@@ -1086,6 +1086,11 @@ function is_traversable(x,y)
   return feat ~= "unseen" and travel.feature_traversable(feat)
 end
 
+function is_solid(x,y)
+  local feat = view.feature_at(x,y)
+  return feat == "unseen" or travel.feature_solid(feat)
+end
+
 function dangerous_to_rest()
   if danger then
     return true
@@ -1434,6 +1439,9 @@ function compare_monster_info(m1, m2)
 end
 
 function is_candidate_for_attack(x, y, no_untabbable)
+  if supdist(x,y) > 8 then
+    return false
+  end
   m = monster_array[x][y]
   if not m or m:attitude() > ATT_NEUTRAL then
     return false
@@ -1456,6 +1464,81 @@ function is_candidate_for_attack(x, y, no_untabbable)
     end
   end
   return true
+end
+
+function count_cleave_groups(cx, cy)
+  local rotate_word = "lukyhbjn"
+  local i, x, y
+  local mons = false
+  local count = 0
+  local mons_first
+  for i = 1,8 do
+    x,y = vi_to_delta(rotate_word:sub(i,i))
+    if is_candidate_for_attack(cx+x,cy+y) then
+      if not mons then
+        count = count + 1
+        mons = true
+      end
+      if mons_first == nil then
+        mons_first = true
+      end
+    end
+    if is_solid(cx+x,cy+y) then
+      mons = false
+      if mons_first == nil then
+        mons_first = false
+      end
+    end
+  end
+  if mons and mons_first and count > 1 then
+    count = count - 1
+  end
+  return count
+end
+
+function count_ranged(cx, cy, r)
+  local x, y
+  local i = 0
+  for x = -r,r do
+    for y = -r,r do
+      if supdist(x,y) > 1 and is_candidate_for_attack(cx+x, cy+y) then
+        m = monster_array[cx+x][cy+y]
+        if supdist(x,y) == 2 and m:reach_range() > 2
+           or is_ranged(m) then
+          i = i+1
+        end
+      end
+    end
+  end
+  return i
+end
+
+function count_adjacent(cx, cy)
+  local x, y
+  local i = 0
+  for x = -1,1 do
+    for y = -1,1 do
+      if supdist(x,y) > 0 and is_candidate_for_attack(cx+x, cy+y) then
+        i = i+1
+      end
+    end
+  end
+  return i
+end
+
+function distance_to_enemy(cx, cy)
+  local x, y
+  local dist = 10
+  for x = -8,8 do
+    for y = -8,8 do
+      if is_candidate_for_attack(x, y) then
+        if supdist(cx-x,cy-y) < dist then
+          dist = supdist(cx-x,cy-y)
+        end
+      end
+    end
+  end
+  return dist
 end
 
 -----------------------------------------
@@ -1585,6 +1668,14 @@ function min_delay_skill()
     mindelay = 7
   end
   return 2 * (weap.delay - mindelay)
+end
+
+function cleaving()
+  weap = items.equipped_at("Weapon")
+  if weap and weap.weap_skill == "Axes" then
+    return true
+  end
+  return false
 end
 
 function armour_ac()
@@ -2080,6 +2171,116 @@ function cloud_is_dangerous(cloud)
   elseif cloud == "foul pestilence" then
     return (not miasma_immune())
   elseif cloud == "seething chaos" or cloud == "mutagenic fog" then
+    return true
+  end
+  return false
+end
+
+function assess_square(x,y)
+  a = {}
+  a.supdist = supdist(x,y)
+  a.can_move = (a.supdist == 0) or not view.withheld(x,y)
+                                   and not monster_in_way(x,y)
+                                   and is_traversable(x,y)
+                                   and not is_solid(x,y)
+  if not a.can_move then
+    return a
+  end
+  cloud = view.cloud_at(x,y)
+  a.cg = count_cleave_groups(x,y)
+  a.ranged = count_ranged(x,y,8)
+  a.adjacent = count_adjacent(x,y)
+  a.enemy_distance = distance_to_enemy(x,y)
+  a.fumble = (not you.flying() and view.feature_at(x,y) == "shallow_water"
+              and intrinsic_fumble())
+  a.safe = view.is_safe_square(x,y)
+  a.cloud_safe = (cloud == nil) or a.safe
+                 or danger and not cloud_is_dangerous(cloud)
+  a.supdist = supdist(x,y)
+  return a
+end
+
+-- returns true if a2 is an improvement over a1
+function square_improvement(a1,a2)
+  if not (a2.can_move and a2.safe) then
+    return false
+  elseif not a1.cloud_safe then
+    return true
+  elseif a2.fumble then
+    return false
+  elseif a1.fumble then
+    return (a1.ranged >= a2.ranged)
+  end
+  if cleaving() then
+    if a2.cg > a1.cg then
+      return false
+    elseif a1.supdist == 0 and a2.cg == a1.cg then
+      return false
+    elseif a1.supdist == 0 and a1.cg <= 1 then
+      return false
+    elseif a2.adjacent+a2.ranged < a1.adjacent+a1.ranged then
+      return true
+    elseif a2.adjacent+a2.ranged > a2.adjacent+a1.ranged then
+      return false
+    elseif a2.ranged < a1.ranged then
+      return true
+    elseif a2.ranged > a1.ranged then
+      return false
+    elseif a2.enemy_distance < a1.enemy_distance then
+      return true
+    else
+      return false
+    end
+  else
+    if a1.supdist == 0 and a1.adjacent == 1 then
+      return false
+    elseif a1.supdist == 0 and a2.adjacent+a2.ranged >=
+                               a1.adjacent+a1.ranged - 1 then
+      return false
+    elseif a2.adjacent+a2.ranged < a1.adjacent+a1.ranged then
+      return true
+    elseif a2.adjacent+a2.ranged > a1.adjacent+a1.ranged then
+      return false
+    elseif a2.enemy_distance < a1.enemy_distance then
+      return true
+    else
+      return false
+    end
+  end
+end
+
+function plan_tactical_step()
+  if you.confused() or you.berserk() or you.constricted()
+     or you.transform() == "tree" or you.transform() == "fungus" then
+    return false
+  end
+  local a0 = assess_square(0,0)
+  if a0.cloud_safe and not (a0.fumble and sense_danger(3))
+     and (a0.adjacent <= 1 or cleaving() and a.cg <= 1) then
+    return false
+  end
+  local bestx = 0
+  local besty = 0
+  local besta = a0
+  local x,y
+  local a
+  for x = -1,1 do
+    for y = -1,1 do
+      if supdist(x,y) > 0 then
+        a = assess_square(x,y)
+        if square_improvement(besta,a) then
+          bestx = x
+          besty = y
+          besta = a
+        end
+      end
+    end
+  end
+  if supdist(bestx,besty) > 0 then
+    say("Stepping ~*~*~tactically~*~*~.")
+    magic(delta_to_vi(bestx,besty) .. "Y")
+    --say("tactics: " .. delta_to_vi(bestx,besty))
+    --stop()
     return true
   end
   return false
@@ -4074,13 +4275,14 @@ plan_emergency = cascade {
   {plan_dd_recharge_teleport, "dd_recharge_teleport"},
   {plan_cure_bad_poison, "cure_bad_poison"},
   {plan_heal_wounds, "heal_wounds"},
-  {plan_cloud_step, "cloud_step"},
+  {plan_tactical_step, "tactical_step"},
+  --{plan_cloud_step, "cloud_step"},
   {plan_hand, "hand"},
   {plan_resistance, "resistance"},
   {plan_bia, "bia"},
   {plan_dd_recharge_heal_wounds, "dd_recharge_heal_wounds"},
   {plan_wield_weapon, "wield_weapon"},
-  {plan_water_step, "water_step"},
+  --{plan_water_step, "water_step"},
   {plan_berserk, "berserk"},
 } -- hack
 
