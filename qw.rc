@@ -2500,7 +2500,7 @@ function plan_wait_for_melee()
         wait_count = 0
         return false
       end
-      if m and m:reach_range() > 2 and (abs(x) <= 2 or abs(y) <= 2) then
+      if m and m:reach_range() > 2 and supdist(x,y) <= 2 then
         wait_count = 0
         return false
       end
