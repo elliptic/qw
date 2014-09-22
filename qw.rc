@@ -1216,10 +1216,10 @@ function sense_immediate_danger()
     for y = -8,8 do
       if is_candidate_for_attack(x,y) then
         m = monster_array[x][y]
-        if (abs(x) <= 1 or abs(y) <= 1) then
+        if supdist(x,y) <= 1 then
           return true
         end
-        if (abs(x) <= 2 or abs(y) <= 2) and m:reach_range() > 2 then
+        if supdist(x,y) <= 2 and m:reach_range() > 2 then
           return true
         end
         if is_ranged(m) then
