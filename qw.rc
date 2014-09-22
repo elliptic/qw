@@ -26,7 +26,7 @@
 
 # qw knows how to play every berserker at the moment (though many of them
 # are quite bad at the moment):
-combo = CeBe.handaxe, DDBe.handaxe, DEBe.falchion, DrBe.handaxe, DsBe.handaxe
+combo = CeBe.handaxe, DDBe.handaxe, DEBe.handaxe, DrBe.handaxe, DsBe.handaxe
 combo += FeBe.claws, FoBe.handaxe, GrBe.handaxe, GhBe.claws, HaBe.falchion
 combo += HEBe.falchion, HOBe.handaxe, HuBe.handaxe, KoBe.mace, MfBe.spear
 combo += MiBe.handaxe, MuBe.handaxe, NaBe.handaxe, OgBe.mace, OpBe.handaxe
