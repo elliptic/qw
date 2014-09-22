@@ -921,6 +921,15 @@ function intrinsic_flight() -- or swimming
   return false
 end
 
+function intrinsic_fumble()
+  local sp = you.race()
+  if sp == "Merfolk" or sp == "Octopode" or sp == "Grey Draconian" or
+     sp == "Centaur" or sp == "Naga" or sp == "Troll" or sp == "Ogre" then
+    return false
+  end
+  return true
+end
+
 function intrinsic_evil()
   local sp = you.race()
   if sp == "Demonspawn" or sp == "Mummy" or sp == "Ghoul" or
@@ -2123,6 +2132,9 @@ end
 
 function plan_water_step()
   if you.confused() or you.berserk() or you.flying() then
+    return false
+  end
+  if not intrinsic_fumble() then
     return false
   end
   if not sense_danger(2) then
