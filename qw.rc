@@ -1364,7 +1364,7 @@ function will_tab(cx, cy, ex, ey)
   end
   local function attempt_move(fx, fy)
     if fx == 0 and fy == 0 then return end
-    if abs(cx+fx) > 8 or abs(cy+fy) > 8 then return end
+    if supdist(cx+fx,cy+fy) > 8 then return end
     if tabbable_square(cx+fx, cy+fy) then
       return will_tab(cx+fx, cy+fy, ex, ey)
     end
