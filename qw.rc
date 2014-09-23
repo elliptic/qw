@@ -580,6 +580,7 @@ local have_message = false
 local read_message = true
 
 local monster_array
+local enemy_list
 
 local upgrade_phase = false
 
@@ -1216,31 +1217,24 @@ function is_ranged(m)
 end
 
 function sense_immediate_danger()
-  local x,y
-  for x = -8,8 do
-    for y = -8,8 do
-      if is_candidate_for_attack(x,y) then
-        m = monster_array[x][y]
-        if supdist(x,y) <= 1 then
-          return true
-        end
-        if supdist(x,y) <= 2 and m:reach_range() > 2 then
-          return true
-        end
-        if is_ranged(m) then
-          return true
-        end
-      end
+  local e
+  for _,e in ipairs(enemy_list) do
+    if supdist(e.x,e.y) <= 1 then
+      return true
+    elseif supdist(e.x,e.y) <= 2 and e.m:reach_range() > 2 then
+      return true
+    elseif is_ranged(e.m) then
+      return true
     end
   end
   return false
 end
 
 function sense_danger(r, no_ignored)
-  local x,y
-  for x = -r,r do
-    for y = -r,r do
-      if is_candidate_for_attack(x,y,no_ignored) then
+  local e
+  for _,e in ipairs(enemy_list) do
+    if supdist(e.x,e.y) <= r then
+      if (not no_ignored) or is_candidate_for_attack(e.x,e.y,no_ignored) then
         return true
       end
     end
@@ -1249,15 +1243,12 @@ function sense_danger(r, no_ignored)
 end
 
 function sense_sigmund()
-  local x,y
-  for x = -8,8 do
-    for y = -8,8 do
-      m = monster_array[x][y]
-      if m and m:name() == "Sigmund" then
-        sigmund_dx = x
-        sigmund_dy = y
-        return
-      end
+  local e
+  for _,e in ipairs(enemy_list) do
+    if e.m:name() == "Sigmund" then
+      sigmund_dx = e.x
+      sigmund_dy = e.y
+      return
     end
   end
 end
@@ -1272,22 +1263,29 @@ end
 
 function update_monster_array()
   local x,y
+  enemy_list = {}
   for x = -8,8 do
     for y = -8,8 do
       monster_array[x][y] = monster.get_monster_at(x, y)
+      if is_candidate_for_attack(x, y) then
+        entry = {}
+        entry.x = x
+        entry.y = y
+        entry.m = monster_array[x][y]
+        table.insert(enemy_list, entry)
+      end
     end
   end
 end
 
 function check_monsters(r, mlist)
-  local x,y
+  local e
   local xl = you.xl()
-  for x = -r,r do
-    for y = -r,r do
-      m = monster_array[x][y]
-      if m and (m:attitude() == 0) and not m:is_firewood() and
-          not contains_string_in(m:name(), {"skeleton", "zombie",
-          "simulacrum", "spectral"}) then
+  for _,e in ipairs(enemy_list) do
+    if supdist(e.x,e.y) <= r then
+      m = monster_array[e.x][e.y]
+      if not contains_string_in(m:name(), {"skeleton", "zombie",
+         "simulacrum", "spectral"}) then
         local name = m:name()
         local desc = m:desc()
         for _, value in ipairs(mlist) do
@@ -1318,14 +1316,11 @@ function count_bia(r)
 end
 
 function count_pan_lords(r)
-  local x, y
+  local e
   local i = 0
-  for x = -r,r do
-    for y = -r,r do
-      m = monster_array[x][y]
-      if m and m:type() == ENUM_MONS_PANDEMONIUM_LORD then
-        i = i+1
-      end
+  for _,e in ipairs(enemy_list) do
+    if e.m:type() == ENUM_MONS_PANDEMONIUM_LORD then
+      i = i+1
     end
   end
   return i
@@ -1497,16 +1492,13 @@ function count_cleave_groups(cx, cy)
 end
 
 function count_ranged(cx, cy, r)
-  local x, y
+  local e
   local i = 0
-  for x = -r,r do
-    for y = -r,r do
-      if supdist(x,y) > 1 and is_candidate_for_attack(cx+x, cy+y) then
-        m = monster_array[cx+x][cy+y]
-        if supdist(x,y) == 2 and m:reach_range() > 2
-           or is_ranged(m) then
-          i = i+1
-        end
+  for _,e in ipairs(enemy_list) do
+    local dist = supdist(cx-e.x,cy-e.y)
+    if dist > 1 and dist <= 4 then
+      if dist == 2 and e.m:reach_range() > 2 or is_ranged(e.m) then
+        i = i+1
       end
     end
   end
@@ -1527,15 +1519,11 @@ function count_adjacent(cx, cy)
 end
 
 function distance_to_enemy(cx, cy)
-  local x, y
   local dist = 10
-  for x = -8,8 do
-    for y = -8,8 do
-      if is_candidate_for_attack(x, y) then
-        if supdist(cx-x,cy-y) < dist then
-          dist = supdist(cx-x,cy-y)
-        end
-      end
+  local e
+  for _,e in ipairs(enemy_list) do
+    if supdist(cx-e.x,cy-e.y) < dist then
+      dist = supdist(cx-e.x,cy-e.y)
     end
   end
   return dist
@@ -1758,21 +1746,19 @@ end
 --                           of loops... this is poorly tested)
 
 function get_target()
-  local x, y, bestx, besty, best_info, new_info
+  local e, bestx, besty, best_info, new_info
   bestx = 0
   besty = 0
   best_info = nil
-  for x = -8, 8 do
-    for y = -8, 8 do
-      if not util.contains(failed_move, 20*x+y) then
-        if is_candidate_for_attack(x, y, true) then
-          new_info = get_monster_info(x, y)
-          if (not best_info) or
-             compare_monster_info(new_info, best_info) then
-            bestx = x
-            besty = y
-            best_info = new_info
-          end
+  for _,e in ipairs(enemy_list) do
+    if not util.contains(failed_move, 20*e.x+e.y) then
+      if is_candidate_for_attack(e.x, e.y, true) then
+        new_info = get_monster_info(e.x, e.y)
+        if (not best_info) or
+           compare_monster_info(new_info, best_info) then
+          bestx = e.x
+          besty = e.y
+          best_info = new_info
         end
       end
     end
@@ -2493,26 +2479,24 @@ function plan_wait_for_melee()
   end
   count = 0
   sleeping_count = 0
-  for x = -8,8 do
-    for y = -8,8 do
-      m = monster_array[x][y]
-      if m and is_ranged(m) then
-        wait_count = 0
-        return false
-      end
-      if m and m:reach_range() > 2 and supdist(x,y) <= 2 then
-        wait_count = 0
-        return false
-      end
-      if m and will_tab(0,0,x,y) and not
-         (m:name() == "wandering mushroom" or
-          m:name():find("ballistomycete") or
-          m:name():find("vortex") or
-          m:desc():find("fleeing")) then
-        count = count + 1
-        if m:desc():find("sleeping") then
-          sleeping_count = sleeping_count + 1
-        end
+  local e
+  for _,e in ipairs(enemy_list) do
+    if is_ranged(e.m) then
+      wait_count = 0
+      return false
+    end
+    if e.m:reach_range() > 2 and supdist(e.x,e.y) <= 2 then
+      wait_count = 0
+      return false
+    end
+    if will_tab(0,0,e.x,e.y) and not
+       (e.m:name() == "wandering mushroom" or
+        e.m:name():find("ballistomycete") or
+        e.m:name():find("vortex") or
+        e.m:desc():find("fleeing")) then
+      count = count + 1
+      if e.m:desc():find("sleeping") then
+        sleeping_count = sleeping_count + 1
       end
     end
   end
