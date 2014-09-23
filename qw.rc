@@ -3475,7 +3475,7 @@ end
 
 function plan_step_towards_lair()
   local x, y
-  if stepped_on_lair then
+  if stepped_on_lair or not found_branch("L") then
     return false
   end
   for x = -8,8 do
