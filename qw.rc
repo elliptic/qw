@@ -1283,11 +1283,10 @@ function check_monsters(r, mlist)
   local xl = you.xl()
   for _,e in ipairs(enemy_list) do
     if supdist(e.x,e.y) <= r then
-      m = monster_array[e.x][e.y]
-      if not contains_string_in(m:name(), {"skeleton", "zombie",
+      if not contains_string_in(e.m:name(), {"skeleton", "zombie",
          "simulacrum", "spectral"}) then
-        local name = m:name()
-        local desc = m:desc()
+        local name = e.m:name()
+        local desc = e.m:desc()
         for _, value in ipairs(mlist) do
           if xl < value[1] and (value[2] == name or value[2] == "desc"
                                 and desc:find(value[3])) then
