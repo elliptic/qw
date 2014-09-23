@@ -1201,8 +1201,53 @@ function too_hungry_to_berserk()
           you.hunger_name() == "very hungry")
 end
 
+function player_speed_num()
+  local num = 3
+  if you.god() == "Cheibriados" then
+    num = 1
+  elseif you.race() == "Spriggan" or you.race() == "Centaur" then
+    num = 4
+  elseif you.race() == "Naga" then
+    num = 2
+  end
+  if you.hasted() or you.berserk() then
+    num = num + 1
+  end
+  if you.slowed() then
+    num = num - 1
+  end
+  return num
+end
+
 -----------------------------------------
 -- monster functions
+
+function mon_speed_num(m)
+  local sdesc = m:speed_description()
+  local num
+  if sdesc == "extremely fast" then
+    num = 5
+  elseif sdesc == "very fast" then
+    num = 4
+  elseif sdesc == "fast" or sdesc == "normal" then
+    num = 3
+  elseif sdesc == "slow" then
+    num = 2
+  elseif sdesc == "very slow" then
+    num = 1
+  end
+  if m:status("fast") then
+    num = num + 1
+  end
+  if m:status("slow") then
+    num = num - 1
+  end
+  return num
+end
+
+function is_fast(m)
+  return (mon_speed_num(m) > player_speed_num())
+end
 
 function is_ranged(m)
   if m:has_known_ranged_attack() then
@@ -1496,7 +1541,8 @@ function count_ranged(cx, cy, r)
   for _,e in ipairs(enemy_list) do
     local dist = supdist(cx-e.x,cy-e.y)
     if dist > 1 and dist <= 4 then
-      if dist == 2 and e.m:reach_range() > 2 or is_ranged(e.m) then
+      if dist == 2 and (e.m:reach_range() > 2 or is_fast(e.m))
+         or is_ranged(e.m) then
         i = i+1
       end
     end
