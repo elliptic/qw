@@ -1219,9 +1219,9 @@ end
 function sense_immediate_danger()
   local e
   for _,e in ipairs(enemy_list) do
-    if supdist(e.x,e.y) <= 1 then
+    if supdist(e.x,e.y) <= 2 then
       return true
-    elseif supdist(e.x,e.y) <= 2 and e.m:reach_range() > 2 then
+    elseif supdist(e.x,e.y) <= 3 and e.m:reach_range() > 2 then
       return true
     elseif is_ranged(e.m) then
       return true
