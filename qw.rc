@@ -1087,6 +1087,15 @@ function is_traversable(x,y)
   return feat ~= "unseen" and travel.feature_traversable(feat)
 end
 
+function is_cornerish(x,y)
+  if is_traversable(x+1,y+1) or is_traversable(x+1,y-1)
+     or is_traversable(x-1,y+1) or is_traversable(x-1,y-1) then
+    return false
+  end
+  return ((is_traversable(x+1,y) or is_traversable(x-1,y))
+          and (is_traversable(x,y+1) or is_traversable(x,y-1)))
+end
+
 function is_solid(x,y)
   local feat = view.feature_at(x,y)
   return feat == "unseen" or travel.feature_solid(feat)
@@ -1551,13 +1560,31 @@ function count_ranged(cx, cy, r)
   return i
 end
 
-function count_adjacent(cx, cy)
+function count_nearby(cx, cy, r)
   local x, y
   local i = 0
-  for x = -1,1 do
-    for y = -1,1 do
+  for x = -r,r do
+    for y = -r,r do
       if supdist(x,y) > 0 and is_candidate_for_attack(cx+x, cy+y) then
         i = i+1
+      end
+    end
+  end
+  return i
+end
+
+function count_slow_nearby(cx, cy, r)
+  local x, y
+  local i = 0
+  for x = -r,r do
+    for y = -r,r do
+      if supdist(x,y) > 0 and is_candidate_for_attack(cx+x, cy+y)
+         then
+        m = monster_array[cx+x][cy+y]
+        if mon_speed_num(m) < player_speed_num()
+           and not is_ranged(m) and m:reach_range() <= 2 then
+          i = i+1
+        end
       end
     end
   end
@@ -2221,7 +2248,11 @@ function assess_square(x,y)
   cloud = view.cloud_at(x,y)
   a.cg = count_cleave_groups(x,y)
   a.ranged = count_ranged(x,y,8)
-  a.adjacent = count_adjacent(x,y)
+  a.adjacent = count_nearby(x,y,1)
+  a.cornerish = is_cornerish(x,y)
+  if have_reaching() then
+    a.slow_adjacent = count_slow_nearby(x,y,1)
+  end
   a.enemy_distance = distance_to_enemy(x,y)
   a.fumble = (not you.flying() and view.feature_at(x,y) == "shallow_water"
               and intrinsic_fumble())
@@ -2244,6 +2275,9 @@ function square_improvement(a1,a2)
     return false
   elseif a1.fumble then
     return (a1.ranged >= a2.ranged)
+  elseif have_reaching() and a1.slow_adjacent > 0 and a2.adjacent == 0
+         and a2.ranged == 0 then
+    return true
   end
   if cleaving() then
     if a2.cg > a1.cg then
@@ -2262,6 +2296,10 @@ function square_improvement(a1,a2)
       return false
     elseif a2.enemy_distance < a1.enemy_distance then
       return true
+    elseif a2.enemy_distance > a1.enemy_distance then
+      return false
+    elseif a1.cornerish and not a2.cornerish then
+      return true
     else
       return false
     end
@@ -2277,6 +2315,10 @@ function square_improvement(a1,a2)
       return false
     elseif a2.enemy_distance < a1.enemy_distance then
       return true
+    elseif a2.enemy_distance > a1.enemy_distance then
+      return false
+    elseif a1.cornerish and not a2.cornerish then
+      return true
     else
       return false
     end
@@ -2290,6 +2332,7 @@ function plan_tactical_step()
   end
   local a0 = assess_square(0,0)
   if a0.cloud_safe and not (a0.fumble and sense_danger(3))
+     and (not have_reaching() or a0.slow_adjacent == 0)
      and (a0.adjacent <= 1 or cleaving() and a.cg <= 1) then
     return false
   end
