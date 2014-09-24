@@ -2290,7 +2290,7 @@ function square_improvement(a1,a2)
     return "reaching"
   end
   if cleaving() then
-    if a2.cg > a1.cg and a1.cg > 0 then
+    if a2.cg > a1.cg and a2.cg > 1 then
       return false
     elseif a1.supdist == 0 and a2.cg == a1.cg then
       return false
