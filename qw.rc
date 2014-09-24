@@ -1255,7 +1255,8 @@ function is_ranged(m)
   end
   local name = m:name()
   if name == "flayed ghost" or name == "shock serpent" or name == "Maurice"
-     or name:find("draconian") and not name:find("grey draconian") then
+     or name:find("draconian") and not name:find("grey draconian")
+     or name:find("crimson imp") then
     return true
   end
   return false
