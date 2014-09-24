@@ -1541,7 +1541,7 @@ function count_ranged(cx, cy, r)
   local i = 0
   for _,e in ipairs(enemy_list) do
     local dist = supdist(cx-e.x,cy-e.y)
-    if dist > 1 and dist <= 4 then
+    if dist > 1 and dist <= r then
       if dist == 2 and (e.m:reach_range() > 2 or is_fast(e.m))
          or is_ranged(e.m) then
         i = i+1
