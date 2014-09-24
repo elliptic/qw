@@ -2225,6 +2225,8 @@ function assess_square(x,y)
   a.enemy_distance = distance_to_enemy(x,y)
   a.fumble = (not you.flying() and view.feature_at(x,y) == "shallow_water"
               and intrinsic_fumble())
+  a.slow = (not you.flying() and view.feature_at(x,y) == "shallow_water"
+            and you.race() ~= "Merfolk" and you.race() ~= "Octopode")
   a.safe = view.is_safe_square(x,y)
   a.cloud_safe = (cloud == nil) or a.safe
                  or danger and not cloud_is_dangerous(cloud)
@@ -2238,7 +2240,7 @@ function square_improvement(a1,a2)
     return false
   elseif not a1.cloud_safe then
     return true
-  elseif a2.fumble then
+  elseif a2.fumble or a2.slow then
     return false
   elseif a1.fumble then
     return (a1.ranged >= a2.ranged)
