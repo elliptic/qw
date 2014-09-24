@@ -2510,7 +2510,8 @@ function want_to_berserk()
 end
 
 function plan_wait_for_melee()
-  if sense_danger(1) or (not options.autopick_on) or
+  if sense_danger(1) or (have_reaching() and sense_danger(2))
+     or (not options.autopick_on) or
      you.berserk() or you.have_orb() or count_bia(8) > 0 or
      not view.is_safe_square(0,0) or
      view.feature_at(0,0) == "shallow_water" and not you.flying() then
