@@ -2302,7 +2302,7 @@ function square_improvement(a1,a2)
       return false
     elseif a2.adjacent+a2.ranged < a1.adjacent+a1.ranged then
       return "cleave"
-    elseif a2.adjacent+a2.ranged > a2.adjacent+a1.ranged then
+    elseif a2.adjacent+a2.ranged > a1.adjacent+a1.ranged then
       return false
     elseif a2.ranged < a1.ranged then
       return "cleave"
