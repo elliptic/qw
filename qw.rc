@@ -584,6 +584,9 @@ local enemy_list
 
 local upgrade_phase = false
 
+local tactical_step
+local tactical_reason
+
 ------------------------------
 -- some tables with hardcoded data about branches/portals/monsters:
 
@@ -2265,19 +2268,30 @@ function assess_square(x,y)
   return a
 end
 
--- returns true if a2 is an improvement over a1
+-- returns a string explaining why if a2 is an improvement over a1
+-- possibilities are:
+--   cloud       - stepping out of harmful cloud
+--   water       - stepping out of shallow water when it would cause fumbling
+--   reaching    - kiting slower monsters with reaching
+--   cleaving    - stepping out of a bad cleave position
+--   outnumbered - stepping away from a square adjacent to multiple monsters
+--                 (when not cleaving)
 function square_improvement(a1,a2)
   if not (a2.can_move and a2.safe) then
     return false
   elseif not a1.cloud_safe then
-    return true
+    return "cloud"
   elseif a2.fumble or a2.slow then
     return false
   elseif a1.fumble then
-    return (a1.ranged >= a2.ranged)
+    if a1.ranged >= a2.ranged then
+      return "water"
+    else
+      return false
+    end
   elseif have_reaching() and a1.slow_adjacent > 0 and a2.adjacent == 0
          and a2.ranged == 0 then
-    return true
+    return "reaching"
   end
   if cleaving() then
     if a2.cg > a1.cg then
@@ -2287,19 +2301,19 @@ function square_improvement(a1,a2)
     elseif a1.supdist == 0 and a1.cg <= 1 then
       return false
     elseif a2.adjacent+a2.ranged < a1.adjacent+a1.ranged then
-      return true
+      return "cleave"
     elseif a2.adjacent+a2.ranged > a2.adjacent+a1.ranged then
       return false
     elseif a2.ranged < a1.ranged then
-      return true
+      return "cleave"
     elseif a2.ranged > a1.ranged then
       return false
     elseif a2.enemy_distance < a1.enemy_distance then
-      return true
+      return "cleave"
     elseif a2.enemy_distance > a1.enemy_distance then
       return false
     elseif a1.cornerish and not a2.cornerish then
-      return true
+      return "cleave"
     else
       return false
     end
@@ -2310,22 +2324,26 @@ function square_improvement(a1,a2)
                                a1.adjacent+a1.ranged - 1 then
       return false
     elseif a2.adjacent+a2.ranged < a1.adjacent+a1.ranged then
-      return true
+      return "outnumbered"
     elseif a2.adjacent+a2.ranged > a1.adjacent+a1.ranged then
       return false
     elseif a2.enemy_distance < a1.enemy_distance then
-      return true
+      return "outnumbered"
     elseif a2.enemy_distance > a1.enemy_distance then
       return false
     elseif a1.cornerish and not a2.cornerish then
-      return true
+      return "outnumbered"
     else
       return false
     end
   end
 end
 
-function plan_tactical_step()
+-- this function always returns false because it doesn't actually take the
+-- tactical step, just chooses it
+function plan_choose_tactical_step()
+  tactical_step = nil
+  tactical_reason = "none"
   if you.confused() or you.berserk() or you.constricted()
      or you.transform() == "tree" or you.transform() == "fungus" then
     return false
@@ -2354,93 +2372,40 @@ function plan_tactical_step()
     end
   end
   if supdist(bestx,besty) > 0 then
-    say("Stepping ~*~*~tactically~*~*~.")
-    magic(delta_to_vi(bestx,besty) .. "Y")
+    tactical_step = delta_to_vi(bestx,besty)
+    tactical_reason = square_improvement(a0,besta)
+    --say("Stepping ~*~*~tactically~*~*~.")
+    --magic(delta_to_vi(bestx,besty) .. "Y")
     --say("tactics: " .. delta_to_vi(bestx,besty))
     --stop()
-    return true
+    --return true
   end
   return false
 end
 
 function plan_cloud_step()
-  if you.confused() or you.berserk() or view.is_safe_square(0,0) then
-    return false
-  end
-  if you.transform() == "tree" or you.transform() == "fungus" then
-    return false
-  end
-  cloud = view.cloud_at(0,0)
-  if not cloud or (danger and not cloud_is_dangerous(cloud)) then
-    return false
-  end
-  local x,y
-  local bestx,besty
-  local dist
-  local bestdist = 11
-  for x = -1,1 do
-    for y = -1,1 do
-      if supdist(x,y) > 0 and view.is_safe_square(x,y)
-         and not view.withheld(x, y) and not monster_in_way(x,y) then
-        dist = 10
-        for x2 = -8,8 do
-          for y2 = -8,8 do
-            if is_candidate_for_attack(x2,y2) then
-              if supdist(x-x2,y-y2) < dist then
-                dist = supdist(x-x2,y-y2)
-              end
-            end
-          end
-        end
-        if dist < bestdist then
-          bestx = x
-          besty = y
-          bestdist = dist
-        end
-      end
-    end
-  end
-  if bestdist < 11 then
-    say("Stepping out of cloud: " .. cloud .. ".")
-    magic(delta_to_vi(bestx,besty) .. "Y")
+  if tactical_reason == "cloud" then
+    say("Stepping ~*~*~tactically~*~*~ (" .. tactical_reason .. ").")
+    magic(tactical_step .. "Y")
     return true
   end
   return false
 end
 
 function plan_water_step()
-  if you.confused() or you.berserk() or you.flying() then
-    return false
+  if tactical_reason == "water" then
+    say("Stepping ~*~*~tactically~*~*~ (" .. tactical_reason .. ").")
+    magic(tactical_step .. "Y")
+    return true
   end
-  if not intrinsic_fumble() then
-    return false
-  end
-  if not sense_danger(2) then
-    return false
-  end
-  if you.transform() == "tree" or you.transform() == "fungus" then
-    return false
-  end
-  if view.feature_at(0,0) ~= "shallow_water" then
-    return false
-  end
-  local x,y
-  for x = -1,1 do
-    for y = -1,1 do
-      if view.is_safe_square(x,y) and not view.withheld(x, y) and
-         view.feature_at(x,y) ~= "shallow_water" and
-         not monster_in_way(x,y) then
-        for x2 = -1,1 do
-          for y2 = -1,1 do
-            if is_candidate_for_attack(x+x2,y+y2) then
-              say("Stepping out of shallow water.")
-              magic(delta_to_vi(x,y) .. "Y")
-              return true
-            end
-          end
-        end
-      end
-    end
+  return false
+end
+
+function plan_other_step()
+  if tactical_reason ~= "none" then
+    say("Stepping ~*~*~tactically~*~*~ (" .. tactical_reason .. ").")
+    magic(tactical_step .. "Y")
+    return true
   end
   return false
 end
@@ -4351,15 +4316,16 @@ plan_emergency = cascade {
   {plan_dd_recharge_teleport, "dd_recharge_teleport"},
   {plan_cure_bad_poison, "cure_bad_poison"},
   {plan_heal_wounds, "heal_wounds"},
-  {plan_tactical_step, "tactical_step"},
-  --{plan_cloud_step, "cloud_step"},
+  {plan_choose_tactical_step, "choose_tactical_step"},
+  {plan_cloud_step, "cloud_step"},
   {plan_hand, "hand"},
   {plan_resistance, "resistance"},
   {plan_bia, "bia"},
   {plan_dd_recharge_heal_wounds, "dd_recharge_heal_wounds"},
   {plan_wield_weapon, "wield_weapon"},
-  --{plan_water_step, "water_step"},
+  {plan_water_step, "water_step"},
   {plan_berserk, "berserk"},
+  {plan_other_step, "other_step"},
 } -- hack
 
 plan_orbrun_emergency = cascade {
