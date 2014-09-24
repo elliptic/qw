@@ -2284,17 +2284,13 @@ function square_improvement(a1,a2)
   elseif a2.fumble or a2.slow then
     return false
   elseif a1.fumble then
-    if a1.ranged >= a2.ranged then
-      return "water"
-    else
-      return false
-    end
+    return "water"
   elseif have_reaching() and a1.slow_adjacent > 0 and a2.adjacent == 0
          and a2.ranged == 0 then
     return "reaching"
   end
   if cleaving() then
-    if a2.cg > a1.cg then
+    if a2.cg > a1.cg and a1.cg > 0 then
       return false
     elseif a1.supdist == 0 and a2.cg == a1.cg then
       return false
