@@ -239,7 +239,7 @@ function armour_value(it, name, with_resists)
       return -1
     end
     if name:find("Pondering") or name:find("hauberk")
-       or name:find("bear spirit") and you.race() == "Deep Dwarf" then
+       or name:find("Bear Spirit") and you.race() == "Deep Dwarf" then
       return -1
     end
   elseif name:find("runed") or name:find("glowing") or name:find("dyed") or
