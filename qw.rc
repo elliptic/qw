@@ -3329,8 +3329,8 @@ end
 function plan_go_up()
   local feat = view.feature_at(0,0)
   if feat:find("stone_stairs_up") or feat == "escape_hatch_up"
-     or feat == "return_from_zot" or feat == "exit_dungeon"
-     or feat == "return_from_depths" then
+     or feat == "exit_zot" or feat == "exit_dungeon"
+     or feat == "exit_depths" then
     expect_new_location = true
     magic("<")
     return true
