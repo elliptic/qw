@@ -503,6 +503,8 @@ function autopickup(it, name)
     end
   elseif class == "food" then
     return true
+  elseif class == "potion" or class == "scroll" or class == "wand" then
+    return
   else
     return false
   end
@@ -526,6 +528,7 @@ function autopickup(it, name)
   end
 end
 
+clear_autopickup_funcs()
 add_autopickup_func(autopickup)
 
 -----------------------------
