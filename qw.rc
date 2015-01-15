@@ -1521,36 +1521,6 @@ function is_candidate_for_attack(x, y, no_untabbable)
   return true
 end
 
-function count_cleave_groups(cx, cy)
-  local rotate_word = "lukyhbjn"
-  local i, x, y
-  local mons = false
-  local count = 0
-  local mons_first
-  for i = 1,8 do
-    x,y = vi_to_delta(rotate_word:sub(i,i))
-    if is_candidate_for_attack(cx+x,cy+y) then
-      if not mons then
-        count = count + 1
-        mons = true
-      end
-      if mons_first == nil then
-        mons_first = true
-      end
-    end
-    if is_solid(cx+x,cy+y) then
-      mons = false
-      if mons_first == nil then
-        mons_first = false
-      end
-    end
-  end
-  if mons and mons_first and count > 1 then
-    count = count - 1
-  end
-  return count
-end
-
 function count_ranged(cx, cy, r)
   local e
   local i = 0
@@ -2243,7 +2213,9 @@ end
 
 function assess_square(x,y)
   a = {}
+  -- distance tu current square
   a.supdist = supdist(x,y)
+  -- can we move there?
   a.can_move = (a.supdist == 0) or not view.withheld(x,y)
                                    and not monster_in_way(x,y)
                                    and is_traversable(x,y)
@@ -2252,89 +2224,92 @@ function assess_square(x,y)
     return a
   end
   cloud = view.cloud_at(x,y)
-  a.cg = count_cleave_groups(x,y)
+  -- nonadjacent monsters who might be able to attack you (ranged/reaching/fast)
   a.ranged = count_ranged(x,y,8)
+  -- adjacent monsters
   a.adjacent = count_nearby(x,y,1)
+  -- corners - avoid these if not cleaving
   a.cornerish = is_cornerish(x,y)
   if have_reaching() then
+    -- slow adjacent nonranged monsters, for kiting
     a.slow_adjacent = count_slow_nearby(x,y,1)
   end
+  -- distance to nearest enemy
   a.enemy_distance = distance_to_enemy(x,y)
+  -- will we fumble if we try to attack from this square?
   a.fumble = (not you.flying() and view.feature_at(x,y) == "shallow_water"
               and intrinsic_fumble())
+  -- will we be slow if we move into this square?
   a.slow = (not you.flying() and view.feature_at(x,y) == "shallow_water"
             and you.race() ~= "Merfolk" and you.race() ~= "Octopode")
+  -- is the square safe to step in? (checks traps+clouds)
   a.safe = view.is_safe_square(x,y)
+  cloud = view.cloud_at(x,y)
+  -- would we want to move out of a cloud? note that we don't worry about
+  -- weak clouds if monsters are around
   a.cloud_safe = (cloud == nil) or a.safe
                  or danger and not cloud_is_dangerous(cloud)
-  a.supdist = supdist(x,y)
   return a
 end
 
--- returns a string explaining why if a2 is an improvement over a1
+-- returns a string explaining why moving a1->a2 is preferable to not moving
 -- possibilities are:
 --   cloud       - stepping out of harmful cloud
 --   water       - stepping out of shallow water when it would cause fumbling
 --   reaching    - kiting slower monsters with reaching
---   cleaving    - stepping out of a bad cleave position
 --   outnumbered - stepping away from a square adjacent to multiple monsters
 --                 (when not cleaving)
-function square_improvement(a1,a2)
-  if not (a2.can_move and a2.safe) then
+function step_reason(a1,a2)
+  if not (a2.can_move and a2.safe and a2.supdist > 0) then
     return false
   elseif not a1.cloud_safe then
     return "cloud"
   elseif a2.fumble or a2.slow then
     return false
   elseif a1.fumble then
-    return "water"
+    if a2.ranged > a1.ranged and a2.enemy_distance > a1.enemy_distance then
+      return false
+    else
+      return "water"
+    end
   elseif have_reaching() and a1.slow_adjacent > 0 and a2.adjacent == 0
          and a2.ranged == 0 then
     return "reaching"
-  end
-  if cleaving() then
-    if a2.cg > a1.cg and a2.cg > 1 then
-      return false
-    elseif a1.supdist == 0 and a2.cg == a1.cg then
-      return false
-    elseif a1.supdist == 0 and a1.cg <= 1 then
-      return false
-    elseif a2.adjacent+a2.ranged < a1.adjacent+a1.ranged then
-      return "cleave"
-    elseif a2.adjacent+a2.ranged > a1.adjacent+a1.ranged then
-      return false
-    elseif a2.ranged < a1.ranged then
-      return "cleave"
-    elseif a2.ranged > a1.ranged then
-      return false
-    elseif a2.enemy_distance < a1.enemy_distance then
-      return "cleave"
-    elseif a2.enemy_distance > a1.enemy_distance then
-      return false
-    elseif a1.cornerish and not a2.cornerish then
-      return "cleave"
-    else
-      return false
-    end
+  elseif cleaving() then
+    return false
+  elseif a1.adjacent == 1 then
+    return false
+  elseif a2.adjacent + a2.ranged <= a1.adjacent + a1.ranged - 2 then
+    return "outnumbered"
   else
-    if a1.supdist == 0 and a1.adjacent == 1 then
-      return false
-    elseif a1.supdist == 0 and a2.adjacent+a2.ranged >=
-                               a1.adjacent+a1.ranged - 1 then
-      return false
-    elseif a2.adjacent+a2.ranged < a1.adjacent+a1.ranged then
-      return "outnumbered"
-    elseif a2.adjacent+a2.ranged > a1.adjacent+a1.ranged then
-      return false
-    elseif a2.enemy_distance < a1.enemy_distance then
-      return "outnumbered"
-    elseif a2.enemy_distance > a1.enemy_distance then
-      return false
-    elseif a1.cornerish and not a2.cornerish then
-      return "outnumbered"
-    else
-      return false
-    end
+    return false
+  end
+end
+
+-- determines whether moving a0->a2 is an improvement over a0->a1
+-- assumes that these two moves have already been determined to be better
+-- than not moving, with given reason
+function step_improvement(reason,a1,a2)
+  if reason == "water" and a2.enemy_distance < a1.enemy_distance then
+    return true
+  elseif reason == "water" and a2.enemy_distance > a1.enemy_distance then
+    return false
+  elseif a2.adjacent+a2.ranged < a1.adjacent+a1.ranged then
+    return true
+  elseif a2.adjacent+a2.ranged > a1.adjacent+a1.ranged then
+    return false
+  elseif cleaving() and a2.ranged < a1.ranged then
+    return true
+  elseif cleaving() and a2.ranged > a1.ranged then
+    return false
+  elseif a2.enemy_distance < a1.enemy_distance then
+    return true
+  elseif a2.enemy_distance > a1.enemy_distance then
+    return false
+  elseif a1.cornerish and not a2.cornerish then
+    return true
+  else
+    return false
   end
 end
 
@@ -2350,33 +2325,37 @@ function plan_choose_tactical_step()
   local a0 = assess_square(0,0)
   if a0.cloud_safe and not (a0.fumble and sense_danger(3))
      and (not have_reaching() or a0.slow_adjacent == 0)
-     and (a0.adjacent <= 1 or cleaving() and a.cg <= 1) then
+     and (a0.adjacent <= 1 or cleaving()) then
     return false
   end
-  local bestx = 0
-  local besty = 0
-  local besta = a0
+  local bestx,besty,bestreason
+  local besta = nil
   local x,y
   local a
+  local reason
   for x = -1,1 do
     for y = -1,1 do
       if supdist(x,y) > 0 then
         a = assess_square(x,y)
-        if square_improvement(besta,a) then
-          bestx = x
-          besty = y
-          besta = a
+        reason = step_reason(a0,a)
+        if reason then
+          if besta == nil or step_improvement(reason,besta,a) then
+            bestx = x
+            besty = y
+            besta = a
+            bestreason = reason
+          end
         end
       end
     end
   end
-  if supdist(bestx,besty) > 0 then
+  if besta then
     tactical_step = delta_to_vi(bestx,besty)
-    tactical_reason = square_improvement(a0,besta)
+    tactical_reason = bestreason
     --say("Stepping ~*~*~tactically~*~*~.")
     --magic(delta_to_vi(bestx,besty) .. "Y")
-    --say("tactics: " .. delta_to_vi(bestx,besty))
-    --stop()
+    say("tactics: " .. delta_to_vi(bestx,besty))
+    stop()
     --return true
   end
   return false
