@@ -123,18 +123,16 @@ df += scrolls? of (immolation|noise|random uselessness|torment)
 # keep: curing,heal wounds,haste,cancellation,resistance,experience,
 #       might,beneficial mutation,cure mutation,restore abilities
 ae += potions? of (brilliance|magic|berserk rage)
-ae += potions? of (flight|invisibility)
-ae += potions? of (agility|porridge)
-ae += potions? of (confusion|decay|degeneration|mutation|slowing)
+ae += potions? of (flight|invisibility|agility)
+ae += potions? of (ambrosia|decay|degeneration|mutation)
 ae += potions? of (poison|lignification)
 df += potions? of (brilliance|magic|berserk rage)
-df += potions? of (flight|invisibility)
-df += potions? of (agility|porridge)
-df += potions? of (confusion|decay|degeneration|mutation|slowing)
+df += potions? of (flight|invisibility|agility)
+df += potions? of (ambrosia|decay|degeneration|mutation)
 df += potions? of (poison|lignification)
 : if you.race() ~= "Vampire" then
-ae += potions? of (blood|coagulated blood)
-df += potions? of (blood|coagulated blood)
+ae += potions? of blood
+df += potions? of blood
 : end
 # keep: heal wounds,hasting,teleportation
 ae += wand of (random effects|slowing|magic darts|flame|frost|confusion)
@@ -407,11 +405,18 @@ function amulet_value(it, name, with_resists)
     if with_resists and you.res_corr() then
       return -1
     else
-      return 8
+      return 9
     end
   end
-  if name:find("resist mutation") then return 7 end
-  if name:find("clarity") then return 6 end
+  if name:find("resist mutation") then return 8 end
+  if name:find("clarity") then return 7 end
+  if name:find("regeneration") then
+    if you.race() == "Deep Dwarf" then
+      return -1
+    else
+      return 6
+    end
+  end
   if name:find("warding") then return 5 end
   if name:find("guardian spirit") and you.race() ~= "Deep Dwarf" then
     return 4
@@ -462,13 +467,6 @@ function ring_value(it, name, with_resists)
   if name:find("protection") then return 19 + plus end
   if name:find("evasion") then return 18 + plus end
   if name:find("positive energy") then return 13 end
-  if name:find("regeneration") then
-    if you.race() == "Deep Dwarf" then
-      return -1
-    else
-      return 12
-    end
-  end
   if name:find("strength") then return 7 + plus end
   if name:find("dexterity") then return 7 + plus end
   if name:find("sustain abilities") then return 2 end
