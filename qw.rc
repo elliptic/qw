@@ -1167,6 +1167,13 @@ function can_zap()
   if you.berserk() or you.confused() or transformed() then
     return false
   end
+  local x = you.mutation("MP-powered wands")
+  if x > 0 then
+    local a,b = you.mp()
+    if a < 3*x then
+      return false
+    end
+  end
   return true
 end
 
