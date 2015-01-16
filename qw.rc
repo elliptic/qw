@@ -2682,7 +2682,7 @@ end
 
 function vp_handle_corpses()
   if want_blood() and on_bottleable_corpses() then
-    use_ability("Bottle Blood", "Y")
+    chop()
   elseif want_permafood() and on_edible_corpse() and not on_dangerous_corpse() then
     magic("eY")
   elseif want_pray()
@@ -2690,7 +2690,7 @@ function vp_handle_corpses()
          and not you.silenced() and not on_valuable_corpse() then
     pray()
   else
-    magic("ccYq")
+    chop()
   end
   return true
 end
