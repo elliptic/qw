@@ -240,6 +240,9 @@ function armour_value(it, name, with_resists)
        or name:find("Bear Spirit") and you.race() == "Deep Dwarf" then
       return -1
     end
+    if you.race() == "Deep Dwarf" and name:find("MP%-") then
+      return -1
+    end
   elseif name:find("runed") or name:find("glowing") or name:find("dyed") or
          name:find("embroidered") or name:find("shiny") then
     value = value + 400 -- it might be very good
@@ -1138,16 +1141,6 @@ function transformed()
   return (you.transform() ~= "")
 end
 
-function real_mmp()
-  local mp,mmp = you.mp()
-  weap = items.equipped_at("Weapon")
-  if weap and weap:name():find("anti") then
-    return 3*mmp
-  else
-    return mmp
-  end
-end
-
 function can_read()
   if you.berserk() or you.confused() or you.silenced()
      or you.status("engulfed (cannot breathe)") then
@@ -1935,7 +1928,7 @@ function plan_hand()
 end
 
 function dd_prefer_hand()
-  return (you.piety_rank() == 6 or real_mmp() < 3)
+  return (you.piety_rank() == 6 or you.base_mp() < 3)
 end
 
 function plan_dd_hand_for_healing()
@@ -2007,7 +2000,7 @@ function plan_dd_recharge_teleport()
     end
   end
   local mp,mmp = you.mp()
-  if mp > 0 then
+  if mp > 0 and you.base_mp() > 0 then
     for letter, abil in pairs(you.ability_table()) do
       if abil == "Device Recharging" then
         say("MP-RECHARGING " .. item(wand_slot).name() .. ".")
@@ -2057,7 +2050,7 @@ function plan_dd_orbrun_recharge_hasting()
     end
   end
   local mp,mmp = you.mp()
-  if mp > 0 then
+  if mp > 0 and you.base_mp() > 0 then
     for letter, abil in pairs(you.ability_table()) do
       if abil == "Device Recharging" then
         say("MP-RECHARGING " .. item(wand_slot).name() .. ".")
@@ -2103,7 +2096,7 @@ function plan_dd_recharge_heal_wounds()
     end
   end
   local mp,mmp = you.mp()
-  if mp > 0 then
+  if mp > 0 and you.base_mp() > 0 then
     for letter, abil in pairs(you.ability_table()) do
       if abil == "Device Recharging" then
         say("MP-RECHARGING " .. item(wand_slot).name() .. ".")
@@ -4482,7 +4475,7 @@ function handle_skills()
     you.train_skill("Fighting", 1)
   end
   if you.race() == "Deep Dwarf" and (you.base_skill("Evocations") < 4
-                                     or real_mmp() < 5) then
+                                     or you.base_mp() < 5) then
     you.train_skill("Evocations", 1)
   end
   if you.race() == "Vine Stalker" and you.base_skill("Evocations") < 12
