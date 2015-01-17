@@ -218,29 +218,42 @@ function armour_value(it, name, with_resists)
     else
       value = value + 400 -- it might be very good
     end
-    if name:find("rF%+") then
-      if not with_resists or you.res_fire() < 2 then
-        value = value + 400 -- we like this a lot
+    ap = it.artprops
+    if ap and ap["rF"] then
+      if ap["rF"] > 0 then
+        if not with_resists or you.res_fire() < 2 then
+          value = value + 400
+        end
+      else
+        value = value - 400
       end
     end
-    if name:find("rPois") and not intrinsic_rpois() then
-      if not with_resists or you.res_poison() < 1 then
-        value = value + 200 -- this is nice too
+    if ap and ap["rPois"] and not intrinsic_rpois() then
+      if ap["rPois"] > 0 then
+        if not with_resists or you.res_poison() < 1 then
+          value = value + 200
+        end
+      else
+        value = value - 200
       end
     end
-    if name:find("SInv") then
+    if ap and ap["SInv"] then
       if not with_resists or not you.see_invisible() then
         value = value + 400 -- we like this a lot
       end
     end
-    if name:find("%-Tele") then
+    if ap and (ap["-Tele"] or ap["*Tele"]) and you.race() ~= "Formicid" then
+      return -1
+    end
+    if ap and ap["*Rage"] and you.race() ~= "Mummy"
+       and you.race() ~= "Ghoul" and you.race() ~= "Formicid" then
       return -1
     end
     if name:find("Pondering") or name:find("hauberk")
        or name:find("Bear Spirit") and you.race() == "Deep Dwarf" then
       return -1
     end
-    if you.race() == "Deep Dwarf" and name:find("MP%-") then
+    if you.race() == "Deep Dwarf" and ap and ap["MP"] and ap["MP"] < 0 then
       return -1
     end
   elseif name:find("runed") or name:find("glowing") or name:find("dyed") or
@@ -367,8 +380,18 @@ function weapon_value(it, name, with_resists)
   if intrinsic_evil() and name:find("holy") then
     return -1
   end
-  if name:find("%-Tele") then
-    return -1
+  if it.artefact then
+    ap = it.artprops
+    if ap and (ap["-Tele"] or ap["*Tele"]) and you.race() ~= "Formicid" then
+      return -1
+    end
+    if ap and ap["*Rage"] and you.race() ~= "Mummy"
+       and you.race() ~= "Ghoul" and you.race() ~= "Formicid" then
+      return -1
+    end
+    if you.race() == "Deep Dwarf" and ap and ap["MP"] and ap["MP"] < 0 then
+      return -1
+    end
   end
   if it.artefact and not it.fully_identified or
      name:find("runed") or name:find("glowing") then
