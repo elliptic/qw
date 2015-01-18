@@ -218,6 +218,7 @@ good_slots = {cloak="Cloak", helmet="Helmet",
 
 function armour_value(it, name, with_resists)
   local value = 0
+  local ego = it.ego()
   if it.artefact then
     if it.fully_identified then
       value = value + 100 -- random stuff is good on average
@@ -262,37 +263,35 @@ function armour_value(it, name, with_resists)
     if you.race() == "Deep Dwarf" and ap and ap["MP"] and ap["MP"] < 0 then
       return -1
     end
-  elseif name:find("runed") or name:find("glowing") or name:find("dyed") or
-         name:find("embroidered") or name:find("shiny") then
-    value = value + 400 -- it might be very good
-  elseif it.fully_identified then
-    if name:find("fire resistance") then
+  elseif ego then -- names in armour_ego_name()
+    if ego == "fire resistance" then
       if not with_resists or you.res_fire() < 2 then
         value = value + 400 -- we like this a lot
       end
-    end
-    if name:find("poison resistance") and not intrinsic_rpois() then
-      if not with_resists or you.res_poison() < 1 then
+    elseif ego == "poison resistance" then
+      if not intrinsic_rpois() and (not with_resists or you.res_poison() < 1) then
         value = value + 200 -- this is nice too
       end
-    end
-    if name:find("see invisible") and not intrinsic_sinv() then
-      if not with_resists or not you.see_invisible() then
+    elseif ego == "see invisible" then
+      if not intrinsic_sinv() and (not with_resists or not you.see_invisible()) then
         value = value + 400 -- we like this a lot
       end
-    end
-    if name:find("running") then
+    elseif ego == "running" then
       value = value + 25
-    end
-    if name:find("flying") and not intrinsic_flight() then
-      value = value + 200
-    end
-    if name:find("ponderous") then
+    elseif ego == "flying" and not intrinsic_flight() then
+      if not intrinsic_flight() then
+        value = value + 200
+      end
+    elseif ego == "ponderousness" then
       return -1
+    elseif ego == "spirit shield" then
+      if you.race() == "Deep Dwarf" then
+        return -1
+      end
     end
-    if name:find("spirit") and you.race() == "Deep Dwarf" then
-      return -1
-    end
+  elseif name:find("runed") or name:find("glowing") or name:find("dyed") or
+         name:find("embroidered") or name:find("shiny") then
+    value = value + 400 -- it might be very good
   end
   value = value + 100*it.ac
   if it.plus then
@@ -380,12 +379,6 @@ function weapon_value(it, name, with_resists)
   if it.hands == 2 and want_buckler() then
     return -1
   end
-  if name:find("distort") then
-    return -1
-  end
-  if intrinsic_evil() and name:find("holy") then
-    return -1
-  end
   if it.artefact then
     ap = it.artprops
     if ap and (ap["-Tele"] or ap["*Tele"]) and you.race() ~= "Formicid" then
@@ -403,20 +396,30 @@ function weapon_value(it, name, with_resists)
      name:find("runed") or name:find("glowing") then
     value = value + 500 -- it might be very good
   end
-  if name:find("vamp") then
-    value = value + 500 -- this is what we want
-  elseif name:find("speed") then
-    value = value + 300 -- this is good too
-  elseif name:find("elec") then
-    value = value + 150 -- not bad
-  elseif name:find("flam") or name:find("freez") or name:find("drain")
-         or name:find("chop") then
-    value = value + 75
-  elseif name:find("anti") then
-    if you.race() == "Vine Stalker" then
-      value = value - 300
-    elseif you.race() ~= "Deep Dwarf" then
+  local ego = it.ego()
+  if ego then -- names are mostly in weapon_brands_verbose[]
+    if ego == "distortion" then
+      return -1
+    elseif ego == "holy wrath" then
+      if intrinsic_evil() then
+        return -1
+      end
+    elseif ego == "vampirism" then
+      value = value + 500 -- this is what we want
+    elseif ego == "speed" then
+      value = value + 300 -- this is good too
+    elseif ego == "electrocution" then
+      value = value + 150 -- not bad
+    elseif ego == "flaming" or ego == "freezing" or ego == "draining"
+           or ego == "crushing" or ego == "slicing"
+           or ego == "piercing" or ego == "chopping" or ego == "slashing" then
       value = value + 75
+    elseif ego == "antimagic" then
+      if you.race() == "Vine Stalker" then
+        value = value - 300
+      elseif you.race() ~= "Deep Dwarf" then
+        value = value + 75
+      end
     end
   end
   if it.plus then
