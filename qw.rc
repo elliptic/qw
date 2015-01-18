@@ -100,6 +100,12 @@ bindkey = [B] CMD_NO_CMD_DEFAULT
 bindkey = [.] CMD_NO_CMD_DEFAULT
 
 ####################################
+# Don't get interrupted!
+: chk_interrupt_activity["blurry vision"] = function (iname, cause, extra)
+:   return nil
+: end
+
+####################################
 # autopickup/drop_filter stuff, just used for scrolls/potions/wands
 
 autopickup = ?!/
