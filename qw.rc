@@ -21,8 +21,8 @@
 : ATT_HOSTILE = 0
 
 # online wins: DDBe GrBe MiBe
-# offline wins: DsBe HOBe NaBe TeBe VSBe
-# (offline) runes: CeBe DrBe FoBe HuBe KoBe MfBe TrBe VpBe
+# offline wins: DsBe HOBe HuBe NaBe TeBe VSBe
+# (offline) runes: CeBe DrBe FoBe KoBe MfBe TrBe VpBe
 
 # qw knows how to play every berserker at the moment (though many of them
 # are quite bad at the moment):
