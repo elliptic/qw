@@ -4665,6 +4665,13 @@ function hit_closest()
   startstop()
 end
 
+function set_counter()
+  crawl.formatted_mpr("Set counter to what? ", "prompt")
+  local res = crawl.c_input_line()
+  c_persist.record.counter = tonumber(res)
+  note("counter set to " .. c_persist.record.counter)
+end
+
 function first_turn_persist()
   if not c_persist.record then
     c_persist.record = {}
@@ -4674,6 +4681,7 @@ function first_turn_persist()
   else
     c_persist.record.counter = c_persist.record.counter + 1
   end
+  note("counter = " .. c_persist.record.counter)
   if not c_persist.mlist then
     c_persist.mlist = {}
   end
