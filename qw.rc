@@ -605,11 +605,6 @@ local last_wait = 0
 local wait_count = 0
 local old_turn_count = you.turns()
 
--- commented out because this messes up loading them from saves
--- local branches_entered
--- local portals_found
--- local cached_wskill
-
 local travel_destination = nil
 
 local have_message = false
@@ -622,6 +617,8 @@ local upgrade_phase = false
 
 local tactical_step
 local tactical_reason
+
+local did_first_turn = false
 
 ------------------------------
 -- some tables with hardcoded data about branches/portals/monsters:
@@ -1029,16 +1026,16 @@ end
 
 function wskill()
   -- cache in case you unwield a weapon somehow
-  if cached_wskill then
-    return cached_wskill
+  if c_persist.cached_wskill then
+    return c_persist.cached_wskill
   end
   weap = items.equipped_at("Weapon")
   if weap then
-    cached_wskill = weap.weap_skill
+    c_persist.cached_wskill = weap.weap_skill
   else
-    cached_wskill = "Unarmed Combat"
+    c_persist.cached_wskill = "Unarmed Combat"
   end
-  return cached_wskill
+  return c_persist.cached_wskill
 end
 
 function max_rings()
@@ -3381,7 +3378,7 @@ function plan_simple_go_down()
     return false
   end
   if found_branch("L") and not
-     util.contains(branches_entered, "L") then
+     util.contains(c_persist.branches_entered, "L") then
     return false
   end
   if where == "Orc:3" then
@@ -3401,7 +3398,7 @@ end
 
 function plan_go_to_temple()
   if found_branch("T") and you.god() ~= "Trog" and not
-     util.contains(branches_entered, "T") and in_branch("D") then
+     util.contains(c_persist.branches_entered, "T") and in_branch("D") then
     expect_new_location = true
     magic("GTY")
     return true
@@ -3411,7 +3408,7 @@ end
 
 function plan_go_to_lair()
   if found_branch("L") and not
-     util.contains(branches_entered, "T") and in_branch("D") then
+     util.contains(c_persist.branches_entered, "T") and in_branch("D") then
     expect_new_location = true
     magic("GL\rY")
     return true
@@ -3422,11 +3419,11 @@ end
 function plan_enter_branch()
   local br
   if found_branch("L") and not
-     util.contains(branches_entered, "L") and in_branch("D") then
+     util.contains(c_persist.branches_entered, "L") and in_branch("D") then
     br = "L"
   elseif found_branch("O") and not
-         util.contains(branches_entered, "O") and in_branch("D") and
-         util.contains(branches_entered, "L") then
+         util.contains(c_persist.branches_entered, "O") and in_branch("D") and
+         util.contains(c_persist.branches_entered, "L") then
     br = "O"
   end
   if br then
@@ -3438,7 +3435,7 @@ function plan_enter_branch()
 end
 
 function plan_go_to_portal_entrance()
-  for _, por in ipairs(portals_found) do
+  for _, por in ipairs(c_persist.portals_found) do
     for _, val in ipairs(portal_data) do
       if val[1] == por then
         magic(control('f') .. "@" .. val[2] .. "\ra\r")
@@ -3489,7 +3486,7 @@ function plan_enter_zig()
 end
 
 function plan_enter_portal()
-  for _, por in ipairs(portals_found) do
+  for _, por in ipairs(c_persist.portals_found) do
     if string.find(view.feature_at(0,0), "enter_" .. get_feat_name(por)) then
       expect_portal = true
       expect_new_location = true
@@ -3586,7 +3583,7 @@ function choose_lair_rune_branch()
   branch_options = { "P", "N", "S", "A" }
   for _, branch_code in ipairs(branch_options) do
     if found_branch(branch_code) and
-       not util.contains(branches_entered, branch_code) then
+       not util.contains(c_persist.branches_entered, branch_code) then
       return branch_code
     end
   end
@@ -3595,7 +3592,7 @@ function choose_lair_rune_branch()
   --  i = 1 + crawl.random2(4)
   --  branch_code = branch_options[i]
   --  if found_branch(branch_code) and
-  --     not util.contains(branches_entered, branch_code) then
+  --     not util.contains(c_persist.branches_entered, branch_code) then
   --    return branch_code
   --  end
   --  tries = tries + 1
@@ -3632,10 +3629,10 @@ function plan_new_travel()
     travel_destination = "D"
   end
   if where == "D:15" then
-    if you.num_runes() == 1 and not util.contains(branches_entered, "V")
+    if you.num_runes() == 1 and not util.contains(c_persist.branches_entered, "V")
        or you.num_runes() == 2 then
       travel_destination = "V"
-    elseif you.num_runes() == 1 and not util.contains(branches_entered, "U")
+    elseif you.num_runes() == 1 and not util.contains(c_persist.branches_entered, "U")
            or you.num_runes() >= 3 then
       travel_destination = "U"
     else
@@ -4209,9 +4206,9 @@ end
 -- these few functions are called directly from ready()
 
 function record_portal_found(por)
-  if not util.contains(portals_found, por) then
+  if not util.contains(c_persist.portals_found, por) then
     say("Found " .. por .. ".")
-    table.insert(portals_found, por)
+    table.insert(c_persist.portals_found, por)
   end
 end
 
@@ -4628,11 +4625,11 @@ function initialize()
   automatic = true
   where = you.where()
   expect_new_location = false
-  if branches_entered == nil then
-    branches_entered = { "D" }
+  if c_persist.branches_entered == nil then
+    c_persist.branches_entered = { "D" }
   end
-  if portals_found == nil then
-    portals_found = { }
+  if c_persist.portals_found == nil then
+    c_persist.portals_found = { }
   end
   set_options()
   initialize_monster_array()
@@ -4666,7 +4663,20 @@ function hit_closest()
   startstop()
 end
 
+function first_turn()
+  for key,_ in pairs(c_persist) do
+    if key ~= "record" then
+      c_persist[key] = nil
+    end
+  end
+  initialize()
+end
+
 function ready()
+  if not did_first_turn and you.turns() == 0 then
+    did_first_turn = true
+    first_turn()
+  end
   if you.turns() >= dump_count then
     dump_count = dump_count+100
     crawl.dump_char()
@@ -4694,14 +4704,14 @@ function ready()
     if not expect_new_location then
       say("Shafted?")
     end
-    if cur_branch() and not util.contains(branches_entered, cur_branch()) then
+    if cur_branch() and not util.contains(c_persist.branches_entered, cur_branch()) then
       say("Entered " .. cur_branch() .. ".")
-      table.insert(branches_entered, cur_branch())
+      table.insert(c_persist.branches_entered, cur_branch())
     end
     if expect_portal and in_portal() then
       say("Entered " .. where .. ".")
     end
-    portals_found = { }
+    c_persist.portals_found = { }
   end
   expect_new_location = false
   expect_portal = false
