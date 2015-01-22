@@ -14,6 +14,9 @@
 # if turned on, this causes annoying throttling delays when played online
 # for some reason
 : ZIG_DIVE = 0
+# whether to start playing immediately when a new game is started
+# unfortunately this doesn't work right if the game starts with a -more-
+: AUTO_START = false
 
 # enum values :/
 : ENUM_MONS_PANDEMONIUM_LORD = 344
@@ -4705,7 +4708,9 @@ end
 
 function first_turn()
   first_turn_persist()
-  initialize()
+  if AUTO_START then
+    initialize()
+  end
 end
 
 function ready()
