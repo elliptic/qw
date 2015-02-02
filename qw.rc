@@ -4630,6 +4630,10 @@ end
 -- initialization/control/saving
 
 function initialize()
+  if not did_first_turn and you.turns() == 0 then
+    did_first_turn = true
+    first_turn()
+  end
   automatic = true
   where = you.where()
   expect_new_location = false
