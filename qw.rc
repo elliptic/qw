@@ -3369,22 +3369,6 @@ function plan_go_down()
   return false
 end
 
-function plan_shoals_travel()
-  if not in_branch("A") or intrinsic_flight() then
-    return false
-  end
-  expect_new_location = true
-  if you.have_rune("barnacled") then
-    magic("G<")
-  else
-    if where == "Shoals:5" then
-      return false
-    end
-    magic("G>")
-  end
-  return true
-end
-
 function plan_simple_go_down()
   if travel_destination then
     return false
@@ -3399,8 +3383,7 @@ function plan_simple_go_down()
   if where == "Vaults:4" and you.num_runes() < 2 then
     return false
   end
-  if in_branch("A") and you.have_rune("barnacled")
-     and not intrinsic_flight() then
+  if in_branch("A") and you.have_rune("barnacled") then
     return false
   end
   expect_new_location = true
@@ -3634,8 +3617,7 @@ function plan_new_travel()
   if where == "Spider:5" and you.have_rune("gossamer") then
     travel_destination = "D"
   end
-  if where == "Shoals:5" and you.have_rune("barnacled")
-     and intrinsic_flight() then
+  if where == "Shoals:5" and you.have_rune("barnacled") then
     travel_destination = "D"
   end
   if where == "Vaults:5" and you.have_rune("silver") then
@@ -3880,23 +3862,6 @@ end
 function plan_orbrun_holy_word()
   if can_read() and want_to_orbrun_holy_word() then
     return holy_word()
-  end
-  return false
-end
-
-function plan_wait_for_tides()
-  if intrinsic_flight() then
-    return false
-  end
-  if in_branch("A") then
-    if crawl.random2(100) == 0 then
-      return plan_stuck_teleport()
-    elseif crawl.random2(10) == 0 then
-      magic("5")
-      return true
-    else
-      return random_step("tides")
-    end
   end
   return false
 end
@@ -4394,7 +4359,6 @@ plan_explore = cascade {
   {plan_continue_travel, "try_continue_travel"},
   {plan_enter_portal, "enter_portal"},
   {plan_go_to_portal_entrance, "try_go_to_portal_entrance"},
-  {plan_shoals_travel, "try_shoals_travel"},
   {plan_autoexplore, "try_autoexplore"},
 } -- hack
 
@@ -4429,7 +4393,6 @@ plan_move = cascade {
   {plan_explore, "explore"},
   {plan_pre_explore2, "pre_explore2"},
   {plan_explore2, "explore2"},
-  {plan_wait_for_tides, "try_wait_for_tides"},
   {plan_swamp_clear_exclusions, "try_swamp_clear_exclusions"},
   {plan_swamp_go_to_rune, "try_swamp_go_to_rune"},
   {plan_swamp_clouds_hack, "swamp_clouds_hack"},
