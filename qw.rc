@@ -17,6 +17,10 @@
 # whether to start playing immediately when a new game is started
 # unfortunately this doesn't work right if the game starts with a -more-
 : AUTO_START = false
+# experimental: do second lair rune branch before depths
+: EARLY_SECOND_RUNE = true
+# do non-water lair rune first, or pick randomly?
+: WATER_RUNE_SECOND = false
 
 # enum values :/
 : ENUM_MONS_PANDEMONIUM_LORD = 344
@@ -3582,13 +3586,14 @@ function plan_continue_travel()
 end
 
 function choose_lair_rune_branch() 
-  --if crawl.random2(2) == 0 then
-    --branch_options = { "A", "P", "S", "N" }
-  --else
-    --branch_options = { "P", "A", "N", "S" }
-    --branch_options = { "N", "S", "P", "A" }
-  --end
-  branch_options = { "P", "N", "S", "A" }
+  if crawl.random2(2) == 0 then
+    branch_options = { "P", "N", "S", "A" }
+  else
+    branch_options = { "S", "A", "P", "N" }
+  end
+  if WATER_RUNE_SECOND then
+    branch_options = { "P", "N", "S", "A" }
+  end
   for _, branch_code in ipairs(branch_options) do
     if found_branch(branch_code) and
        not util.contains(c_persist.branches_entered, branch_code) then
@@ -3638,9 +3643,9 @@ function plan_new_travel()
   end
   if where == "D:15" then
     if you.num_runes() == 1 and not util.contains(c_persist.branches_entered, "V")
-       or you.num_runes() == 2 then
+       or you.num_runes() == 2 and util.contains(c_persist.branches_entered, "U") then
       travel_destination = "V"
-    elseif you.num_runes() == 1 and not util.contains(c_persist.branches_entered, "U")
+    elseif you.num_runes() >= 1 and not util.contains(c_persist.branches_entered, "U") and not (EARLY_SECOND_RUNE and you.num_runes() == 1)
            or you.num_runes() >= 3 then
       travel_destination = "U"
     else
