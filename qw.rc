@@ -4784,29 +4784,7 @@ function magic(command)
                      string.char(27))
 end
 
-function write_string_array(arr, aname)
-  local res = aname .. " = { "
-  for i, v in ipairs(arr) do
-    res = res .. '"' .. v .. '"' .. ", "
-  end
-  return res .. "}\n"
-end
 
-function qw_save()
-  local res = ""
-  if branches_entered then
-    res = res .. write_string_array(branches_entered, "branches_entered")
-  end
-  if portals_found then
-    res = res .. write_string_array(portals_found, "portals_found")
-  end
-  if cached_wskill then
-    res = res .. "cached_wskill = " .. '"' .. cached_wskill .. '"' .. "\n"
-  end
-  return res
-end
-
-table.insert(chk_lua_save, qw_save)
 
 --------------------------------
 -- a function to test various things conveniently
