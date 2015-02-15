@@ -1359,7 +1359,7 @@ end
 function update_monster_array()
   local x,y
   enemy_list = {}
-  c_persist.mlist = {}
+  --c_persist.mlist = {}
   for x = -8,8 do
     for y = -8,8 do
       monster_array[x][y] = monster.get_monster_at(x, y)
@@ -1369,7 +1369,7 @@ function update_monster_array()
         entry.y = y
         entry.m = monster_array[x][y]
         table.insert(enemy_list, entry)
-        table.insert(c_persist.mlist, entry.m:name())
+        --table.insert(c_persist.mlist, entry.m:name())
       end
     end
   end
@@ -4660,19 +4660,19 @@ function first_turn_persist()
     c_persist.record.counter = c_persist.record.counter + 1
   end
   note("counter = " .. c_persist.record.counter)
-  if not c_persist.mlist then
-    c_persist.mlist = {}
-  end
-  if not c_persist.record.mlist then
-    c_persist.record.mlist = {}
-  end
-  for _,mname in ipairs(c_persist.mlist) do
-    if not c_persist.record.mlist[mname] then
-      c_persist.record.mlist[mname] = 1
-    else
-      c_persist.record.mlist[mname] = c_persist.record.mlist[mname] + 1
-    end
-  end
+  --if not c_persist.mlist then
+  --  c_persist.mlist = {}
+  --end
+  --if not c_persist.record.mlist then
+  --  c_persist.record.mlist = {}
+  --end
+  --for _,mname in ipairs(c_persist.mlist) do
+  --  if not c_persist.record.mlist[mname] then
+  --    c_persist.record.mlist[mname] = 1
+  --  else
+  --    c_persist.record.mlist[mname] = c_persist.record.mlist[mname] + 1
+  --  end
+  --end
   for key,_ in pairs(c_persist) do
     if key ~= "record" then
       c_persist[key] = nil
