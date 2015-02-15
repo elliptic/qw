@@ -4452,7 +4452,14 @@ end
 function handle_skills()
   local weapon_skill = wskill()
   -- need to have at least one skill selected or bad things might happen
-  choose_single_skill(weapon_skill)
+  -- early xom characters might get their weapon removed at any point, so
+  -- always train fighting
+  if you.god() == "Xom" then
+    choose_single_skill("Fighting")
+    you.train_skill(weapon_skill, 1)
+  else
+    choose_single_skill(weapon_skill)
+  end
   local at_min_delay = (you.base_skill(weapon_skill) >= min_delay_skill())
   local ac = armour_ac()
   if you.base_skill("Shields") < target_shield_skill()
