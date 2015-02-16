@@ -2759,7 +2759,7 @@ function plan_handle_corpses()
 end
 
 function plan_find_altar()
-  if you.god() == "Trog" then
+  if not want_altar() then
     return false
   end
   magic(control('f') .. "@altar&&trog" .. "\ra\r")
@@ -2786,7 +2786,7 @@ function plan_unwield_weapon()
 end
 
 function plan_join_god()
-  if you.god() == "Trog" then
+  if not want_altar() then
     return false
   end
   if view.feature_at(0, 0) == "altar_trog" then
@@ -3403,8 +3403,12 @@ function plan_simple_go_down()
   return true
 end
 
+function want_altar()
+  return (you.god() ~= "Trog" and you.race() ~= "Demigod")
+end
+
 function plan_go_to_temple()
-  if found_branch("T") and you.god() ~= "Trog" and not
+  if found_branch("T") and want_altar() and not
      util.contains(c_persist.branches_entered, "T") and in_branch("D") then
     expect_new_location = true
     magic("GTY")
