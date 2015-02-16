@@ -70,9 +70,6 @@ cset_ascii=item_orb:0
 use_fake_player_cursor = true
 equip_unequip = true
 
-# putting Zot on this list doesn't work because you still get prompts
-trapwalk_safe_hp = net:1,needle:1,arrow:1,bolt:1,spear:1,blade:1,alarm:1,pressure plate:1,teleport:1
-
 dump_order = header,hiscore,stats,misc,mutations,skills,spells,inventory
 dump_order += overview
 dump_order += messages,screenshot,monlist,kills,notes,vaults,action_counts
@@ -4837,4 +4834,7 @@ function ttt()
   end
 end
 
+function c_trap_is_safe(trap)
+  return (trap ~= "permanent teleport")
+end
 }
