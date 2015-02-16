@@ -1036,19 +1036,34 @@ function want_shield()
   return (you.race() == "Troll" or you.race() == "Formicid")
 end
 
+-- used for backgrounds who don't get to choose a weapon
+function weapon_choice()
+  sp = you.race()
+  if sp == "Felid" or sp == "Troll" or sp == "Ghoul" then
+    return "Unarmed Combat"
+  elseif sp == "Halfling" or sp == "High Elf" then
+    return "Long Blades"
+  elseif sp == "Ogre" or sp == "Kobold" then
+    return "Maces & Flails"
+  elseif sp == "Merfolk" then
+    return "Polearms"
+  elseif sp == "Spriggan" then
+    return "Short Blades"
+  else
+    return "Axes"
+  end
+end
+
 function wskill()
   -- cache in case you unwield a weapon somehow
   if c_persist.cached_wskill then
     return c_persist.cached_wskill
   end
   weap = items.equipped_at("Weapon")
-  if weap and (weap.weap_skill ~= "Short Blades" or you.race() == "Spriggan")
-     then
+  if weap and weap.weap_skill ~= "Short Blades" then
     c_persist.cached_wskill = weap.weap_skill
-  elseif you.race() == "Troll" or you.race() == "Felid" or you.race() == "Ghoul" then
-    c_persist.cached_wskill = "Unarmed Combat"
   else
-    c_persist.cached_wskill = "Axes"
+    c_persist.cached_wskill = weapon_choice()
   end
   return c_persist.cached_wskill
 end
@@ -2775,7 +2790,7 @@ function plan_abandon_god()
 end
 
 function plan_unwield_weapon()
-  if you.race() ~= "Troll" then
+  if wskill() ~= "Unarmed Combat" then
     return false
   end
   if not items.equipped_at("Weapon") then
@@ -4401,7 +4416,7 @@ plan_move = cascade {
   {plan_step_towards_lair, "step_towards_lair"},
   {plan_continue_tab, "continue_tab"},
   --{plan_abandon_god, "abandon_god"},
-  --{plan_unwield_weapon, "unwield_weapon"},
+  {plan_unwield_weapon, "unwield_weapon"},
   {plan_join_god, "join_god"},
   {plan_find_altar, "try_find_altar"},
   {plan_go_to_temple, "try_go_to_temple"},
