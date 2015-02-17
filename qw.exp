@@ -1,0 +1,9 @@
+#!/usr/bin/expect
+
+for {set i 1} {$i < 1001} {incr i 1} {
+spawn ./crawl -rc qw/qw.rc -seed $i -name qw
+
+    expect "Welcome, qw" { send "\r\t" }
+
+interact
+}
