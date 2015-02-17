@@ -3084,7 +3084,6 @@ function plan_wield_weapon()
       end
     end
   end
-  say("Failed to find a weapon to wield.")
   return false
 end
 
