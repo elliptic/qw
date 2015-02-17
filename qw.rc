@@ -773,7 +773,7 @@ local scary_monsters = {
   {20, "deep troll shaman"},
   {20, "Xtahua"},
   {20, "tengu reaver"},
-  {21, "ettin"},
+  {20, "ettin"},
 
   {100, "deep elf annihilator"},
   {100, "deep elf sorcerer"},
@@ -814,6 +814,7 @@ local scary_monsters = {
   {100, "enormous slime creature"},
   {100, "titan"},
   {100, "orb of fire"},
+  {100, "caustic shrike"},
 } -- hack
 
 -- these scary monsters are slow, so wait to berserk until they are adjacent
@@ -882,6 +883,7 @@ local bia_monsters = {
   {100, "Shadow Fiend"},
   {100, "Tiamat"},
   {100, "orb of fire"},
+  {100, "caustic shrike"},
 } -- hack
 
 -- Trog's Hand these
