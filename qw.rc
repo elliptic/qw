@@ -773,6 +773,7 @@ local scary_monsters = {
   {20, "deep troll shaman"},
   {20, "Xtahua"},
   {20, "tengu reaver"},
+  {21, "ettin"},
 
   {100, "deep elf annihilator"},
   {100, "deep elf sorcerer"},
