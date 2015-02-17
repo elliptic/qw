@@ -3079,7 +3079,8 @@ function plan_wield_weapon()
         l = items.index_to_letter(it.slot)
         say("Wielding weapon " .. it:name() .. ".")
         magic("w" .. l .. "YY")
-        return true
+        -- this might have a 0-turn fail because of unIDed vamp/holy
+        return nil
       end
     end
   end
@@ -3123,7 +3124,7 @@ function plan_upgrade_weapon()
           l = items.index_to_letter(it.slot)
           say("UPGRADING to " .. it:name() .. " (value " .. new_value .. ").")
           magic("w" .. l .. "YY")
-          -- this might have a 0-turn fail because of vamp, so return nil
+          -- this might have a 0-turn fail because of unIDed vamp/holy
           return nil
         end
       end
