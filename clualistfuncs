@@ -1,0 +1,4 @@
+#!/bin/bash
+cd ..
+./crawl -version
+grep luaL_openlib *.cc | grep -v dlua | grep -v dlib | grep -v cluatil | awk '{print $1, $4, $3}' | tr -d ':,"' | while read file lib luaname; do echo "$file defines $luaname"; sed -n '/'${lib}'\[/,/^[}]/p'  <$file; done
