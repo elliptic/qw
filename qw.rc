@@ -21,6 +21,8 @@
 : EARLY_SECOND_RUNE = true
 # do non-water lair rune first, or pick randomly?
 : WATER_RUNE_SECOND = false
+# burn books with Trog. May theoretically cause navigation problems
+: BURN_BOOKS = false
 
 # enum values :/
 : ENUM_MONS_PANDEMONIUM_LORD = 344
@@ -82,7 +84,7 @@ note_all_spells = true
 # not sure exactly how important or correct these settings are
 
 explore_stop =
-explore_stop += branches,portals,stairs,altars
+explore_stop += items,branches,portals,stairs,altars
 explore_stop += greedy_visited_item_stack,greedy_pickup_smart
 
 stop := runrest_stop_message
@@ -1847,6 +1849,36 @@ function can_swap(equip_slot)
   return true
 end
 
+-- plural form, e.g. "Scrolls"
+-- or invoke with item_class="name_callback" and provide callback for name
+function see_item(item_class, name_callback)
+  for x = -8,8 do
+    for y = -8,8 do
+      -- crawl.mpr("(" .. x .. ", " .. y .. "): " .. view.feature_at(x,y) .."\r")
+      local is = items.get_items_at(x, y)
+      if (is ~= nil) and (#is > 0) and (you.see_cell(x,y)) then
+        -- TODO loop here
+        -- crawl.mpr(is[1]:name())
+        for ind,i in pairs(is) do
+          local iname = i:name()
+          if (i:class(true) == item_class) or ((item_class == "name_callback") and name_callback(iname)) then
+            return true
+          end
+        end
+      end
+    end
+  end
+  return false
+end
+
+-- Matches all unindentified books
+function is_spellbook(book_name)
+  return (book_name ~= nil) and (book_name:find("book") ~= nil)
+end
+
+function see_spellbooks()
+  return see_item("name_callback", is_spellbook)
+end
 -----------------------------------------
 -- "plans" - functions that take actions, and logic to determine which actions
 --           to take.
@@ -1965,6 +1997,11 @@ end
 
 function bia()
   use_ability("Brothers in Arms")
+end
+
+-- Will fail if the book is mimic or at our feet
+function burn_spellbooks()
+  use_ability("Burn Spellbooks")
 end
 
 function plan_bia()
@@ -2458,6 +2495,14 @@ function plan_berserk()
   return false
 end
 
+function plan_burn_spellbooks()
+  if want_to_burn_spellbooks() then
+    burn_spellbooks()
+    return true
+  end
+  return false
+end
+
 function want_to_bia()
   if check_monsters(8, bia_necessary_monsters) or you.piety_rank() > 4 and
      ((want_to_berserk() and not can_berserk()) or
@@ -2738,6 +2783,10 @@ end
 
 function want_pray()
   return (you.god() == "Trog")
+end
+
+function want_to_burn_spellbooks()
+  return BURN_BOOKS and (you.god() == "Trog") and can_read() and see_spellbooks()
 end
 
 function want_blood()
@@ -4414,6 +4463,7 @@ plan_move = cascade {
   {plan_cure_poison_rotting, "cure_poison_rotting"},
   {plan_cure_bad_statdrain, "cure_bad_statdrain"},
   {plan_flail_at_invis, "try_flail_at_invis"},
+  {plan_burn_spellbooks, "try_burn_spellbooks"},
   {plan_eatrest, "eatrest"},
   {plan_pre_explore, "pre_explore"},
   {plan_step_towards_lair, "step_towards_lair"},
@@ -4855,6 +4905,8 @@ function ttt()
       --if cloud then crawl.mpr(x .. "," .. y .. ":" .. cloud) end
     end
   end
+
+  crawl.mpr("? " .. tostring(see_item("Scrolls")) .. ";   : " .. tostring(see_item("Books")))
 end
 
 function c_trap_is_safe(trap)
