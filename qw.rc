@@ -173,6 +173,7 @@ function set_options()
   crawl.setopt("message_colour += mute:Drink which item")
   crawl.setopt("message_colour += mute:not good enough")
   crawl.setopt("message_colour ^= mute:Unknown command")
+  crawl.enable_more(false)
 end
 
 function unset_options()
@@ -187,6 +188,7 @@ function unset_options()
   crawl.setopt("message_colour -= mute:Drink which item")
   crawl.setopt("message_colour -= mute:not good enough")
   crawl.setopt("message_colour -= mute:Unknown command")
+  crawl.enable_more(true)
 end
 
 -------------------------------------
@@ -4698,7 +4700,6 @@ end
 function stop()
   automatic = false
   unset_options()
-  crawl.enable_more(true)
 end
 
 function start()
@@ -4831,7 +4832,6 @@ function ready()
 end
 
 function magic(command)
-  crawl.enable_more(false)
   crawl.process_keys(command .. string.char(27) .. string.char(27) ..
                      string.char(27))
 end
