@@ -46,6 +46,9 @@ combo += SpBe.shortsword, TeBe.handaxe, TrBe.claws, VSBe.handaxe, VpBe.handaxe
 #####################################
 # miscellaneous simple options
 
+name = qw
+restart_after_game = false
+
 view_delay = 0
 use_animations =
 clear_messages = true
