@@ -3443,6 +3443,10 @@ function want_altar()
 end
 
 function plan_go_to_temple()
+  local c = c_persist.plan_fail_count["try_go_to_temple"]
+  if c and c >= 10 then
+    return false
+  end
   if found_branch("T") and want_altar() and not
      util.contains(c_persist.branches_entered, "T") and in_branch("D") then
     expect_new_location = true
@@ -4319,6 +4323,10 @@ function cascade(plans)
         if not plandata[2]:find("^try") then
           panic(plandata[2] .. " failed despite returning true.")
         end
+        if not c_persist.plan_fail_count[plandata[2]] then
+          c_persist.plan_fail_count[plandata[2]] = 0
+        end
+        c_persist.plan_fail_count[plandata[2]] = c_persist.plan_fail_count[plandata[2]] + 1
       end
     end
     return false
@@ -4676,6 +4684,9 @@ function initialize()
   end
   if c_persist.portals_found == nil then
     c_persist.portals_found = { }
+  end
+  if c_persist.plan_fail_count == nil then
+    c_persist.plan_fail_count = { }
   end
   set_options()
   initialize_monster_array()
