@@ -1846,7 +1846,14 @@ end
 
 function can_swap(equip_slot)
   local it = items.equipped_at(equip_slot)
-  if it and it.cursed then return false end
+  if it and it.cursed then
+    return false
+  end
+  if it and it.ego == "flying" and
+     (view.feature_at(0,0) == "deep_water" or
+      view.feature_at(0,0) == "lava") then
+    return false
+  end
   return true
 end
 
