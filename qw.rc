@@ -1788,8 +1788,7 @@ end
 
 function on_corpses()
   for it in at_feet() do
-    if string.find(it.name(), "corpse")
-        and not string.find(it.name(), "rotting") then
+    if string.find(it.name(), "corpse") then
       return true
     end
   end
@@ -1838,7 +1837,7 @@ function on_valuable_corpse()
 end
 
 function bad_food(it)
-  return (food.dangerous(it) or string.find(it.name(), "rotting"))
+  return food.dangerous(it)
 end
 
 function can_swap(equip_slot)
