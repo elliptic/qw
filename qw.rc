@@ -2040,25 +2040,25 @@ function plan_dd_recharge_teleport()
   if immediate_danger and not want_to_teleport() then
     return false
   end
-  local wand_slot
+  local wand_letter
   for it in inventory() do
     if it.class(true) == "wand" and it.name():find("teleportation") then
       if (((not it.fully_identified) and not it.name():find("empty")) or
           it.plus and it.plus > 0) then
         return false
       else
-        wand_slot = items.index_to_letter(it.slot)
+        wand_letter = letter(it)
       end
     end
   end
-  if not wand_slot then
+  if not wand_letter then
     return false
   end
   for it in inventory() do
     if it.class(true) == "scroll" and can_read() and
        it.name():find("recharging") then
-      oldname = item(wand_slot).name()
-      if read2(it, wand_slot) then
+      oldname = item(wand_letter).name()
+      if read2(it, wand_letter) then
         say("RECHARGING " .. oldname .. ".")
         return true
       end
@@ -2068,8 +2068,10 @@ function plan_dd_recharge_teleport()
   if mp > 0 and you.base_mp() > 0 then
     for letter, abil in pairs(you.ability_table()) do
       if abil == "Device Recharging" then
-        say("MP-RECHARGING " .. item(wand_slot).name() .. ".")
-        magic("a" .. letter .. wand_slot)
+        say("MP-RECHARGING " .. item(wand_letter).name() .. ".")
+        -- swap slots in case ability fails
+        items.swap_slots(slot(wand_letter), slot('Y'))
+        magic("a" .. letter .. "Y")
         return true
       end
     end
@@ -2090,25 +2092,25 @@ function plan_dd_orbrun_recharge_hasting()
   if count_item("potion","haste") > 0 then
     return false
   end
-  local wand_slot
+  local wand_letter
   for it in inventory() do
     if it.class(true) == "wand" and it.name():find("hasting") then
       if (((not it.fully_identified) and not it.name():find("empty")) or
           it.plus and it.plus > 0) then
         return false
       else
-        wand_slot = items.index_to_letter(it.slot)
+        wand_letter = letter(it)
       end
     end
   end
-  if not wand_slot then
+  if not wand_letter then
     return false
   end
   for it in inventory() do
     if it.class(true) == "scroll" and can_read() and
        it.name():find("recharging") then
-      oldname = item(wand_slot).name()
-      if read2(it, wand_slot) then
+      oldname = item(wand_letter).name()
+      if read2(it, wand_letter) then
         say("RECHARGING " .. oldname .. ".")
         return true
       end
@@ -2118,8 +2120,10 @@ function plan_dd_orbrun_recharge_hasting()
   if mp > 0 and you.base_mp() > 0 then
     for letter, abil in pairs(you.ability_table()) do
       if abil == "Device Recharging" then
-        say("MP-RECHARGING " .. item(wand_slot).name() .. ".")
-        magic("a" .. letter .. wand_slot)
+        say("MP-RECHARGING " .. item(wand_letter).name() .. ".")
+        -- swap slots in case ability fails
+        items.swap_slots(slot(wand_letter), slot('Y'))
+        magic("a" .. letter .. "Y")
         return true
       end
     end
@@ -2135,7 +2139,7 @@ function plan_dd_recharge_heal_wounds()
     return false
   end
   local charge_bound = immediate_danger and 1 or 3
-  local wand_slot
+  local wand_letter
   local wand_count = 0
   for it in inventory() do
     if it.class(true) == "wand" and it.name():find("heal wounds") then
@@ -2143,18 +2147,18 @@ function plan_dd_recharge_heal_wounds()
           it.plus and it.plus > charge_bound) then
         wand_count = wand_count + 1
       else
-        wand_slot = items.index_to_letter(it.slot)
+        wand_letter = letter(it)
       end
     end
   end
-  if immediate_danger and wand_count > 0 or not wand_slot then
+  if immediate_danger and wand_count > 0 or not wand_letter then
     return false
   end
   for it in inventory() do
     if it.class(true) == "scroll" and can_read() and
        it.name():find("recharging") then
-      oldname = item(wand_slot).name()
-      if read2(it, wand_slot) then
+      oldname = item(wand_letter).name()
+      if read2(it, wand_letter) then
         say("RECHARGING " .. oldname .. ".")
         return true
       end
@@ -2164,8 +2168,10 @@ function plan_dd_recharge_heal_wounds()
   if mp > 0 and you.base_mp() > 0 then
     for letter, abil in pairs(you.ability_table()) do
       if abil == "Device Recharging" then
-        say("MP-RECHARGING " .. item(wand_slot).name() .. ".")
-        magic("a" .. letter .. wand_slot)
+        say("MP-RECHARGING " .. item(wand_letter).name() .. ".")
+        -- swap slots in case ability fails
+        items.swap_slots(slot(wand_letter), slot('Y'))
+        magic("a" .. letter .. "Y")
         return true
       end
     end
