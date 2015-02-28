@@ -3043,7 +3043,8 @@ function plan_use_good_consumables()
            you.mutation("blurry vision") > 0 or
            you.mutation("frail") > 0 or
            you.mutation("forlorn") > 0 or
-           you.mutation("no device heal") > 0 and you.race() ~= "Vine Stalker"
+           you.mutation("no device heal") > 0 and you.race() ~= "Vine Stalker" or
+           you.mutation("MP-powered wands") > 0
            then
           return drink(it)
         end
