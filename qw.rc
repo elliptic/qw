@@ -3989,6 +3989,11 @@ function read2(c,etc)
   if not can_read() then
     return false
   end
+  local int, mint = you.intelligence()
+  if int < 0 then
+    -- failing to read a scroll due to intzero can make qw unhappy
+    return false
+  end
   say("READING " .. item(c).name() .. ".")
   magic("r" .. letter(c) .. etc)
   return true
