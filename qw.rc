@@ -1,47 +1,56 @@
 # This rcfile is elliptic's DCSS bot "qw", the first (and thus far only) bot
 # to win DCSS with no human assistance. A substantial amount of code here was
-# contributed by elliott or borrowed from N78291's bot "xw".
+# contributed by elliott or borrowed from N78291's bot "xw", and many others
+# have contributed as well.
 
-# The current version of qw works in 0.16 trunk and can play berserkers of
-# any species. In offline testing, it has a winrate of over 5% with GrBe (and
-# also very respectable winrates with DDBe and MiBe).
+# For brief instructions and the most up-to-date version of qw, see
+# https://github.com/elliptic/qw.
 
+## qw's settings:
+#
 # Set this to true when playing online.
 : DELAYED = false
-# Set this to 100 or so when playing online.
+# Delay per action in milliseconds.
+# Set this to at least 100 or so when playing online.
 : DELAY_TIME = 100
-# depth to attempt to dive in ziggurats (0 to turn off)
-# if turned on, this causes annoying throttling delays when played online
-# for some reason
-: ZIG_DIVE = 0
 # whether to start playing immediately when a new game is started
-# unfortunately this doesn't work right if the game starts with a -more-
+# unfortunately this doesn't work if the game starts with a -more-
 : AUTO_START = false
 # experimental: do second lair rune branch before depths
 : EARLY_SECOND_RUNE = true
 # do non-water lair rune first, or pick randomly?
 : WATER_RUNE_SECOND = false
+# depth to attempt to dive in ziggurats (0 to turn off)
+# if turned on, this causes annoying throttling delays when played online
+# for some reason
+: ZIG_DIVE = 0
 
+# qw can play any starting combo. These ones are recommended:
+combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
+
+# For random berserkers, use these combos instead:
+#combo = CeBe.handaxe, DDBe.handaxe, DEBe.handaxe, DrBe.handaxe, DsBe.handaxe
+#combo += FeBe.claws, FoBe.handaxe, GrBe.handaxe, GhBe.claws, HaBe.falchion
+#combo += HEBe.falchion, HOBe.handaxe, HuBe.handaxe, KoBe.mace, MfBe.spear
+#combo += MiBe.handaxe, MuBe.handaxe, NaBe.handaxe, OgBe.mace, OpBe.handaxe
+#combo += SpBe.shortsword, TeBe.handaxe, TrBe.claws, VSBe.handaxe, VpBe.handaxe
+
+# For a totally random combo (with chosen weapon type), hyperqwcombo.rc can
+# be created using hyperqwcombogen.sh and used:
+#combo =
+#include += hyperqwcombo.rc
+
+## The accomplishments of qw:
+# online wins: DDBe GrBe MiBe
+# offline wins: DsBe HOBe HuBe MfBe NaBe TeBe VSBe
+# (offline) runes: CeBe DrBe FoBe KoBe TrBe VpBe
+# non-Be offline wins: DDAs DDFi DDGl DDMo DDNe DDSu DDWr
+
+#####################################
 # enum values :/
 : ENUM_MONS_PANDEMONIUM_LORD = 344
 : ATT_NEUTRAL = 1
 : ATT_HOSTILE = 0
-
-# online wins: DDBe GrBe MiBe
-# offline wins: DsBe HOBe HuBe MfBe NaBe TeBe VSBe
-# (offline) runes: CeBe DrBe FoBe KoBe TrBe VpBe
-
-# qw knows how to play every berserker at the moment (though many of them
-# are quite bad at the moment):
-combo = CeBe.handaxe, DDBe.handaxe, DEBe.handaxe, DrBe.handaxe, DsBe.handaxe
-combo += FeBe.claws, FoBe.handaxe, GrBe.handaxe, GhBe.claws, HaBe.falchion
-combo += HEBe.falchion, HOBe.handaxe, HuBe.handaxe, KoBe.mace, MfBe.spear
-combo += MiBe.handaxe, MuBe.handaxe, NaBe.handaxe, OgBe.mace, OpBe.handaxe
-combo += SpBe.shortsword, TeBe.handaxe, TrBe.claws, VSBe.handaxe, VpBe.handaxe
-# Most racial abilities aren't used: Fo shafting/digging, Dr breath, Na spit,
-#   Sp running away, Gh eating to heal, etc.
-# With minor modifications, qw will play non-Be and convert to Trog; it has
-#   won DDSu offline this way.
 
 #####################################
 # miscellaneous simple options
