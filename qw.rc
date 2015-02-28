@@ -1214,7 +1214,8 @@ function can_read()
 end
 
 function can_drink()
-  if you.berserk() or you.race() == "Mummy" or you.transform() == "bat" then
+  if you.berserk() or you.race() == "Mummy" or you.transform() == "bat"
+     or you.transform() == "lich" then
     return false
   end
   return true
@@ -1242,6 +1243,7 @@ function can_berserk()
           you.god() ~= "Trog" or
           you.transform() == "tree" or
           you.transform() == "wisp" or
+          you.transform() == "lich" or
           you.status("afraid") or
           you.race() == "Mummy" or you.race() == "Ghoul"
           or you.race() == "Formicid"))
@@ -1894,7 +1896,7 @@ function should_rest()
 end
 
 function want_permafood()
-  if you.race() == "Mummy" then
+  if you.race() == "Mummy" or you.transform() == "lich" then
     return false
   end
   if you.race() == "Vampire" then
@@ -1915,7 +1917,7 @@ end
 
 function want_chunk()
   if you.race() == "Spriggan" or you.race() == "Mummy"
-     or you.race() == "Vampire" then
+     or you.race() == "Vampire" or you.transform() == "lich" then
     return false
   end
   if you.race() == "Ghoul" and you.rot() > 0 then
