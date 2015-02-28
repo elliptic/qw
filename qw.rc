@@ -4187,8 +4187,9 @@ function attack_reach(x, y)
 end
 
 function attack_melee(x, y)
-  if you.confused() and dangerous_terrain_adjacent() then
-    magic("s")
+  if you.confused() and
+     (dangerous_terrain_adjacent() or you.transform() == "tree") then
+    magic(control(delta_to_vi(x, y)) .. "Y")
   else
     magic(delta_to_vi(x, y) .. "Y")
   end
