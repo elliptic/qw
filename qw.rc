@@ -815,6 +815,7 @@ local scary_monsters = {
   {100, "titan"},
   {100, "orb of fire"},
   {100, "caustic shrike"},
+  {100, "seraph"},
 } -- hack
 
 -- these scary monsters are slow, so wait to berserk until they are adjacent
@@ -884,6 +885,7 @@ local bia_monsters = {
   {100, "Tiamat"},
   {100, "orb of fire"},
   {100, "caustic shrike"},
+  {100, "seraph"},
 } -- hack
 
 -- Trog's Hand these
