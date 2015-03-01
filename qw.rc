@@ -78,7 +78,7 @@ autoinscribe += slay:mikee
 flush.failure = false
 char_set = ascii
 cset = cloud:xa4
-cset_ascii=item_orb:0
+cset = item_orb:0
 use_fake_player_cursor = true
 equip_unequip = true
 
