@@ -732,7 +732,7 @@ local scary_monsters = {
   {12, "Nergalle"},
   {12, "jelly"},
   {12, "manticore"},
-  {12, "guardian mummy"}, 
+  {12, "guardian mummy"},
   {12, "Psyche"},
 
   {13, "blink frog"},
