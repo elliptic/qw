@@ -1446,7 +1446,7 @@ function count_bia(r)
   for x = -r,r do
     for y = -r,r do
       m = monster_array[x][y]
-      if m and m:is_safe() and m:is("berserk") 
+      if m and m:is_safe() and m:is("berserk")
        and contains_string_in(m:name(), {"ogre","giant","bear","troll"}) then
         i = i+1
       end
@@ -2479,7 +2479,7 @@ function plan_other_step()
   end
   return false
 end
-              
+
 function plan_berserk()
   if can_berserk() and want_to_berserk() then
     berserk()
@@ -3245,7 +3245,7 @@ function plan_upgrade_rings()
   end
   if worst_ring and worst_ring.cursed then
     return false
-  end 
+  end
   for it in inventory() do
     if it and it.class(true) == "jewellery" and it:name():find("ring")
           and (it.fully_identified or count_item("scroll", "remove curse") > 1)
@@ -3369,7 +3369,7 @@ function plan_upgrade_armour()
       magic("T" .. l .. "YN")
       return true
     end
-  end 
+  end
   return false
 end
 
@@ -3637,7 +3637,7 @@ function plan_continue_travel()
   return false
 end
 
-function choose_lair_rune_branch() 
+function choose_lair_rune_branch()
   if crawl.random2(2) == 0 then
     branch_options = { "P", "N", "S", "A" }
   else
@@ -3755,7 +3755,7 @@ function plan_find_downstairs()
     end
     magic(c .. "\r")
     return true
-  end 
+  end
   magic("X>\r")
   return true
 end
