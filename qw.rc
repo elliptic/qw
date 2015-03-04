@@ -1863,7 +1863,7 @@ function can_swap(equip_slot)
   if it and it.cursed then
     return false
   end
-  if it and it.ego == "flying" and
+  if it and it.ego() == "flying" and
      (view.feature_at(0,0) == "deep_water" or
       view.feature_at(0,0) == "lava") then
     return false
@@ -3397,7 +3397,7 @@ function plan_remove_redundant_jewels()
         it2 = items.equipped_at(slotname)
         if it2 and (it2.artprops and it2.artprops["rPois"]
                     and it2.artprops["rPois"] > 0 or
-                    it2.ego == "poison resistance") then
+                    it2.ego() == "poison resistance") then
           say("Removing redundant " .. it:name() .. ".")
           magic("P" .. items.index_to_letter(it.slot) .. "YY")
           return true
