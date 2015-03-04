@@ -598,6 +598,7 @@ local skill_count = you.turns() - (you.turns() % 20)
 local danger
 local immediate_danger
 local where = you.where()
+local where_shafted_from = nil
 local expect_new_location
 local expect_portal
 
@@ -3773,6 +3774,16 @@ function plan_stuck()
   -- panic("Stuck!")
 end
 
+function plan_unshaft()
+  if where_shafted_from and (where_shafted_from ~= you.where()) then
+    say("trying to unshaft to " .. where_shafted_from)
+    expect_new_location = true
+    magic("G<")
+    return true
+  end
+  return false
+end
+
 function plan_not_coded()
   panic("Need to code this!")
   return true
@@ -4434,6 +4445,7 @@ plan_orbrun_eatrest = cascade {
 } -- hack
 
 plan_explore = cascade {
+  {plan_unshaft, "try_unshaft"},
   {plan_enter_zig, "enter_zig"},
   {plan_continue_travel, "try_continue_travel"},
   {plan_enter_portal, "enter_portal"},
@@ -4805,10 +4817,17 @@ function ready()
   end
   if you.where() ~= where then
     clear_ignores()
-    where = you.where()
-    if not expect_new_location then
+    if expect_new_location then
+      if where_shafted_from == you.where() then
+        where_shafted_from = nil
+      end
+    else
       say("Shafted?")
+      if not where_shafted_from then
+        where_shafted_from = where
+      end
     end
+    where = you.where()
     if cur_branch() and not util.contains(c_persist.branches_entered, cur_branch()) then
       say("Entered " .. cur_branch() .. ".")
       table.insert(c_persist.branches_entered, cur_branch())
