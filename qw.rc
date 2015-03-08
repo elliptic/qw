@@ -1875,14 +1875,12 @@ end
 
 -- plural form, e.g. "Scrolls"
 -- or invoke with item_class="name_callback" and provide callback for name
-function see_item(item_class, name_callback)
-  for x = -8,8 do
-    for y = -8,8 do
+function see_item(item_class, r, name_callback)
+  for x = -r,r do
+    for y = -r,r do
       -- crawl.mpr("(" .. x .. ", " .. y .. "): " .. view.feature_at(x,y) .."\r")
       local is = items.get_items_at(x, y)
       if (is ~= nil) and (#is > 0) and (you.see_cell(x,y)) then
-        -- TODO loop here
-        -- crawl.mpr(is[1]:name())
         for ind,i in pairs(is) do
           local iname = i:name()
           if (i:class(true) == item_class) or ((item_class == "name_callback") and name_callback(iname)) then
@@ -1900,8 +1898,9 @@ function is_spellbook(book_name)
   return (book_name ~= nil) and (book_name:find("book") ~= nil)
 end
 
-function see_spellbooks()
-  return see_item("name_callback", is_spellbook)
+function see_spellbooks_to_burn()
+  return see_item("name_callback", 8, is_spellbook)
+         and not see_item("name_callback", 0, is_spellbook)
 end
 -----------------------------------------
 -- "plans" - functions that take actions, and logic to determine which actions
@@ -2023,7 +2022,7 @@ function bia()
   use_ability("Brothers in Arms")
 end
 
--- Will fail if the book is mimic or at our feet
+-- Will fail if the book is in a non-fire cloud already.
 function burn_spellbooks()
   use_ability("Burn Spellbooks")
 end
@@ -2816,7 +2815,7 @@ function want_pray()
 end
 
 function want_to_burn_spellbooks()
-  return BURN_BOOKS and (you.god() == "Trog") and can_read() and see_spellbooks()
+  return BURN_BOOKS and (you.god() == "Trog") and can_read() and see_spellbooks_to_burn()
 end
 
 function want_blood()
