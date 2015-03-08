@@ -3824,7 +3824,7 @@ end
 
 function plan_unshaft()
   if where_shafted_from and (where_shafted_from ~= you.where()) then
-    say("trying to unshaft to " .. where_shafted_from)
+    --say("Trying to unshaft to " .. where_shafted_from .. ".")
     expect_new_location = true
     magic("G<")
     return true
@@ -4868,10 +4868,11 @@ function ready()
     clear_ignores()
     if expect_new_location then
       if where_shafted_from == you.where() then
+        say("Successfully unshafted to " .. you.where() .. ".")
         where_shafted_from = nil
       end
-    else
-      say("Shafted?")
+    elseif automatic and not you.where():find("Abyss") then
+      say("Shafted from " .. where .. " to " .. you.where() .. ".")
       if not where_shafted_from then
         where_shafted_from = where
       end
