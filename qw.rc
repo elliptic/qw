@@ -4025,7 +4025,7 @@ function plan_swamp_clouds_hack()
     for y = -1,1 do
       if supdist(x,y) > 0 and view.is_safe_square(x,y)
          and not view.withheld(x,y) and not monster_in_way(x,y) then
-        dist = 10
+        dist = 11
         for x2 = -8,8 do
           for y2 = -8,8 do
             if (view.cloud_at(x2,y2) == "freezing vapour"
