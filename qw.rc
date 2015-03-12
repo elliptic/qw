@@ -697,10 +697,10 @@ local scary_monsters = {
   {5, "ice beast"},
   {5, "iguana"},
   {5, "Natasha"},
+  {5, "Robin"},
 
   {7, "orc wizard"},
   {7, "Grinder"},
-  {7, "Prince Ribbit"},
   {7, "Dowan"},
   {7, "Duvessa"},
   {7, "Menkaure"},
@@ -709,6 +709,7 @@ local scary_monsters = {
   {7, "Eustachio"},
   {7, "gnoll sergeant"},
 
+  {10, "Prince Ribbit"},
   {10, "Pikel"},
   {10, "Crazy Yiuf"},
   {10, "Sigmund"},
@@ -737,6 +738,7 @@ local scary_monsters = {
   {12, "manticore"},
   {12, "guardian mummy"},
   {12, "Psyche"},
+  {12, "oklob sapling"},
 
   {13, "blink frog"},
 
@@ -791,6 +793,7 @@ local scary_monsters = {
   {20, "Xtahua"},
   {20, "tengu reaver"},
   {20, "ettin"},
+  {20, "Polyphemus"},
 
   {100, "deep elf annihilator"},
   {100, "deep elf sorcerer"},
@@ -852,12 +855,14 @@ local bia_necessary_monsters = {
 -- BiA these
 local bia_monsters = {
   {15, "Rupert"},
-  {15, "desc", "hydra"},
   {15, "Azrael"},
   {15, "fire dragon"},
   {15, "ice dragon"},
   {15, "Snorg"},
   {15, "death yak"},
+  {15, "red devil"},
+
+  {17, "desc", "hydra"},
 
   {20, "orc warlord"},
   {20, "Aizul"},
@@ -873,6 +878,7 @@ local bia_monsters = {
   {20, "orb spider"},
   {20, "thorn hunter"},
   {20, "sun demon"},
+  {20, "Polyphemus"},
 
   {100, "deep troll shaman"},
   {100, "spriggan air mage"},
