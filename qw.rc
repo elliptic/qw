@@ -4088,7 +4088,7 @@ function read2(c,etc)
     return false
   end
   local int, mint = you.intelligence()
-  if int < 0 then
+  if int <= 0 then
     -- failing to read a scroll due to intzero can make qw unhappy
     return false
   end
