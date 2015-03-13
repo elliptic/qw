@@ -649,6 +649,8 @@ local tactical_reason
 
 local did_first_turn = false
 
+local stairdance_count = {}
+
 ------------------------------
 -- some tables with hardcoded data about branches/portals/monsters:
 
@@ -3485,6 +3487,46 @@ function plan_go_down()
   return false
 end
 
+function want_to_stairdace_up()
+  local n = stairdance_count[where] or 0
+  if n > 10 then
+    return false
+  end
+  if you.caught() or you.mesmerised() or you.confused() or
+     you.rooted() or you.transform() == "tree" or you.transform() == "fungus" then
+    return false
+  end
+  local feat = view.feature_at(0,0)
+  if feat:find("stone_stairs_up") then
+    local x, y, m
+    for x = -1, 1 do
+      for y = -1, 1 do
+        m = monster.get_monster_at(x, y)
+        -- who can use stairs? let's suppose anyone except undead and plants
+        if m and supdist(x,y) > 0 and
+                 m:holiness() ~= 2 and m:holiness() ~= 5 and
+                 m:attitude() < ATT_NEUTRAL and
+                 m:stabbability() < 1 then
+          stairdance_count[where] = n + 1
+          return true
+        end
+      end
+    end
+  else
+    return false
+  end
+end
+
+function plan_stairdance_up()
+  if want_to_stairdace_up() then
+    expect_new_location = true
+    say("STAIRDANCE")
+    magic("<")
+    return true
+  end
+  return false
+end
+
 function plan_simple_go_down()
   if travel_destination then
     return false
@@ -4530,6 +4572,7 @@ plan_explore2 = cascade {
 } -- hack
 
 plan_move = cascade {
+  {plan_stairdance_up, "plan_stairdance_up"},
   {plan_emergency, "emergency"},
   {plan_wait_for_melee, "wait_for_melee"},
   {plan_attack, "attack"},
