@@ -3786,6 +3786,12 @@ function plan_find_upstairs()
   return true
 end
 
+function plan_gd1()
+  expect_new_location = true
+  magic("GD1\rY")
+  return true
+end
+
 function plan_zig_go_to_stairs()
   if not where:find("Zig") then
     return false
@@ -4564,6 +4570,7 @@ plan_orbrun_move = cascade {
   --{plan_stuck_clear_exclusions, "try_stuck_clear_exclusions"},
   {plan_stuck_teleport, "stuck_teleport"},
   {plan_autoexplore, "try_autoexplore"},
+  {plan_gd1, "try_gd1"},
   {plan_stuck, "stuck"},
 } -- hack
 
