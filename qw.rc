@@ -20,6 +20,8 @@
 : EARLY_SECOND_RUNE = true
 # do non-water lair rune first, or pick randomly?
 : WATER_RUNE_SECOND = false
+# experimental: dive to Abyss:3 to get fourth rune
+: ABYSSAL_RUNE = false
 # depth to attempt to dive in ziggurats (0 to turn off)
 # if turned on, this causes annoying throttling delays when played online
 # for some reason
@@ -2792,6 +2794,11 @@ function want_to_berserk()
           (invisi_sigmund and not options.autopick_on))
 end
 
+function want_to_stay_in_abyss()
+  return you.xl() > 20 and not you.have_rune("abyssal") and
+         not hp_is_low(60) and you.num_runes() == 3 and ABYSSAL_RUNE
+end
+
 function plan_wait_for_melee()
   is_waiting = false
   if sense_danger(1) or (have_reaching() and sense_danger(2))
@@ -3841,6 +3848,24 @@ function plan_go_to_portal_exit()
   return false
 end
 
+function plan_go_to_abyss_portal()
+  if not want_to_stay_in_abyss() then
+    return false
+  else
+    expect_new_location = true
+    magic(control('f') .. "one-way gate to the infinite horrors of the Abyss" .. "\ra\r")
+    return true
+  end
+end
+
+function plan_go_to_abyss_downstairs()
+  if want_to_stay_in_abyss() and where == "Abyss:1" or where == "Abyss:2" then
+    magic("X>\r")
+    return true
+  end
+  return false
+end
+
 function plan_go_to_abyss_exit()
   magic("X<\r")
   return true
@@ -3881,6 +3906,24 @@ function plan_exit_portal()
   if string.find(view.feature_at(0,0), "exit_" .. get_feat_name(where)) then
     expect_new_location = true
     magic("<")
+    return true
+  end
+  return false
+end
+
+function plan_enter_abyss()
+  if view.feature_at(0,0) == "enter_abyss" and want_to_stay_in_abyss() then
+    expect_new_location = true
+    magic(">Y")
+    return true
+  end
+  return false
+end
+
+function plan_go_down_abyss()
+  if view.feature_at(0,0) == "abyssal_stair" and want_to_stay_in_abyss() then
+    expect_new_location = true
+    magic(">")
     return true
   end
   return false
@@ -4777,6 +4820,10 @@ plan_explore = cascade {
   {plan_continue_travel, "try_continue_travel"},
   {plan_enter_portal, "enter_portal"},
   {plan_go_to_portal_entrance, "try_go_to_portal_entrance"},
+  {plan_enter_abyss, "enter_abyss"},
+  {plan_go_to_abyss_portal, "try_go_to_abyss_portal"},
+  {plan_go_down_abyss, "try_go_down_abyss"},
+  {plan_go_to_abyss_downstairs, "try_go_to_abyss_downstairs"},
   {plan_autoexplore, "try_autoexplore"},
 } -- hack
 
@@ -5201,7 +5248,7 @@ function ready()
     sense_sigmund()
     if have_message then
       plan_message()
-    elseif you.where():find("Abyss") then
+    elseif you.where():find("Abyss") and not want_to_stay_in_abyss() then
       plan_abyss_move()
     elseif you.have_orb() then
       plan_orbrun_move()
