@@ -25,7 +25,7 @@
 # for some reason
 : ZIG_DIVE = 0
 # burn books with Trog, may theoretically cause navigation problems
-: BURN_BOOKS = false
+: BURN_BOOKS = true
 
 # qw can play any starting combo. These ones are recommended:
 combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
