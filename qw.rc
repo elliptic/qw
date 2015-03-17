@@ -20,6 +20,8 @@
 : EARLY_SECOND_RUNE = true
 # do non-water lair rune first, or pick randomly?
 : WATER_RUNE_SECOND = false
+# experimental: dive to Abyss:3 to get fourth rune
+: ABYSSAL_RUNE = false
 # depth to attempt to dive in ziggurats (0 to turn off)
 # if turned on, this causes annoying throttling delays when played online
 # for some reason
@@ -648,6 +650,8 @@ local tactical_step
 local tactical_reason
 
 local did_first_turn = false
+
+local stairdance_count = {}
 
 ------------------------------
 -- some tables with hardcoded data about branches/portals/monsters:
@@ -2640,6 +2644,15 @@ function want_to_berserk()
           (invisi_sigmund and not options.autopick_on))
 end
 
+function want_to_stay_in_abyss()
+  if you.xl() > 20 and count_permafood() <= 5 and ABYSSAL_RUNE then
+    say("Giving up on abyssal rune: low on food")
+    ABYSSAL_RUNE = false
+  end
+  return you.xl() > 20 and not you.have_rune("abyssal") and
+         not hp_is_low(60) and you.num_runes() == 3 and ABYSSAL_RUNE
+end
+
 function plan_wait_for_melee()
   if sense_danger(1) or (have_reaching() and sense_danger(2))
      or (not options.autopick_on) or
@@ -2786,6 +2799,16 @@ function eat_permafood()
     magic("ee")
     return true
   end
+end
+
+function count_permafood()
+  local s = 0
+  for it in inventory() do
+    if it.class(true) == "food" and not bad_food(it) and not food.ischunk(it) then
+      s = s + 1
+    end
+  end
+  return s
 end
 
 function plan_rest()
@@ -3485,6 +3508,46 @@ function plan_go_down()
   return false
 end
 
+function want_to_stairdace_up()
+  local n = stairdance_count[where] or 0
+  if n > 10 then
+    return false
+  end
+  if you.caught() or you.mesmerised() or you.confused() or
+     you.rooted() or you.transform() == "tree" or you.transform() == "fungus" then
+    return false
+  end
+  local feat = view.feature_at(0,0)
+  if feat:find("stone_stairs_up") then
+    local x, y, m
+    for x = -1, 1 do
+      for y = -1, 1 do
+        m = monster.get_monster_at(x, y)
+        -- who can use stairs? let's suppose anyone except undead and plants
+        if m and supdist(x,y) > 0 and
+                 m:holiness() ~= 2 and m:holiness() ~= 5 and
+                 m:attitude() < ATT_NEUTRAL and
+                 m:stabbability() < 1 then
+          stairdance_count[where] = n + 1
+          return true
+        end
+      end
+    end
+  else
+    return false
+  end
+end
+
+function plan_stairdance_up()
+  if want_to_stairdace_up() then
+    expect_new_location = true
+    say("STAIRDANCE")
+    magic("<")
+    return true
+  end
+  return false
+end
+
 function plan_simple_go_down()
   if travel_destination then
     return false
@@ -3584,6 +3647,24 @@ function plan_go_to_portal_exit()
   return false
 end
 
+function plan_go_to_abyss_portal()
+  if not want_to_stay_in_abyss() or not where:find("Depths") then
+    return false
+  else
+    expect_new_location = true
+    magic(control('f') .. "one-way gate to the infinite horrors of the Abyss" .. "\ra\r")
+    return true
+  end
+end
+
+function plan_go_to_abyss_downstairs()
+  if want_to_stay_in_abyss() and where == "Abyss:1" or where == "Abyss:2" then
+    magic("X>\r")
+    return true
+  end
+  return false
+end
+
 function plan_go_to_abyss_exit()
   magic("X<\r")
   return true
@@ -3624,6 +3705,24 @@ function plan_exit_portal()
   if string.find(view.feature_at(0,0), "exit_" .. get_feat_name(where)) then
     expect_new_location = true
     magic("<")
+    return true
+  end
+  return false
+end
+
+function plan_enter_abyss()
+  if view.feature_at(0,0) == "enter_abyss" and want_to_stay_in_abyss() then
+    expect_new_location = true
+    magic(">Y")
+    return true
+  end
+  return false
+end
+
+function plan_go_down_abyss()
+  if view.feature_at(0,0) == "abyssal_stair" and want_to_stay_in_abyss() then
+    expect_new_location = true
+    magic(">")
     return true
   end
   return false
@@ -4515,6 +4614,10 @@ plan_explore = cascade {
   {plan_continue_travel, "try_continue_travel"},
   {plan_enter_portal, "enter_portal"},
   {plan_go_to_portal_entrance, "try_go_to_portal_entrance"},
+  {plan_enter_abyss, "enter_abyss"},
+  {plan_go_to_abyss_portal, "try_go_to_abyss_portal"},
+  {plan_go_down_abyss, "try_go_down_abyss"},
+  {plan_go_to_abyss_downstairs, "try_go_to_abyss_downstairs"},
   {plan_autoexplore, "try_autoexplore"},
 } -- hack
 
@@ -4530,6 +4633,7 @@ plan_explore2 = cascade {
 } -- hack
 
 plan_move = cascade {
+  {plan_stairdance_up, "plan_stairdance_up"},
   {plan_emergency, "emergency"},
   {plan_wait_for_melee, "wait_for_melee"},
   {plan_attack, "attack"},
@@ -4917,7 +5021,7 @@ function ready()
     sense_sigmund()
     if have_message then
       plan_message()
-    elseif you.where():find("Abyss") then
+    elseif you.where():find("Abyss") and not want_to_stay_in_abyss() then
       plan_abyss_move()
     elseif you.have_orb() then
       plan_orbrun_move()
