@@ -2795,6 +2795,10 @@ function want_to_berserk()
 end
 
 function want_to_stay_in_abyss()
+  if you.xl() > 20 and where:find("Abyss") and count_permafood() <= 5 and ABYSSAL_RUNE then
+    say("Giving up on abyssal rune: low on food")
+    ABYSSAL_RUNE = false
+  end
   return you.xl() > 20 and not you.have_rune("abyssal") and
          not hp_is_low(60) and you.num_runes() == 3 and ABYSSAL_RUNE
 end
@@ -2972,6 +2976,16 @@ function eat_permafood()
     magic("ee")
     return true
   end
+end
+
+function count_permafood()
+  local s = 0
+  for it in inventory() do
+    if it.class(true) == "food" and not bad_food(it) and not food.ischunk(it) then
+      s = s + it.quantity
+    end
+  end
+  return s
 end
 
 function plan_rest()
@@ -3849,7 +3863,7 @@ function plan_go_to_portal_exit()
 end
 
 function plan_go_to_abyss_portal()
-  if not want_to_stay_in_abyss() then
+  if not want_to_stay_in_abyss() or not where:find("Depths") then
     return false
   else
     expect_new_location = true
