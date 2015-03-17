@@ -2645,7 +2645,7 @@ function want_to_berserk()
 end
 
 function want_to_stay_in_abyss()
-  if you.xl() > 20 and count_permafood() <= 5 and ABYSSAL_RUNE then
+  if you.xl() > 20 and where:find("Abyss") and count_permafood() <= 5 and ABYSSAL_RUNE then
     say("Giving up on abyssal rune: low on food")
     ABYSSAL_RUNE = false
   end
@@ -3513,7 +3513,7 @@ function want_to_stairdace_up()
   if n > 10 then
     return false
   end
-  if you.caught() or you.mesmerised() or you.confused() or
+  if you.caught() or you.mesmerised() or you.confused() or you.constricted() or
      you.rooted() or you.transform() == "tree" or you.transform() == "fungus" then
     return false
   end
