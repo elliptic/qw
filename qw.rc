@@ -2805,7 +2805,7 @@ function count_permafood()
   local s = 0
   for it in inventory() do
     if it.class(true) == "food" and not bad_food(it) and not food.ischunk(it) then
-      s = s + 1
+      s = s + it.quantity
     end
   end
   return s
