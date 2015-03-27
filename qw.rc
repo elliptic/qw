@@ -98,6 +98,8 @@ note_hp_percent = 25
 note_skill_levels = 1,3,6,9,12,15,18,21,24,27
 note_all_spells = true
 
+fire_order = launcher, rock, javelin, tomahawk
+
 ####################################
 # not sure exactly how important or correct these settings are
 
@@ -572,6 +574,9 @@ function autopickup(it, name)
     return true
   elseif class == "potion" or class == "scroll" or class == "wand" then
     return
+  elseif class == "missile" then
+    st = it.subtype()
+    return (st == "large rock" and (you.race() == "Troll" or you.race() == "Ogre") or st == "javelin" or st == "tomahawk")
   else
     return false
   end
@@ -654,6 +659,8 @@ local upgrade_phase = false
 
 local tactical_step
 local tactical_reason
+
+local is_waiting
 
 local did_first_turn = false
 
@@ -2783,6 +2790,7 @@ function want_to_berserk()
 end
 
 function plan_wait_for_melee()
+  is_waiting = false
   if sense_danger(1) or (have_reaching() and sense_danger(2))
      or (not options.autopick_on) or
      you.berserk() or you.have_orb() or count_bia(8) > 0 or count_sgd(8) > 0 or
@@ -2830,6 +2838,27 @@ function plan_wait_for_melee()
   last_wait = you.turns()
   if plan_cure_poison_rotting() then
     return true
+  end
+  -- don't actually wait yet, because we might try to throw something
+  is_waiting = true
+  return false
+end
+
+function plan_wait_throw()
+  if not is_waiting then
+    return false
+  end
+  if items.fired_item() then
+    magic("ff") -- can fail for various reasons
+    return true
+  else
+    return false
+  end
+end
+
+function plan_wait_wait()
+  if not is_waiting then
+    return false
   end
   magic("s")
   return true
@@ -4691,6 +4720,8 @@ plan_explore2 = cascade {
 plan_move = cascade {
   {plan_emergency, "emergency"},
   {plan_wait_for_melee, "wait_for_melee"},
+  {plan_wait_throw, "try_wait_throw"},
+  {plan_wait_wait, "wait_wait"},
   {plan_attack, "attack"},
   {plan_cure_poison_rotting, "cure_poison_rotting"},
   {plan_cure_bad_statdrain, "cure_bad_statdrain"},
