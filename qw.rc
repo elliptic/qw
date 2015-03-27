@@ -32,7 +32,11 @@
 # qw can play any starting combo. These ones are recommended:
 combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
 
-# For random berserkers, use these combos instead:
+# DDGl is the recommended non-berserker start. It will worship whichever of
+# Makhleb and Trog it finds first.
+#combo = DDGl.waraxe
+
+# For random berserkers, use these combos:
 #combo = CeBe.handaxe, DDBe.handaxe, DEBe.handaxe, DrBe.handaxe, DsBe.handaxe
 #combo += FeBe.claws, FoBe.handaxe, GrBe.handaxe, GhBe.claws, HaBe.falchion
 #combo += HEBe.falchion, HOBe.handaxe, HuBe.handaxe, KoBe.mace, MfBe.spear
@@ -618,6 +622,8 @@ local dd_hw_meter = 0
 local sigmund_dx = 0
 local sigmund_dy = 0
 local invisi_sigmund = false
+
+local sgd_timer = -200
 
 local stuck_turns = 0
 
@@ -1287,6 +1293,22 @@ function can_bia()
           you.god() ~= "Trog"))
 end
 
+function can_sgd()
+  local hp,mhp = you.hp()
+  return (not (you.berserk() or you.confused() or you.silenced() or
+          you.hunger_name() == "starving" or you.piety_rank() < 5 or
+          hp <= 10 or
+          you.god() ~= "Makhleb"))
+end
+
+function can_destruction()
+  local hp,mhp = you.hp()
+  return (not (you.berserk() or you.confused() or you.silenced() or
+          you.hunger_name() == "starving" or you.piety_rank() < 4 or
+          hp <= 6 or
+          you.god() ~= "Makhleb"))
+end
+
 function can_teleport()
   return (not you.berserk() and not you.teleporting() and not you.anchored()
           and not you.confused()
@@ -1452,6 +1474,9 @@ function check_monsters(r, mlist)
 end
 
 function count_bia(r)
+  if you.god() ~= "Trog" then
+    return 0
+  end
   local x, y
   local i = 0
   for x = -r,r do
@@ -1459,6 +1484,57 @@ function count_bia(r)
       m = monster_array[x][y]
       if m and m:is_safe() and m:is("berserk")
        and contains_string_in(m:name(), {"ogre","giant","bear","troll"}) then
+        i = i+1
+      end
+    end
+  end
+  return i
+end
+
+function count_sgd(r)
+  if you.god() ~= "Makhleb" then
+    return 0
+  end
+  local x, y
+  local i = 0
+  for x = -r,r do
+    for y = -r,r do
+      m = monster_array[x][y]
+      if m and m:is_safe()
+       and contains_string_in(m:name(), {"Executioner","green death","blizzard demon","balrug","cacodemon"}) then
+        i = i+1
+      end
+    end
+  end
+  return i
+end
+
+function count_hostile_sgd(r)
+  if you.god() ~= "Makhleb" then
+    return 0
+  end
+  local x, y
+  local i = 0
+  for x = -r,r do
+    for y = -r,r do
+      m = monster_array[x][y]
+      if m and not m:is_safe() and m:is("summoned")
+       and contains_string_in(m:name(), {"Executioner","green death","blizzard demon","balrug","cacodemon"}) then
+        i = i+1
+      end
+    end
+  end
+  return i
+end
+
+function count_big_slimes(r)
+  local x, y
+  local i = 0
+  for x = -r,r do
+    for y = -r,r do
+      m = monster_array[x][y]
+      if m and not m:is_safe()
+       and contains_string_in(m:name(), {"enormous slime creature","titanic slime creature"}) then
         i = i+1
       end
     end
@@ -1953,7 +2029,8 @@ function should_rest()
            or you.regenerating())
           or you.slowed() or you.exhausted() or you.teleporting()
           or you.status("manticore barbs")
-          or you.silencing() or you.corrosion() > 0)
+          or you.silencing() or you.corrosion() > 0
+          or you.god() == "Makhleb" and you.turns() <= sgd_timer + 100)
 end
 
 function want_permafood()
@@ -2031,6 +2108,10 @@ function bia()
   use_ability("Brothers in Arms")
 end
 
+function sgd()
+  use_ability("Greater Servant of Makhleb")
+end
+
 -- Will fail if the book is in a non-fire cloud already.
 function burn_spellbooks()
   use_ability("Burn Spellbooks")
@@ -2040,6 +2121,39 @@ function plan_bia()
   if can_bia() and want_to_bia() then
     bia()
     return true
+  end
+  return false
+end
+
+function plan_sgd()
+  if can_sgd() and want_to_sgd() then
+    sgd()
+    return true
+  end
+  return false
+end
+
+function plan_hydra_destruction()
+  if not can_destruction() then
+    return false
+  end
+  if count_sgd(4) > 0 then
+    return false
+  end
+  local x,y
+  for x = -6,6 do
+    for y = -6,6 do
+      m = monster_array[x][y]
+      if m and string.find(m:desc(), "hydra") and (x*x + y*y <= 37) then
+        say("INVOKING MAJOR DESTRUCTION")
+        for letter, abil in pairs(you.ability_table()) do
+          if abil == "Major Destruction" then
+            magic("a" .. letter .. "r" .. vector_move(x, y) .. "\r")
+            return true
+          end
+        end
+      end
+    end
   end
   return false
 end
@@ -2061,6 +2175,9 @@ function plan_hand()
 end
 
 function dd_prefer_hand()
+  if you.god() ~= "Trog" then
+    return false
+  end
   return (you.piety_rank() == 6 or you.base_mp() < 3)
 end
 
@@ -2552,22 +2669,41 @@ function want_to_bia()
   return false
 end
 
+function want_to_sgd()
+  if you.skill("Invocations") >= 8 and
+     (check_monsters(8, bia_monsters) or hp_is_low(50) and immediate_danger) then
+    if count_sgd(4) == 0 and not you.teleporting() then
+      return true
+    end
+  end
+  return false
+end
+
 function dd_want_to_teleport()
   --say("HW: " .. dd_hw_meter)
   return ((immediate_danger and dd_hw_meter > 300
            or immediate_danger and you.corrosion() >= 3
-           or (you.slowed() or too_hungry_to_berserk())
+           or you.god() ~= "Trog" and immediate_danger and hp_is_low(25)
+           or you.god() == "Trog" and (you.slowed() or too_hungry_to_berserk())
               and want_to_berserk()
               and not can_berserk())
           and count_bia(4) == 0)
 end
 
 function want_to_teleport()
+  if count_hostile_sgd(8) > 0 then
+    sgd_timer = you.turns()
+    return true
+  end
+  if you.xl() <= 17 and not can_berserk() and count_big_slimes(8) > 0 then
+    return true
+  end
   if you.race() == "Deep Dwarf" then
     return dd_want_to_teleport()
   end
   return ((immediate_danger and you.corrosion() >= 3
-           or (you.slowed() or too_hungry_to_berserk())
+           or you.god() ~= "Trog" and immediate_danger and hp_is_low(25)
+           or you.god() == "Trog" and (you.slowed() or too_hungry_to_berserk())
               and want_to_berserk()
               and not can_berserk())
           and count_bia(4) == 0)
@@ -2591,6 +2727,10 @@ function dd_want_to_heal_wounds()
             (mhp - hp >= 20 and hp <= 20))
   else
     if dd_prefer_hand() and (not you.teleporting()) and not hp_is_low(66) then
+      return false
+    end
+    if you.god() == "Makhleb" and you.piety_rank() >= 1 and
+       not hp_is_low(66) then
       return false
     end
     return (hp_is_low(25) or
@@ -2645,7 +2785,7 @@ end
 function plan_wait_for_melee()
   if sense_danger(1) or (have_reaching() and sense_danger(2))
      or (not options.autopick_on) or
-     you.berserk() or you.have_orb() or count_bia(8) > 0 or
+     you.berserk() or you.have_orb() or count_bia(8) > 0 or count_sgd(8) > 0 or
      not view.is_safe_square(0,0) or
      view.feature_at(0,0) == "shallow_water" and not you.flying() then
     wait_count = 0
@@ -2867,12 +3007,16 @@ function plan_find_altar()
   if not want_altar() then
     return false
   end
-  magic(control('f') .. "@altar&&trog" .. "\ra\r")
+  if you.race() == "Deep Dwarf" then
+    magic(control('f') .. "@altar&&<<trog||makhleb>>" .. "\ra\r")
+  else
+    magic(control('f') .. "@altar&&trog" .. "\ra\r")
+  end
   return true
 end
 
 function plan_abandon_god()
-  if you.god() ~= "No God" and you.god() ~= "Trog" then
+  if you.god() ~= "No God" and you.god() ~= "Trog" and you.god() ~= "Makhleb" then
     magic("aXYY")
     return true
   end
@@ -2894,7 +3038,8 @@ function plan_join_god()
   if not want_altar() then
     return false
   end
-  if view.feature_at(0, 0) == "altar_trog" then
+  if view.feature_at(0, 0) == "altar_trog" or
+     you.race() == "Deep Dwarf" and view.feature_at(0, 0) == "altar_makhleb" then
     if you.silenced() then
       rest()
     else
@@ -3487,11 +3632,18 @@ function plan_go_down()
   return false
 end
 
+function ready_for_lair()
+  if you.god() ~= "Trog" and you.piety_rank() < 4 then
+    return false
+  end
+  return true
+end
+
 function plan_simple_go_down()
   if travel_destination then
     return false
   end
-  if found_branch("L") and not
+  if (found_branch("L") and ready_for_lair() or where == "D:11") and not
      util.contains(c_persist.branches_entered, "L") then
     return false
   end
@@ -3510,7 +3662,7 @@ function plan_simple_go_down()
 end
 
 function want_altar()
-  return (you.god() ~= "Trog" and you.race() ~= "Demigod")
+  return (you.god() ~= "Trog" and you.god() ~= "Makhleb" and you.race() ~= "Demigod")
 end
 
 function plan_go_to_temple()
@@ -3539,10 +3691,10 @@ end
 
 function plan_enter_branch()
   local br
-  if found_branch("L") and not
+  if found_branch("L") and ready_for_lair() and not
      util.contains(c_persist.branches_entered, "L") and in_branch("D") then
     br = "L"
-  elseif found_branch("O") and not
+  elseif found_branch("O") and you.god() == "Trog" and not
          util.contains(c_persist.branches_entered, "O") and in_branch("D") and
          util.contains(c_persist.branches_entered, "L") then
     br = "O"
@@ -3726,6 +3878,9 @@ function plan_new_travel()
   local back_to_D_places = { "Temple", "Orc:3", "Orc:4", "Vaults:4"}
   if util.contains(back_to_D_places, where) then
     travel_destination = "D"
+  end
+  if where == "D:11" then
+    travel_destination = "L"
   end
   if where == "Lair:8" then
     if travel.find_deepest_explored("D") == 15 and you.num_runes() < 2 then
@@ -4188,7 +4343,7 @@ end
 function move_towards(dx, dy)
   if you.transform() == "tree" or you.transform() == "fungus"
      or you.confused() and
-        (dangerous_terrain_adjacent() or count_bia(1) > 0) then
+        (dangerous_terrain_adjacent() or count_bia(1) > 0 or count_sgd(1) > 0) then
     magic("s")
     return true
   end
@@ -4295,7 +4450,7 @@ end
 
 function attack_melee(x, y)
   if you.confused() then
-    if count_bia(1) > 0 then
+    if count_bia(1) > 0 or count_sgd(1) > 0 then
       magic("s")
       return
     elseif dangerous_terrain_adjacent() or you.transform() == "tree" then
@@ -4461,6 +4616,8 @@ plan_emergency = cascade {
   {plan_hand, "hand"},
   {plan_resistance, "resistance"},
   {plan_bia, "bia"},
+  {plan_sgd, "sgd"},
+  {plan_hydra_destruction, "try_hydra_destruction"},
   {plan_dd_recharge_heal_wounds, "dd_recharge_heal_wounds"},
   {plan_wield_weapon, "wield_weapon"},
   {plan_water_step, "water_step"},
@@ -4648,8 +4805,16 @@ function handle_skills()
                          >= 2*you.base_skill("Fighting") then
     you.train_skill("Fighting", 1)
   end
-  if you.race() == "Deep Dwarf" and (you.base_skill("Evocations") < 4
-                                     or you.base_mp() < 5) then
+  if you.god() == "Makhleb" and you.piety_rank() >= 2 and you.base_skill("Invocations") < 12 then
+    you.train_skill("Invocations", 1)
+  end
+  -- logic for training skills for MP could be improved probably
+  if you.race() == "Deep Dwarf" and you.can_train_skill("Invocations") and
+      (you.base_skill("Invocations") < 4 or you.base_mp() < 5) then
+    you.train_skill("Invocations", 1)
+  end
+  if you.race() == "Deep Dwarf" and you.god() == "Trog"
+     and (you.base_skill("Evocations") < 4 or you.base_mp() < 5) then
     you.train_skill("Evocations", 1)
   end
   if you.race() == "Vine Stalker" and you.base_skill("Evocations") < 12
