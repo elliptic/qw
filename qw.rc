@@ -26,6 +26,8 @@
 : ZIG_DIVE = 0
 # burn books with Trog, may theoretically cause navigation problems
 : BURN_BOOKS = true
+# tab just takes a single action (for testing)
+: SINGLE_STEP = false
 
 # qw can play any starting combo. These ones are recommended:
 combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
@@ -4869,6 +4871,7 @@ function ready()
     skill_count = skill_count+20
     handle_skills()
   end
+  local time_passed
   if you.turns() > old_turn_count then
     if did_move then
       move_count = move_count + 1
@@ -4881,6 +4884,9 @@ function ready()
     if did_move_towards_monster > 0 then
       did_move_towards_monster = did_move_towards_monster - 1
     end
+    time_passed = true
+  else
+    time_passed = false
   end
   if you.where() ~= where then
     clear_ignores()
@@ -4908,6 +4914,9 @@ function ready()
   expect_new_location = false
   expect_portal = false
   check_messages()
+  if time_passed and SINGLE_STEP then
+    stop()
+  end
   if automatic then
     crawl.flush_input()
     crawl.more_autoclear(true)
