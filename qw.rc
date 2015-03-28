@@ -4164,7 +4164,7 @@ function plan_cure_bad_statdrain()
   local dex, mdex = you.dexterity()
   if str <= mstr - 3 or str <= 3 and str < mstr or
      int <= mint - 3 or int <= 3 and int < mint or
-     dex <= mint - 3 or dex <= 3 and dex < mdex then
+     dex <= mdex - 3 or dex <= 3 and dex < mdex then
     return drink_by_name("restore abilities")
   end
   return false
