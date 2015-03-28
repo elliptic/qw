@@ -2795,12 +2795,14 @@ function want_to_berserk()
 end
 
 function want_to_stay_in_abyss()
-  if you.xl() > 20 and where:find("Abyss") and count_permafood() <= 5 and ABYSSAL_RUNE then
+  if ABYSSAL_RUNE and you.xl() > 20
+     and where:find("Abyss") and count_permafood() <= 5 then
     say("Giving up on abyssal rune: low on food")
     ABYSSAL_RUNE = false
   end
-  return you.xl() > 20 and not you.have_rune("abyssal") and
-         not hp_is_low(60) and you.num_runes() == 3 and ABYSSAL_RUNE
+  return ABYSSAL_RUNE and you.xl() > 20
+         and not you.have_rune("abyssal") and you.have_rune("silver")
+         and count_permafood() > 5 and not hp_is_low(60)
 end
 
 function plan_wait_for_melee()
@@ -3863,7 +3865,7 @@ function plan_go_to_portal_exit()
 end
 
 function plan_go_to_abyss_portal()
-  if not want_to_stay_in_abyss() or not where:find("Depths") then
+  if not where:find("Depths") or not want_to_stay_in_abyss() then
     return false
   else
     expect_new_location = true
@@ -3873,7 +3875,7 @@ function plan_go_to_abyss_portal()
 end
 
 function plan_go_to_abyss_downstairs()
-  if want_to_stay_in_abyss() and where == "Abyss:1" or where == "Abyss:2" then
+  if (where == "Abyss:1" or where == "Abyss:2") and want_to_stay_in_abyss() then
     magic("X>\r")
     return true
   end
@@ -4836,7 +4838,7 @@ plan_explore = cascade {
   {plan_go_to_portal_entrance, "try_go_to_portal_entrance"},
   {plan_enter_abyss, "enter_abyss"},
   {plan_go_to_abyss_portal, "try_go_to_abyss_portal"},
-  {plan_go_down_abyss, "try_go_down_abyss"},
+  {plan_go_down_abyss, "go_down_abyss"},
   {plan_go_to_abyss_downstairs, "try_go_to_abyss_downstairs"},
   {plan_autoexplore, "try_autoexplore"},
 } -- hack
