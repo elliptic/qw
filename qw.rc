@@ -3693,8 +3693,8 @@ function want_to_stairdance_up()
     return false
   end
   if you.caught() or you.mesmerised() or you.constricted() or you.berserk()
-     you.rooted() or you.transform() == "tree" or you.transform() == "fungus" or
-     hp_is_low(33) or count_bia(3) > 0 or count_sgd(3) > 0 then
+     or you.rooted() or you.transform() == "tree" or you.transform() == "fungus"
+     or hp_is_low(33) or count_bia(3) > 0 or count_sgd(3) > 0 then
     return false
   end
   local e
