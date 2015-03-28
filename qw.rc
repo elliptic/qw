@@ -1054,7 +1054,7 @@ function intrinsic_heavy()
   return (not intrinsic_dodgy() and not intrinsic_heavy_dodgy())
 end
 
-function intrinsic_want_dex()
+function intrinsic_like_dex()
   return (intrinsic_dodgy() or intrinsic_heavy_dodgy())
 end
 
@@ -3295,7 +3295,7 @@ function plan_use_good_consumables()
         if you.mutation("slow healing") > 0 and you.race() ~= "Deep Dwarf"
            and you.race() ~= "Ghoul" or
            you.mutation("dopey") > 1 or
-           intrinsic_want_dex() and you.mutation("clumsy") > 1 or
+           intrinsic_like_dex() and you.mutation("clumsy") > 1 or
            you.mutation("teleportitis") > 0 or
            you.mutation("deformed body") > 0 and you.race() ~= "Naga"
            and you.race() ~= "Centaur" or
@@ -4876,7 +4876,8 @@ function handle_skills()
 end
 
 function choose_stat_gain()
-  if intrinsic_want_dex() then
+  local str, mstr = you.strength()
+  if intrinsic_dodgy() or mstr >= 20 and intrinsic_heavy_dodgy() then
     return "d"
   else
     return "s"
