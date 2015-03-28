@@ -665,6 +665,7 @@ local is_waiting
 local did_first_turn = false
 
 local stairdance_count = {}
+local v5_entry_turn
 
 ------------------------------
 -- some tables with hardcoded data about branches/portals/monsters:
@@ -2807,6 +2808,11 @@ function plan_wait_for_melee()
   if (not danger) or wait_count >= 10 then
     return false
   end
+  -- hack to make us wait when we enter v5 so we don't move off stairs
+  if v5_entry_turn and you.turns() <= v5_entry_turn + 2 then
+    is_waiting = true
+    return false
+  end
   count = 0
   sleeping_count = 0
   local e
@@ -3671,38 +3677,64 @@ function ready_for_lair()
 end
 
 function want_to_stairdance_up()
+  local feat = view.feature_at(0,0)
+  if not (feat:find("stone_stairs_up") or
+          feat:find("exit_") and (feat == "exit_hell" or feat == "exit_vaults"
+          or feat == "exit_zot" or feat == "exit_slime_pits"
+          or feat == "exit_orcish_mines" or feat == "exit_lair"
+          or feat == "exit_crypt" or feat == "exit_snake_pit"
+          or feat == "exit_elven_halls" or feat == "exit_tomb"
+          or feat == "exit_swamp" or feat == "exit_shoals"
+          or feat == "exit_spider_nest" or feat == "exit_depths")) then
+    return false
+  end
   local n = stairdance_count[where] or 0
   if n > 10 then
     return false
   end
-  if you.caught() or you.mesmerised() or you.confused() or you.constricted() or
-     you.rooted() or you.transform() == "tree" or you.transform() == "fungus" then
+  if you.caught() or you.mesmerised() or you.constricted() or you.berserk()
+     you.rooted() or you.transform() == "tree" or you.transform() == "fungus" or
+     hp_is_low(33) or count_bia(3) > 0 or count_sgd(3) > 0 then
     return false
   end
-  local feat = view.feature_at(0,0)
-  if feat:find("stone_stairs_up") then
-    local x, y, m
-    for x = -1, 1 do
-      for y = -1, 1 do
-        m = monster.get_monster_at(x, y)
-        -- who can use stairs? let's suppose anyone except undead and plants
-        if m and supdist(x,y) > 0 and
-                 m:holiness() ~= 2 and m:holiness() ~= 5 and
-                 m:attitude() < ATT_NEUTRAL and
-                 m:stabbability() < 1 then
-          stairdance_count[where] = n + 1
-          return true
-        end
+  local e
+  for _,e in ipairs(enemy_list) do
+    local dist = supdist(e.x,e.y)
+    if dist == 1 then
+      if e.m:stabbability() == 0 and can_use_stairs(e.m:name()) then
+        stairdance_count[where] = n + 1
+        return true
       end
     end
-  else
+  end
+  return false
+end
+
+-- adding some clua for this would be better
+function can_use_stairs(mname)
+  if mname:find("zombie") or mname:find("skeleton") or mname:find("spectral")
+     or mname:find("simulacrum") or mname:find("oklob")
+     or mname:find("statue") or mname:find("ballistomycete")
+     or mname == "burning bush" or mname == "lightning spire"
+     or mname:find("tentacle") or mname == "silent spectre"
+     or mname == "Geryon" or mname == "the royal jelly"
+     or mname:find("'s ghost") or mname:find("' ghost")
+     or mname == "swamp worm" or mname == "electric eel"
+     or mname == "kraken" or mname == "lava snake" then
     return false
+  else
+    return true
   end
 end
 
 function plan_stairdance_up()
   if want_to_stairdance_up() then
     expect_new_location = true
+    -- set travel_destination to the current location in case we
+    -- leave the branch while stairdancing
+    if not travel_destination then
+      travel_destination = cur_branch()
+    end
     say("STAIRDANCE")
     magic("<")
     return true
@@ -5150,6 +5182,9 @@ function ready()
       say("Entered " .. where .. ".")
     end
     c_persist.portals_found = { }
+    if where == "Vaults:5" and not v5_entry_turn then
+      v5_entry_turn = you.turns()
+    end
   end
   expect_new_location = false
   expect_portal = false
