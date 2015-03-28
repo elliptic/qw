@@ -2811,7 +2811,8 @@ function plan_wait_for_melee()
      or (not options.autopick_on) or
      you.berserk() or you.have_orb() or count_bia(8) > 0 or count_sgd(8) > 0 or
      not view.is_safe_square(0,0) or
-     view.feature_at(0,0) == "shallow_water" and not you.flying() then
+     view.feature_at(0,0) == "shallow_water" and not you.flying() or
+     where:find("Abyss") then
     wait_count = 0
     return false
   end
