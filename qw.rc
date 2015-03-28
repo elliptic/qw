@@ -30,6 +30,8 @@
 : BURN_BOOKS = true
 # tab just takes a single action (for testing)
 : SINGLE_STEP = false
+# panic (stop) at full inventory
+: FULL_INVENTORY_PANIC = true
 
 # qw can play any starting combo. These ones are recommended:
 combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
@@ -1764,6 +1766,14 @@ end
 
 function at_feet()
   return iter.invent_iterator:new(you.floor_items())
+end
+
+function free_inventory_slots()
+  local slots = 52
+  for _ in inventory() do
+    slots = slots - 1
+  end
+  return slots
 end
 
 function slot(x)
@@ -5251,6 +5261,9 @@ function ready()
   expect_new_location = false
   expect_portal = false
   check_messages()
+  if FULL_INVENTORY_PANIC and free_inventory_slots() == 0 then
+    panic("Inventory is full!")
+  end
   if time_passed and SINGLE_STEP then
     stop()
   end
