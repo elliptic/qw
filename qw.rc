@@ -896,6 +896,11 @@ function should_remove(it)
   return (equip_value(it,true,it) <= 0)
 end
 
+function want_missile(it)
+  st = it.subtype()
+  return (st == "large rock" and (you.race() == "Troll" or you.race() == "Ogre") or st == "javelin" or st == "tomahawk" and you.xl() < 15)
+end
+
 function autopickup(it, name)
   if name:find("of Zot") then
     return true
@@ -914,8 +919,7 @@ function autopickup(it, name)
   elseif class == "potion" or class == "scroll" or class == "wand" then
     return
   elseif class == "missile" then
-    st = it.subtype()
-    return (st == "large rock" and (you.race() == "Troll" or you.race() == "Ogre") or st == "javelin" or st == "tomahawk")
+    return want_missile(it)
   else
     return false
   end
@@ -3452,6 +3456,17 @@ function plan_drop_filtered_items()
   return true
 end
 
+function plan_drop_other_items()
+  for it in inventory() do
+    if it.class(true) == "missile" and not want_missile(it) then
+      say("DROPPING " .. it.name() .. ".")
+      magic("d" .. letter(it) .. "\r")
+      return true
+    end
+  end
+  return false
+end
+
 function plan_quaff_id()
   for it in inventory() do
     if it.class(true) == "potion" and it.quantity > 1 and
@@ -5014,6 +5029,7 @@ plan_pre_explore2 = cascade {
   {plan_quaff_id, "quaff_id"},
   {plan_use_id_scrolls, "use_id_scrolls"},
   {plan_drop_filtered_items, "try_drop_filtered_items"},
+  {plan_drop_other_items, "drop_other_items"},
 } -- hack
 
 plan_emergency = cascade {
