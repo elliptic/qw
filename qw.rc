@@ -824,7 +824,7 @@ function ring_value(it, cur, it2)
 end
 
 function item_is_dominated(it)
-  local _,maxv = equip_value(it)
+  local minv,maxv = equip_value(it)
   if maxv <= 0 then
     return true
   end
@@ -835,11 +835,38 @@ function item_is_dominated(it)
   end
   for it2 in inventory() do
     if equip_slot(it2) == slotname and slot(it2) ~= slot(it) then
-      local minv,_ = equip_value(it2)
-      if minv >= maxv then
+      local minv2,maxv2 = equip_value(it2)
+      if minv2 >= maxv then
         num_slots = num_slots - 1
         if num_slots == 0 then
           return true
+        end
+      end
+      if minv == minv2 and maxv == maxv2 then
+        if slotname == "Ring" then
+          if not it.artefact and not it2.artefact then
+            sub = it.subtype()
+            sub2 = it2.subtype()
+            if sub == sub2 then
+              if sub == "ring of fire" or
+                 sub == "ring of ice" or
+                 sub == "ring of poison resistance" or
+                 sub == "ring of see invisible" or
+                 sub == "ring of sustain abilities" then
+                return true
+              end
+            end
+          end
+        elseif slotname == "Amulet" then
+          if it.artefact and not it2.artefact and it.subtype() == it2.subtype() then
+            return true
+          end
+        elseif it.name() == it2.name() then
+          local name = it.name()
+          if not (name:find("runed") or name:find("glowing") or name:find("dyed") or
+                  name:find("embroidered") or name:find("shiny")) then
+            return true
+          end
         end
       end
     end
