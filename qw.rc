@@ -883,6 +883,9 @@ function should_upgrade(it,old_it)
   if not old_it then
     return should_equip(it)
   end
+  if not it.fully_identified and not should_drop(it) then
+    return true
+  end
   return (equip_value(it,true,old_it) > equip_value(old_it,true,old_it))
 end
 
