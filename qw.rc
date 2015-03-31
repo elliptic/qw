@@ -858,7 +858,7 @@ function item_is_dominated(it)
             end
           end
         elseif slotname == "Amulet" then
-          if it.artefact and not it2.artefact and it.subtype() == it2.subtype() then
+          if not it.artefact and not it2.artefact and it.subtype() == it2.subtype() then
             return true
           end
         elseif it.name() == it2.name() then
