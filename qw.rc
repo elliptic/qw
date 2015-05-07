@@ -42,6 +42,10 @@ combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
 # Makhleb and Trog it finds first.
 #combo = DDGl.waraxe
 
+# For a mix of the above:
+#combo = DDBe.handaxe, DDGl.waraxe, GrBe.handaxe, GrBe.handaxe
+#combo += MiBe.handaxe, MiBe.handaxe
+
 # For random berserkers, use these combos:
 #combo = CeBe.handaxe, DDBe.handaxe, DEBe.handaxe, DrBe.handaxe, DsBe.handaxe
 #combo += FeBe.claws, FoBe.handaxe, GrBe.handaxe, GhBe.claws, HaBe.falchion
