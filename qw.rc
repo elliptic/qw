@@ -633,7 +633,7 @@ function armour_value(it, cur, it2)
     evp = it.encumbrance
     if intrinsic_dodgy() then
       if evp > 7 then
-        return -1
+        return -1,-1
       elseif evp >= 6 then
         value = value - 250
       elseif evp >= 3 then
