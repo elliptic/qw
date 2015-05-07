@@ -5574,4 +5574,13 @@ end
 function c_trap_is_safe(trap)
   return (trap ~= "permanent teleport")
 end
+
+function c_answer_prompt(prompt)
+  if prompt == "Die?" then
+    return false
+  end
+  if prompt:find("blurry vision") then
+    return true
+  end
+end
 }
