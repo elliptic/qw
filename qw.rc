@@ -69,6 +69,7 @@ combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
 : ENUM_MONS_PANDEMONIUM_LORD = 344
 : ATT_NEUTRAL = 1
 : ATT_HOSTILE = 0
+: LOS = 7
 
 #####################################
 # miscellaneous simple options
@@ -1768,7 +1769,7 @@ end
 function initialize_monster_array()
   monster_array = {}
   local x
-  for x = -8,8 do
+  for x = -LOS,LOS do
     monster_array[x] = {}
   end
 end
@@ -1777,8 +1778,8 @@ function update_monster_array()
   local x,y
   enemy_list = {}
   --c_persist.mlist = {}
-  for x = -8,8 do
-    for y = -8,8 do
+  for x = -LOS,LOS do
+    for y = -LOS,LOS do
       monster_array[x][y] = monster.get_monster_at(x, y)
       if is_candidate_for_attack(x, y) then
         entry = {}
@@ -1931,7 +1932,7 @@ function will_tab(cx, cy, ex, ey)
   end
   local function attempt_move(fx, fy)
     if fx == 0 and fy == 0 then return end
-    if supdist(cx+fx,cy+fy) > 8 then return end
+    if supdist(cx+fx,cy+fy) > LOS then return end
     if tabbable_square(cx+fx, cy+fy) then
       return will_tab(cx+fx, cy+fy, ex, ey)
     end
@@ -2001,7 +2002,7 @@ function compare_monster_info(m1, m2)
 end
 
 function is_candidate_for_attack(x, y, no_untabbable)
-  if supdist(x,y) > 8 then
+  if supdist(x,y) > LOS then
     return false
   end
   m = monster_array[x][y]
@@ -2186,7 +2187,7 @@ end
 
 function have_reaching()
   local wp = items.equipped_at("weapon")
-  return wp and wp.reach_range == 8 and not wp.is_melded
+  return wp and wp.reach_range == 2 and not wp.is_melded
 end
 
 function target_shield_skill()
@@ -2332,7 +2333,7 @@ function is_spellbook(book_name)
 end
 
 function see_spellbooks_to_burn()
-  return see_item("name_callback", 8, is_spellbook)
+  return see_item("name_callback", LOS, is_spellbook)
          and not see_item("name_callback", 0, is_spellbook)
 end
 -----------------------------------------
@@ -2489,10 +2490,10 @@ function plan_hydra_destruction()
     return false
   end
   local x,y
-  for x = -6,6 do
-    for y = -6,6 do
+  for x = -5,5 do
+    for y = -5,5 do
       m = monster_array[x][y]
-      if m and string.find(m:desc(), "hydra") and (x*x + y*y <= 37) then
+      if m and string.find(m:desc(), "hydra") then
         say("INVOKING MAJOR DESTRUCTION")
         for letter, abil in pairs(you.ability_table()) do
           if abil == "Major Destruction" then
@@ -2827,7 +2828,7 @@ function assess_square(x,y)
   end
   cloud = view.cloud_at(x,y)
   -- nonadjacent monsters who might be able to attack you (ranged/reaching/fast)
-  a.ranged = count_ranged(x,y,8)
+  a.ranged = count_ranged(x,y,LOS)
   -- adjacent monsters
   a.adjacent = count_nearby(x,y,1)
   -- corners - avoid these if not cleaving
@@ -3007,9 +3008,9 @@ function plan_burn_spellbooks()
 end
 
 function want_to_bia()
-  if check_monsters(8, bia_necessary_monsters) or you.piety_rank() > 4 and
+  if check_monsters(LOS, bia_necessary_monsters) or you.piety_rank() > 4 and
      ((want_to_berserk() and not can_berserk()) or
-     check_monsters(8, bia_monsters)) then
+     check_monsters(LOS, bia_monsters)) then
     if count_bia(4) == 0 and not you.teleporting() then
       return true
     end
@@ -3019,7 +3020,7 @@ end
 
 function want_to_sgd()
   if you.skill("Invocations") >= 8 and
-     (check_monsters(8, bia_monsters) or hp_is_low(50) and immediate_danger) then
+     (check_monsters(LOS, bia_monsters) or hp_is_low(50) and immediate_danger) then
     if count_sgd(4) == 0 and not you.teleporting() then
       return true
     end
@@ -3039,11 +3040,11 @@ function dd_want_to_teleport()
 end
 
 function want_to_teleport()
-  if count_hostile_sgd(8) > 0 then
+  if count_hostile_sgd(LOS) > 0 then
     sgd_timer = you.turns()
     return true
   end
-  if you.xl() <= 17 and not can_berserk() and count_big_slimes(8) > 0 then
+  if you.xl() <= 17 and not can_berserk() and count_big_slimes(LOS) > 0 then
     return true
   end
   if you.race() == "Deep Dwarf" then
@@ -3103,7 +3104,7 @@ function want_to_orbrun_heal_wounds()
 end
 
 function want_to_orbrun_haste()
-  return ((count_pan_lords(8) > 0) or check_monsters(8, scary_monsters))
+  return ((count_pan_lords(LOS) > 0) or check_monsters(LOS, scary_monsters))
 end
 
 function want_to_orbrun_might()
@@ -3111,15 +3112,15 @@ function want_to_orbrun_might()
 end
 
 function want_resistance()
-  return (check_monsters(8, fire_resistance_monsters) and you.res_fire() < 3
-          or check_monsters(8, cold_resistance_monsters) and you.res_cold() < 3
-          or check_monsters(8, elec_resistance_monsters) and you.res_shock() < 1
-          or check_monsters(8, pois_resistance_monsters) and
+  return (check_monsters(LOS, fire_resistance_monsters) and you.res_fire() < 3
+          or check_monsters(LOS, cold_resistance_monsters) and you.res_cold() < 3
+          or check_monsters(LOS, elec_resistance_monsters) and you.res_shock() < 1
+          or check_monsters(LOS, pois_resistance_monsters) and
              you.res_poison() < 1)
 end
 
 function want_to_hand()
-  return check_monsters(8, hand_monsters)
+  return check_monsters(LOS, hand_monsters)
 end
 
 function want_to_berserk()
@@ -3145,7 +3146,7 @@ function plan_wait_for_melee()
   is_waiting = false
   if sense_danger(1) or (have_reaching() and sense_danger(2))
      or (not options.autopick_on) or
-     you.berserk() or you.have_orb() or count_bia(8) > 0 or count_sgd(8) > 0 or
+     you.berserk() or you.have_orb() or count_bia(LOS) > 0 or count_sgd(LOS) > 0 or
      not view.is_safe_square(0,0) or
      view.feature_at(0,0) == "shallow_water" and not you.flying() or
      where:find("Abyss") then
@@ -4249,8 +4250,8 @@ function plan_step_towards_lair()
   if stepped_on_lair or not found_branch("L") then
     return false
   end
-  for x = -8,8 do
-    for y = -8,8 do
+  for x = -LOS,LOS do
+    for y = -LOS,LOS do
       if view.feature_at(x,y) == "enter_lair"
          and you.see_cell_no_trans(x,y) then
         if x == 0 and y == 0 then
@@ -4631,8 +4632,8 @@ function plan_swamp_clouds_hack()
       if supdist(x,y) > 0 and view.is_safe_square(x,y)
          and not view.withheld(x,y) and not monster_in_way(x,y) then
         dist = 11
-        for x2 = -8,8 do
-          for y2 = -8,8 do
+        for x2 = -LOS,LOS do
+          for y2 = -LOS,LOS do
             if (view.cloud_at(x2,y2) == "freezing vapour"
                 or view.cloud_at(x2,y2) == "foul pestilence")
                and you.see_cell_no_trans(x2,y2) then
@@ -4654,8 +4655,8 @@ function plan_swamp_clouds_hack()
     magic(delta_to_vi(bestx,besty) .. "Y")
     return true
   end
-  for x = -8,8 do
-    for y = -8,8 do
+  for x = -LOS,LOS do
+    for y = -LOS,LOS do
       if (view.cloud_at(x,y) == "freezing vapour"
           or view.cloud_at(x,y) == "foul pestilence")
          and you.see_cell_no_trans(x,y) then
@@ -5540,7 +5541,7 @@ function ready()
     crawl.flush_input()
     crawl.more_autoclear(true)
     update_monster_array()
-    danger = sense_danger(8)
+    danger = sense_danger(LOS)
     immediate_danger = sense_immediate_danger()
     sense_sigmund()
     if have_message then
