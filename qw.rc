@@ -3359,7 +3359,7 @@ function plan_abyss_rest()
 end
 
 function want_pray()
-  return (you.god() == "Trog")
+  return false
 end
 
 function want_to_burn_spellbooks()
