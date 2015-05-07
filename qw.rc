@@ -2397,7 +2397,8 @@ function want_permafood()
   end
   return (you.hunger_name() == "near starving"
           or you.hunger_name() == "very hungry"
-             and (where == "Snake:5" or where == "Spider:5"
+             and (where == "Snake:4" or where == "Spider:4"
+                  or where == "Swamp:4" or where == "Shoals:4"
                   or you.xl() >= 18 or intrinsic_gourmand())
           or you.hunger_name() == "starving")
 end
@@ -4326,16 +4327,16 @@ function plan_new_travel()
       travel_destination = "D"
     end
   end
-  if where == "Snake:5" and you.have_rune("serpentine") then
+  if where == "Snake:4" and you.have_rune("serpentine") then
     travel_destination = "D"
   end
-  if where == "Swamp:5" and you.have_rune("decaying") then
+  if where == "Swamp:4" and you.have_rune("decaying") then
     travel_destination = "D"
   end
-  if where == "Spider:5" and you.have_rune("gossamer") then
+  if where == "Spider:4" and you.have_rune("gossamer") then
     travel_destination = "D"
   end
-  if where == "Shoals:5" and you.have_rune("barnacled") then
+  if where == "Shoals:4" and you.have_rune("barnacled") then
     travel_destination = "D"
   end
   if where == "Vaults:5" and you.have_rune("silver") then
@@ -4601,7 +4602,7 @@ function plan_orbrun_holy_word()
 end
 
 function plan_swamp_clear_exclusions()
-  if where ~= "Swamp:5" then
+  if where ~= "Swamp:4" then
     return false
   end
   magic("X" .. control('e'))
@@ -4609,7 +4610,7 @@ function plan_swamp_clear_exclusions()
 end
 
 function plan_swamp_go_to_rune()
-  if where ~= "Swamp:5" or you.have_rune("decaying") then
+  if where ~= "Swamp:4" or you.have_rune("decaying") then
     return false
   end
   magic(control('f') .. "@decaying rune" .. "\ra\r")
@@ -4617,7 +4618,7 @@ function plan_swamp_go_to_rune()
 end
 
 function plan_swamp_clouds_hack()
-  if where ~= "Swamp:5" then
+  if where ~= "Swamp:4" then
     return false
   end
   if you.have_rune("decaying") and can_teleport() and teleport() then
@@ -4660,7 +4661,7 @@ function plan_swamp_clouds_hack()
       if (view.cloud_at(x,y) == "freezing vapour"
           or view.cloud_at(x,y) == "foul pestilence")
          and you.see_cell_no_trans(x,y) then
-        return random_step("Swamp:5")
+        return random_step("Swamp:4")
       end
     end
   end
