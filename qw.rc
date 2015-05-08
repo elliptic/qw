@@ -1900,6 +1900,7 @@ function monster_in_way(dx,dy)
   return (m and (m:attitude() <= ATT_NEUTRAL and not kill_plant_mode or
                  m:attitude() > ATT_NEUTRAL and
                  (m:is_constricted() or m:is_caught()
+                  or m:status("petrified")
                   or view.feature_at(0,0) == "deep_water"
                   or view.feature_at(0,0) == "lava"
                   or view.feature_at(0,0) == "trap_zot")))
