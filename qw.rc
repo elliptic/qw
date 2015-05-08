@@ -3673,20 +3673,20 @@ function plan_use_good_consumables()
         return drink(it)
       end
       if it.name():find("cure mutation") then
-        if you.mutation("slow healing") > 0 and you.race() ~= "Deep Dwarf"
+        if base_mutation("slow healing") > 0 and you.race() ~= "Deep Dwarf"
            and you.race() ~= "Ghoul" or
-           you.mutation("dopey") > 1 or
-           intrinsic_like_dex() and you.mutation("clumsy") > 1 or
-           you.mutation("teleportitis") > 0 or
-           you.mutation("deformed body") > 0 and you.race() ~= "Naga"
+           base_mutation("dopey") > 1 or
+           intrinsic_like_dex() and base_mutation("clumsy") > 1 or
+           base_mutation("teleportitis") > 0 or
+           base_mutation("deformed body") > 0 and you.race() ~= "Naga"
            and you.race() ~= "Centaur" or
-           you.mutation("berserk") > 0 or
-           you.mutation("deterioration") > 1 or
-           you.mutation("blurry vision") > 0 or
-           you.mutation("frail") > 0 or
-           you.mutation("forlorn") > 0 or
-           you.mutation("no device heal") > 0 and you.race() ~= "Vine Stalker" or
-           you.mutation("MP-powered wands") > 0
+           base_mutation("berserk") > 0 or
+           base_mutation("deterioration") > 1 or
+           base_mutation("blurry vision") > 0 or
+           base_mutation("frail") > 0 or
+           base_mutation("forlorn") > 0 or
+           base_mutation("no device heal") > 0 and you.race() ~= "Vine Stalker" or
+           base_mutation("MP-powered wands") > 0
            then
           return drink(it)
         end
@@ -3694,6 +3694,10 @@ function plan_use_good_consumables()
     end
   end
   return false
+end
+
+function base_mutation(str)
+  return you.mutation(str) - you.temp_mutation(str)
 end
 
 function plan_zap_id()
