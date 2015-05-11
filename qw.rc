@@ -4896,6 +4896,10 @@ function attack_melee(x, y)
       return
     end
   end
+  if monster_array[x][y]:attitude() == ATT_NEUTRAL then
+    magic(control(delta_to_vi(x, y)))
+    return
+  end
   magic(delta_to_vi(x, y) .. "Y")
 end
 
