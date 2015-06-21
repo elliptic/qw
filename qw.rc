@@ -1734,7 +1734,7 @@ function sense_immediate_danger()
   for _,e in ipairs(enemy_list) do
     if supdist(e.x,e.y) <= 2 then
       return true
-    elseif supdist(e.x,e.y) <= 3 and e.m:reach_range() > 2 then
+    elseif supdist(e.x,e.y) <= 3 and e.m:reach_range() >= 2 then
       return true
     elseif is_ranged(e.m) then
       return true
@@ -2037,7 +2037,7 @@ function count_ranged(cx, cy, r)
   for _,e in ipairs(enemy_list) do
     local dist = supdist(cx-e.x,cy-e.y)
     if dist > 1 and dist <= r then
-      if dist == 2 and (e.m:reach_range() > 2 or is_fast(e.m))
+      if dist == 2 and (e.m:reach_range() >= 2 or is_fast(e.m))
          or is_ranged(e.m) then
         i = i+1
       end
@@ -2068,7 +2068,7 @@ function count_slow_nearby(cx, cy, r)
          then
         m = monster_array[cx+x][cy+y]
         if mon_speed_num(m) < player_speed_num()
-           and not is_ranged(m) and m:reach_range() <= 2 then
+           and not is_ranged(m) and m:reach_range() < 2 then
           i = i+1
         end
       end
@@ -3175,7 +3175,7 @@ function plan_wait_for_melee()
       wait_count = 0
       return false
     end
-    if e.m:reach_range() > 2 and supdist(e.x,e.y) <= 2 then
+    if e.m:reach_range() >= 2 and supdist(e.x,e.y) <= 2 then
       wait_count = 0
       return false
     end
