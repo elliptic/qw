@@ -164,12 +164,16 @@ df += scrolls? of (amnesia)
 df += scrolls? of (curse armour|curse jewellery|curse weapon)
 df += scrolls? of (immolation|noise|random uselessness|torment)
 # keep: curing,heal wounds,haste,cancellation,resistance,experience,
-#       might,beneficial mutation,cure mutation,restore abilities
-ae += potions? of (brilliance|magic|berserk rage)
+#       might,beneficial mutation,cure mutation,restore abilities,berserk rage (if appropriate)
+ae += potions? of (brilliance|magic)
 ae += potions? of (flight|invisibility|agility)
 ae += potions? of (ambrosia|decay|degeneration|mutation)
 ae += potions? of (poison|lignification)
-df += potions? of (brilliance|magic|berserk rage)
+df += potions? of (brilliance|magic)
+: if you.class() == "Berserker" or (you.race() == "Mummy" or you.race() == "Ghoul" or you.race() == "Formicid") then
+df += potions? of berserk rage
+ae += potions? of berserk rage
+:end
 df += potions? of (flight|invisibility|agility)
 df += potions? of (ambrosia|decay|degeneration|mutation)
 df += potions? of (poison|lignification)
@@ -1609,12 +1613,23 @@ function can_zap()
   return true
 end
 
+function can_trog_berserk()
+  return you.piety_rank() >= 1 and you.god() == "Trog"
+end
+
+function can_quaff_berserk()
+  if find_item("potion", "berserk") then
+    return true
+  else
+    return false
+  end
+end
+
 function can_berserk()
   return (not (you.berserk() or you.confused() or you.silenced() or
           you.exhausted() or you.mesmerised() or
           too_hungry_to_berserk() or
-          you.piety_rank() < 1 or
-          you.god() ~= "Trog" or
+          (not can_trog_berserk() and not can_quaff_berserk()) or
           you.transform() == "tree" or
           you.transform() == "wisp" or
           you.transform() == "lich" or
@@ -2464,7 +2479,11 @@ function chop()
 end
 
 function berserk()
-  use_ability("Berserk")
+  if can_trog_berserk() then
+    use_ability("Berserk")
+  elseif can_quaff_berserk() then
+    drink_by_name("berserk")
+  end
 end
 
 function hand()
