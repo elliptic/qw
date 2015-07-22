@@ -4041,16 +4041,21 @@ function want_to_stairdance_up()
     return false
   end
   local e
+  local adjacent, remote, ranged
+  adjacent = 0
+  remote = 0
+  -- ranged = count_ranged(0, 0, LOS)
   for _,e in ipairs(enemy_list) do
     local dist = supdist(e.x,e.y)
     if dist == 1 then
       if e.m:stabbability() == 0 and can_use_stairs(e.m:name()) then
-        stairdance_count[where] = n + 1
-        return true
+        adjacent = adjacent + 1
       end
+    elseif dist >= 2 then
+      remote = remote + 1
     end
   end
-  return false
+  return (adjacent > 0) and (remote > 0)
 end
 
 -- adding some clua for this would be better
@@ -4078,6 +4083,8 @@ function plan_stairdance_up()
     if not travel_destination then
       travel_destination = cur_branch()
     end
+    local n = stairdance_count[where] or 0
+    stairdance_count[where] = n + 1
     say("STAIRDANCE")
     magic("<")
     return true
