@@ -1560,21 +1560,6 @@ function dangerous_to_rest()
   return false
 end
 
-function dangerous_terrain_adjacent()
-  if you.flying() then
-    return false
-  end
-  for i = -1,1 do
-    for j = -1,1 do
-      if view.feature_at(i,j) == "deep_water" or
-         view.feature_at(i,j) == "lava" then
-        return true
-      end
-    end
-  end
-  return false
-end
-
 function transformed()
   return (you.transform() ~= "")
 end
@@ -4781,7 +4766,7 @@ end
 function move_towards(dx, dy)
   if you.transform() == "tree" or you.transform() == "fungus"
      or you.confused() and
-        (dangerous_terrain_adjacent() or count_bia(1) > 0 or count_sgd(1) > 0) then
+        (count_bia(1) > 0 or count_sgd(1) > 0) then
     magic("s")
     return true
   end
@@ -4891,7 +4876,7 @@ function attack_melee(x, y)
     if count_bia(1) > 0 or count_sgd(1) > 0 then
       magic("s")
       return
-    elseif dangerous_terrain_adjacent() or you.transform() == "tree" then
+    elseif you.transform() == "tree" then
       magic(control(delta_to_vi(x, y)) .. "Y")
       return
     end
