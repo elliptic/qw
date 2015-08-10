@@ -152,24 +152,28 @@ df := drop_filter
 ae =
 df =
 # keep: identify,teleportation,remove curse,enchant weapon,
-#       enchant armour,acquirement,recharging,holy word
+#       enchant armour,acquirement,recharging,holy word,blinking
 ae += scrolls? of (summoning|vulnerability|brand weapon)
 ae += scrolls? of (magic mapping|fog|fear|silence)
-ae += scrolls? of (blinking|amnesia)
+ae += scrolls? of (amnesia)
 ae += scrolls? of (curse armour|curse jewellery|curse weapon)
 ae += scrolls? of (immolation|noise|random uselessness|torment)
 df += scrolls? of (summoning|vulnerability|brand weapon)
 df += scrolls? of (magic mapping|fog|fear|silence)
-df += scrolls? of (blinking|amnesia)
+df += scrolls? of (amnesia)
 df += scrolls? of (curse armour|curse jewellery|curse weapon)
 df += scrolls? of (immolation|noise|random uselessness|torment)
 # keep: curing,heal wounds,haste,cancellation,resistance,experience,
-#       might,beneficial mutation,cure mutation,restore abilities
-ae += potions? of (brilliance|magic|berserk rage)
+#       might,beneficial mutation,cure mutation,restore abilities,berserk rage (if appropriate)
+ae += potions? of (brilliance|magic)
 ae += potions? of (flight|invisibility|agility)
 ae += potions? of (ambrosia|decay|degeneration|mutation)
 ae += potions? of (poison|lignification)
-df += potions? of (brilliance|magic|berserk rage)
+df += potions? of (brilliance|magic)
+: if you.class() == "Berserker" or (you.race() == "Mummy" or you.race() == "Ghoul" or you.race() == "Formicid") then
+df += potions? of berserk rage
+ae += potions? of berserk rage
+:end
 df += potions? of (flight|invisibility|agility)
 df += potions? of (ambrosia|decay|degeneration|mutation)
 df += potions? of (poison|lignification)
@@ -1594,12 +1598,23 @@ function can_zap()
   return true
 end
 
+function can_trog_berserk()
+  return you.piety_rank() >= 1 and you.god() == "Trog"
+end
+
+function can_quaff_berserk()
+  if find_item("potion", "berserk") then
+    return true
+  else
+    return false
+  end
+end
+
 function can_berserk()
   return (not (you.berserk() or you.confused() or you.silenced() or
           you.exhausted() or you.mesmerised() or
           too_hungry_to_berserk() or
-          you.piety_rank() < 1 or
-          you.god() ~= "Trog" or
+          (not can_trog_berserk() and not can_quaff_berserk()) or
           you.transform() == "tree" or
           you.transform() == "wisp" or
           you.transform() == "lich" or
@@ -2323,6 +2338,21 @@ function see_spellbooks_to_burn()
   return see_item("name_callback", LOS, is_spellbook)
          and not see_item("name_callback", 0, is_spellbook)
 end
+
+-- TODO: return the nearest one
+function get_upstairs_location(r)
+  r = r or LOS
+  local x, y
+  for x = -r,r do
+    for y = -r,r do
+      if you.see_cell(x,y) and is_upstairs(view.feature_at(x,y)) then
+        return x, y
+      end
+    end
+  end
+
+  return nil
+end
 -----------------------------------------
 -- "plans" - functions that take actions, and logic to determine which actions
 --           to take.
@@ -2434,7 +2464,11 @@ function chop()
 end
 
 function berserk()
-  use_ability("Berserk")
+  if can_trog_berserk() then
+    use_ability("Berserk")
+  elseif can_quaff_berserk() then
+    drink_by_name("berserk")
+  end
 end
 
 function hand()
@@ -3966,16 +4000,20 @@ function ready_for_lair()
   return true
 end
 
-function want_to_stairdance_up()
-  local feat = view.feature_at(0,0)
-  if not (feat:find("stone_stairs_up") or
+function is_upstairs(feat)
+  return feat and (feat:find("stone_stairs_up") or
           feat:find("exit_") and (feat == "exit_hell" or feat == "exit_vaults"
           or feat == "exit_zot" or feat == "exit_slime_pits"
           or feat == "exit_orcish_mines" or feat == "exit_lair"
           or feat == "exit_crypt" or feat == "exit_snake_pit"
           or feat == "exit_elven_halls" or feat == "exit_tomb"
           or feat == "exit_swamp" or feat == "exit_shoals"
-          or feat == "exit_spider_nest" or feat == "exit_depths")) then
+          or feat == "exit_spider_nest" or feat == "exit_depths"))
+end
+
+function want_to_stairdance_up()
+  local feat = view.feature_at(0,0)
+  if not is_upstairs(feat) then
     return false
   end
   local n = stairdance_count[where] or 0
@@ -3988,16 +4026,21 @@ function want_to_stairdance_up()
     return false
   end
   local e
+  local adjacent, remote, ranged
+  adjacent = 0
+  remote = 0
+  -- ranged = count_ranged(0, 0, LOS)
   for _,e in ipairs(enemy_list) do
     local dist = supdist(e.x,e.y)
     if dist == 1 then
       if e.m:stabbability() == 0 and can_use_stairs(e.m:name()) then
-        stairdance_count[where] = n + 1
-        return true
+        adjacent = adjacent + 1
       end
+    elseif dist >= 2 then
+      remote = remote + 1
     end
   end
-  return false
+  return (adjacent > 0) and (remote > 0)
 end
 
 -- adding some clua for this would be better
@@ -4025,6 +4068,8 @@ function plan_stairdance_up()
     if not travel_destination then
       travel_destination = cur_branch()
     end
+    local n = stairdance_count[where] or 0
+    stairdance_count[where] = n + 1
     say("STAIRDANCE")
     magic("<")
     return true
@@ -4585,6 +4630,25 @@ function plan_orbrun_teleport()
   return false
 end
 
+function plan_blink_to_upstairs()
+  -- the only -cTele reason as for 0.17-a0
+  if you.have_orb() then
+    return false
+  end
+  
+  if not can_teleport() then
+    return false
+  end
+
+  local x, y
+  x, y = get_upstairs_location()
+  if x and supdist(x,y) > 1 and want_to_teleport() then
+    return blink_delta(x, y)
+  end
+
+  return false
+end
+
 function plan_orbrun_holy_word()
   if can_read() and want_to_orbrun_holy_word() then
     return holy_word()
@@ -4715,6 +4779,14 @@ function read_by_name(name)
   return false
 end
 
+function read_by_name2(name, etc)
+  local c = find_item("scroll", name)
+  if (c and read2(c, etc)) then
+    return true
+  end
+  return false
+end
+
 function drink_by_name(name)
   local c = find_item("potion", name)
   if (c and drink(c)) then
@@ -4741,6 +4813,11 @@ function teleport()
     return true
   end
   return false
+end
+
+function blink_delta(dx, dy)
+  local s = vector_move(dx, dy)
+  return read_by_name2("blinking", s.."\r")
 end
 
 function holy_word()
@@ -5034,6 +5111,7 @@ plan_emergency = cascade {
   {plan_cure_statzero, "cure_statzero"},
   {plan_cure_confusion, "cure_confusion"},
   {plan_remove_terrible_jewellery, "remove_terrible_jewellery"},
+  {plan_blink_to_upstairs, "blink_to_upstairs"},
   {plan_teleport, "teleport"},
   {plan_dd_recharge_teleport, "dd_recharge_teleport"},
   {plan_cure_bad_poison, "cure_bad_poison"},
