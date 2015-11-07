@@ -164,7 +164,7 @@ df += scrolls? of (blinking|amnesia)
 df += scrolls? of (curse armour|curse jewellery|curse weapon)
 df += scrolls? of (immolation|noise|random uselessness|torment)
 # keep: curing,heal wounds,haste,cancellation,resistance,experience,
-#       might,beneficial mutation,cure mutation,restore abilities
+#       might,beneficial mutation,cure mutation
 ae += potions? of (brilliance|magic|berserk rage)
 ae += potions? of (flight|invisibility|agility)
 ae += potions? of (ambrosia|decay|degeneration|mutation)
@@ -4560,32 +4560,6 @@ function plan_cure_starving()
   return false
 end
 
-function plan_cure_statzero()
-  local str, mstr = you.strength()
-  local int, mint = you.intelligence()
-  local dex, mdex = you.dexterity()
-  if str <= 0 and mstr > 0 or int <= 0 and mint > 0 or dex <= 0 and mdex > 0
-     then
-    return drink_by_name("restore abilities")
-  end
-  return false
-end
-
-function plan_cure_bad_statdrain()
-  if you.berserk() or transformed() then
-    return false
-  end
-  local str, mstr = you.strength()
-  local int, mint = you.intelligence()
-  local dex, mdex = you.dexterity()
-  if str <= mstr - 3 or str <= 3 and str < mstr or
-     int <= mint - 3 or int <= 3 and int < mint or
-     dex <= mdex - 3 or dex <= 3 and dex < mdex then
-    return drink_by_name("restore abilities")
-  end
-  return false
-end
-
 function plan_teleport()
   if can_teleport() and want_to_teleport() then
     -- return false
@@ -5048,7 +5022,6 @@ plan_pre_explore2 = cascade {
 
 plan_emergency = cascade {
   {plan_cure_starving, "cure_starving"},
-  {plan_cure_statzero, "cure_statzero"},
   {plan_cure_confusion, "cure_confusion"},
   {plan_remove_terrible_jewellery, "remove_terrible_jewellery"},
   {plan_teleport, "teleport"},
@@ -5071,7 +5044,6 @@ plan_emergency = cascade {
 
 plan_orbrun_emergency = cascade {
   {plan_cure_starving, "cure_starving"},
-  {plan_cure_statzero, "cure_statzero"},
   {plan_cure_confusion, "cure_confusion"},
   {plan_orbrun_teleport, "orbrun_teleport"},
   {plan_dd_recharge_teleport, "dd_recharge_teleport"},
@@ -5145,7 +5117,6 @@ plan_move = cascade {
   {plan_wait_wait, "wait_wait"},
   {plan_attack, "attack"},
   {plan_cure_poison, "cure_poison"},
-  {plan_cure_bad_statdrain, "cure_bad_statdrain"},
   {plan_flail_at_invis, "try_flail_at_invis"},
   {plan_burn_spellbooks, "try_burn_spellbooks"},
   {plan_eatrest, "eatrest"},
@@ -5172,7 +5143,6 @@ plan_orbrun_move = cascade {
   {plan_orbrun_emergency, "orbrun_emergency"},
   {plan_attack, "attack"},
   {plan_cure_poison, "cure_poison"},
-  {plan_cure_bad_statdrain, "cure_bad_statdrain"},
   {plan_orbrun_eatrest, "orbrun_eatrest"},
   {plan_go_up, "go_up"},
   {plan_fly, "fly"},
@@ -5190,7 +5160,6 @@ plan_abyss_move = cascade {
   {plan_emergency, "emergency"},
   {plan_attack, "attack"},
   {plan_cure_poison, "cure_poison"},
-  {plan_cure_bad_statdrain, "cure_bad_statdrain"},
   {plan_flail_at_invis, "try_flail_at_invis"},
   {plan_abyss_eatrest, "abyss_eatrest"},
   {plan_pre_explore, "pre_explore"},
