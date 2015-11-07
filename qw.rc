@@ -3312,6 +3312,7 @@ function eat_permafood(prefer_ration)
     magic("ee")
     return true
   end
+  return false
 end
 
 function count_permafood()
