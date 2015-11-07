@@ -1560,6 +1560,10 @@ function dangerous_to_rest()
   return false
 end
 
+function starving()
+  return (you.hunger_name() == "starving" or you.hunger_name() == "fainting")
+end
+
 function transformed()
   return (you.transform() ~= "")
 end
@@ -1611,20 +1615,20 @@ end
 function can_hand()
   return (not (you.berserk() or you.confused() or you.silenced() or
           you.regenerating() or
-          you.hunger_name() == "starving" or you.piety_rank() < 2 or
+          starving() or you.piety_rank() < 2 or
           you.god() ~= "Trog"))
 end
 
 function can_bia()
   return (not (you.berserk() or you.confused() or you.silenced() or
-          you.hunger_name() == "starving" or you.piety_rank() < 4 or
+          starving() or you.piety_rank() < 4 or
           you.god() ~= "Trog"))
 end
 
 function can_sgd()
   local hp,mhp = you.hp()
   return (not (you.berserk() or you.confused() or you.silenced() or
-          you.hunger_name() == "starving" or you.piety_rank() < 5 or
+          starving() or you.piety_rank() < 5 or
           hp <= 10 or
           you.god() ~= "Makhleb"))
 end
@@ -1632,7 +1636,7 @@ end
 function can_destruction()
   local hp,mhp = you.hp()
   return (not (you.berserk() or you.confused() or you.silenced() or
-          you.hunger_name() == "starving" or you.piety_rank() < 4 or
+          starving() or you.piety_rank() < 4 or
           hp <= 6 or
           you.god() ~= "Makhleb"))
 end
@@ -1650,7 +1654,7 @@ function too_hungry_to_berserk()
             and you.hunger_name() ~= "very full"
             and you.hunger_name() ~= "full")
   end
-  return (you.hunger_name() == "starving" or
+  return (starving() or
           you.hunger_name() == "near starving" or
           you.hunger_name() == "very hungry")
 end
@@ -2387,7 +2391,7 @@ function want_permafood()
              and (where == "Snake:4" or where == "Spider:4"
                   or where == "Swamp:4" or where == "Shoals:4"
                   or you.xl() >= 18 or intrinsic_gourmand())
-          or you.hunger_name() == "starving")
+          or starving())
 end
 
 function want_chunk()
@@ -2553,7 +2557,7 @@ function plan_dd_recharge_teleport()
   if you.race() ~= "Deep Dwarf" then
     return false
   end
-  if you.berserk() or you.confused() or you.hunger_name() == "starving" then
+  if you.berserk() or you.confused() or starving() then
     return false
   end
   if count_item("scroll","teleportation") > 0 then
@@ -2608,7 +2612,7 @@ function plan_dd_orbrun_recharge_hasting()
   if danger then
     return false
   end
-  if you.berserk() or you.confused() or you.hunger_name() == "starving" then
+  if you.berserk() or you.confused() or starving() then
     return false
   end
   if count_item("potion","haste") > 0 then
@@ -2657,7 +2661,7 @@ function plan_dd_recharge_heal_wounds()
   if you.race() ~= "Deep Dwarf" then
     return false
   end
-  if you.berserk() or you.confused() or you.hunger_name() == "starving" then
+  if you.berserk() or you.confused() or starving() then
     return false
   end
   local charge_bound = immediate_danger and 1 or 3
@@ -4357,7 +4361,7 @@ end
 function plan_fly()
   if you.xl() >= 14 and intrinsic_flight() and not you.flying() then
     local a,b = you.mp()
-    if a >= 3 and not you.rooted() and you.hunger_name() ~= "starving" then
+    if a >= 3 and not you.rooted() and not starving() then
       if use_ability("Fly") then
         say("FLYING.")
         return true
@@ -4408,7 +4412,7 @@ function plan_find_downstairs()
 end
 
 function plan_stuck()
-  if you.hunger_name() == "starving" then
+  if starving() then
     return random_step("starving")
   end
   stuck_turns = stuck_turns + 1
