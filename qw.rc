@@ -3276,7 +3276,7 @@ function drink_blood()
   return drink_by_name("blood")
 end
 
-function eat_permafood()
+function eat_permafood(prefer_ration)
   if you.race() == "Vampire" then
     return drink_blood()
   end
@@ -3287,8 +3287,12 @@ function eat_permafood()
     if it.class(true) == "food" and not bad_food(it) then
       local name = it.name()
       local prefer
-      if name:find("ration") or name:find("royal") then
-        prefer = 1
+      if name:find("ration") then
+        if prefer_ration then
+          prefer = 5
+        else
+          prefer = 1
+        end
       elseif name:find("chunk") then
         prefer = 0
       else
@@ -4548,6 +4552,14 @@ function plan_cure_confusion()
   return false
 end
 
+function plan_cure_starving()
+  if you.hunger_name() == "fainting"
+     or (you.hunger_name() == "starving" and not hp_is_low(50)) then
+    return eat_permafood(true)
+  end
+  return false
+end
+
 function plan_cure_statzero()
   local str, mstr = you.strength()
   local int, mint = you.intelligence()
@@ -5035,6 +5047,7 @@ plan_pre_explore2 = cascade {
 } -- hack
 
 plan_emergency = cascade {
+  {plan_cure_starving, "cure_starving"},
   {plan_cure_statzero, "cure_statzero"},
   {plan_cure_confusion, "cure_confusion"},
   {plan_remove_terrible_jewellery, "remove_terrible_jewellery"},
@@ -5057,6 +5070,7 @@ plan_emergency = cascade {
 } -- hack
 
 plan_orbrun_emergency = cascade {
+  {plan_cure_starving, "cure_starving"},
   {plan_cure_statzero, "cure_statzero"},
   {plan_cure_confusion, "cure_confusion"},
   {plan_orbrun_teleport, "orbrun_teleport"},
