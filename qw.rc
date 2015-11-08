@@ -888,6 +888,12 @@ function item_is_dominated(it)
                  sub == "ring of see invisible" or
                  sub == "ring of sustain abilities" then
                 return true
+              elseif sub == "ring of protection from fire" or
+                     sub == "ring of protection from cold" then
+                num_slots = num_slots - 1
+                if num_slots == 0 then
+                  return true
+                end
               end
             end
           end
