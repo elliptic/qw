@@ -177,13 +177,13 @@ df += potions? of (poison|lignification)
 ae += potions? of blood
 df += potions? of blood
 : end
-# keep: heal wounds,hasting,teleportation
+# keep: heal wounds,hasting,teleportation,digging/disint
 ae += wand of (random effects|slowing|magic darts|flame|frost|confusion)
 ae += wand of (enslavement|paralysis|invisibility|lightning|fireball)
-ae += wand of (cold|digging|disintegration|draining|fire|polymorph)
+ae += wand of (cold|draining|fire|polymorph)
 df += wand of (random effects|slowing|magic darts|flame|frost|confusion)
 df += wand of (enslavement|paralysis|invisibility|lightning|fireball)
-df += wand of (cold|digging|disintegration|draining|fire|polymorph)
+df += wand of (cold|draining|fire|polymorph)
 
 ################################################################
 # now the lua, beginning with options to set while qw is running
@@ -828,6 +828,35 @@ function ring_value(it, cur, it2)
   return value+val1,value+val2
 end
 
+-- assumes that the wand is of a type that you would normally want
+function want_wand(it)
+  sub = it.subtype()
+  if sub == nil then
+    return true
+  end
+  if it.name():find("empty") or it.plus == 0 then
+    for it2 in inventory() do
+      if it2.class(true) == "wand" and slot(it2) ~= slot(it) and
+         it2.subtype() == sub then
+        return false
+      end
+    end
+  elseif sub == "digging" or sub == "disintegration" then
+    for it2 in inventory() do
+      if it2.class(true) == "wand" and slot(it2) ~= slot(it) then
+        sub2 = it2.subtype()
+        if sub2 == "digging" or sub2 == "disintegration" then
+          if not it2.name():find("empty") and not it2.name():find("zapped")
+             and (it2.plus == nil or it2.plus > 0) then
+            return false
+          end
+        end
+      end
+    end
+  end
+  return true
+end
+
 function item_is_dominated(it)
   local minv,maxv = equip_value(it)
   if maxv <= 0 then
@@ -924,7 +953,12 @@ function autopickup(it, name)
     return not item_is_dominated(it)
   elseif class == "food" then
     return true
-  elseif class == "potion" or class == "scroll" or class == "wand" then
+  elseif class == "potion" or class == "scroll" then
+    return
+  elseif class == "wand" then
+    if not want_wand(it) then
+      return false
+    end
     return
   elseif class == "missile" then
     return want_missile(it)
@@ -3463,7 +3497,8 @@ end
 
 function plan_drop_other_items()
   for it in inventory() do
-    if it.class(true) == "missile" and not want_missile(it) then
+    if it.class(true) == "missile" and not want_missile(it) or
+       it.class(true) == "wand" and not want_wand(it) then
       say("DROPPING " .. it.name() .. ".")
       magic("d" .. letter(it) .. "\r")
       return true
