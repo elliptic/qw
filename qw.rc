@@ -3696,22 +3696,6 @@ function base_mutation(str)
   return you.mutation(str) - you.temp_mutation(str)
 end
 
-function plan_zap_id()
-  if not can_zap() then
-    return false
-  end
-  for it in inventory() do
-    if it.class(true) == "wand" and
-       not (it.name():find("wand of") or it.name():find("empty")) then
-      l = items.index_to_letter(it.slot)
-      say("ZAPPING " .. it.name() .. ".")
-      magic("V" .. l .. "YY")
-      return true
-    end
-  end
-  return false
-end
-
 function plan_wield_weapon()
   if items.equipped_at("Weapon") or you.berserk() or transformed() then
     return false
@@ -5014,7 +4998,6 @@ plan_pre_explore2 = cascade {
   {plan_upgrade_amulet, "upgrade_amulet"},
   {plan_upgrade_rings, "upgrade_rings"},
   {plan_read_id, "read_id"},
-  {plan_zap_id, "zap_id"},
   {plan_quaff_id, "quaff_id"},
   {plan_use_id_scrolls, "use_id_scrolls"},
   {plan_drop_filtered_items, "try_drop_filtered_items"},
