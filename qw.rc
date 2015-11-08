@@ -22,7 +22,7 @@
 : WATER_RUNE_SECOND = false
 # experimental: get abyssal rune
 : ABYSSAL_RUNE = false
-# not yet implemented: get slimy rune
+# experimental: get slimy rune
 : SLIMY_RUNE = false
 # depth to attempt to dive in ziggurats (0 to turn off)
 # if turned on, this causes annoying throttling delays when played online
@@ -1053,7 +1053,7 @@ local branch_data = {
   {"A", "the Shoals", "Shoals"},
   {"P", "the Snake Pit", "Snake"},
   {"N", "the Spider Nest", "Spider"},
-  --{"M", "the Slime Pits", "Slime"},
+  {"M", "the Slime Pits", "Slime"},
   {"V", "the Vaults", "Vaults"},
   --{"C", "the Crypt", "Crypt"},
   --{"W", "the Tomb", "Tomb"},
@@ -3174,6 +3174,17 @@ function want_to_stay_in_abyss()
          and count_permafood() > 5 and not hp_is_low(60)
 end
 
+function rejecting_slime()
+  local c = find_item("wand", "digging") or
+            find_item("wand", "disintegration")
+  if not c then
+    say("Not doing Slime - no dig source.")
+    SLIMY_RUNE = false
+    return true
+  end
+  return false
+end
+
 function plan_wait_for_melee()
   is_waiting = false
   if sense_danger(1) or (have_reaching() and sense_danger(2))
@@ -4150,7 +4161,7 @@ function plan_go_to_zig()
   if ZIG_DIVE <= 0 then
     return false
   end
-  if you.num_runes() < 3 then
+  if you.num_runes() < rune_goal() then
     return false
   end
   magic(control('f') .. "gateway to a ziggurat" .. "\ra\r")
@@ -4188,11 +4199,20 @@ function plan_go_to_abyss_exit()
   return true
 end
 
+function plan_dive()
+  if in_branch("M") and where ~= "Slime:6" then
+    expect_new_location = true
+    magic("G>")
+    return true
+  end
+  return false
+end
+
 function plan_enter_zig()
   if ZIG_DIVE <= 0 then
     return false
   end
-  if you.num_runes() < 3 then
+  if you.num_runes() < rune_goal() then
     return false
   end
   if view.feature_at(0,0) == "enter_ziggurat" then
@@ -4348,6 +4368,9 @@ function plan_new_travel()
   if where == "Lair:8" then
     if travel.find_deepest_explored("D") == 15 and you.num_runes() < 2 then
       travel_destination = choose_lair_rune_branch()
+    elseif SLIMY_RUNE and you.have_rune("silver") and
+           not you.have_rune("slimy") and not rejecting_slime() then
+      travel_destination = "M"
     else
       travel_destination = "D"
     end
@@ -4367,19 +4390,27 @@ function plan_new_travel()
   if where == "Vaults:5" and you.have_rune("silver") then
     travel_destination = "D"
   end
+  if where == "Slime:6" and you.have_rune("slimy") then
+    travel_destination = "D"
+  end
   if where == "D:15" then
     if you.num_runes() == 1 and not util.contains(c_persist.branches_entered, "V")
        or you.num_runes() == 2 and util.contains(c_persist.branches_entered, "U") then
       travel_destination = "V"
-    elseif you.num_runes() >= 1 and not util.contains(c_persist.branches_entered, "U") and not (EARLY_SECOND_RUNE and you.num_runes() == 1)
-           or you.num_runes() >= 3 then
+    elseif you.num_runes() >= 1 and not util.contains(c_persist.branches_entered, "U") and not (EARLY_SECOND_RUNE and you.num_runes() == 1) then
       travel_destination = "U"
+    elseif you.have_rune("silver") then
+      if SLIMY_RUNE and not you.have_rune("slimy") then
+        travel_destination = "L"
+      else
+        travel_destination = "U"
+      end
     else
       travel_destination = "L"
     end
   end
   if where == "Depths:5" then
-    if you.num_runes() >= 3 then
+    if you.num_runes() >= rune_goal() then
       travel_destination = "Z"
     else
       travel_destination = "D"
@@ -4673,6 +4704,42 @@ function plan_swamp_clouds_hack()
     end
   end
   return plan_stuck_teleport()
+end
+
+function plan_slime_dig_to_rune()
+  if where ~= "Slime:6" or you.have_rune("slimy") then
+    return false
+  end
+  vlist = { {-1,-1}, {-1,1}, {1,-1}, {1,1} }
+  for _,v in ipairs(vlist) do
+    its = items.get_items_at(3*v[1],3*v[2])
+    if its then
+      for _,it in ipairs(its) do
+        if it.name():find("slimy rune") then
+          local c = find_item("wand", "digging") or
+                    find_item("wand", "disintegration")
+          if c and can_zap() then
+            say("ZAPPING " .. item(c).name() .. ".")
+            magic("V" .. letter(c) .. string.upper(delta_to_vi(v[1],v[2])))
+            return true
+          end
+          return false
+        end
+      end
+    end
+  end
+  return false
+end
+
+function plan_slime_go_to_rune()
+  if where ~= "Slime:6" or you.have_rune("slimy") then
+    return false
+  end
+  x = 2*crawl.random2(2)-1
+  y = 2*crawl.random2(2)-1
+  c = delta_to_vi(x,y)
+  magic(control('f') .. "@slimy rune" .. "\ra" .. c .. c .. c .. "\r")
+  return
 end
 
 function plan_stuck_teleport()
@@ -5120,6 +5187,7 @@ plan_explore = cascade {
   {plan_go_to_abyss_portal, "try_go_to_abyss_portal"},
   {plan_go_down_abyss, "go_down_abyss"},
   {plan_go_to_abyss_downstairs, "try_go_to_abyss_downstairs"},
+  {plan_dive, "try_dive"},
   {plan_autoexplore, "try_autoexplore"},
 } -- hack
 
@@ -5160,6 +5228,8 @@ plan_move = cascade {
   {plan_swamp_clear_exclusions, "try_swamp_clear_exclusions"},
   {plan_swamp_go_to_rune, "try_swamp_go_to_rune"},
   {plan_swamp_clouds_hack, "swamp_clouds_hack"},
+  {plan_slime_dig_to_rune, "slime_dig_to_rune"},
+  {plan_slime_go_to_rune, "try_slime_go_to_rune"},
   {plan_stuck_teleport, "stuck_teleport"},
   {plan_stuck, "stuck"},
 } -- hack
