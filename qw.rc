@@ -1040,6 +1040,8 @@ local did_first_turn = false
 local stairdance_count = {}
 local v5_entry_turn
 
+local slime_forgot_map = false
+
 ------------------------------
 -- some tables with hardcoded data about branches/portals/monsters:
 
@@ -4744,6 +4746,15 @@ function plan_slime_go_to_rune()
   return
 end
 
+function plan_slime_forget_map()
+  if where ~= "Slime:6" or slime_forgot_map or you.have_rune("slimy") then
+    return false
+  end
+  slime_forgot_map = true
+  magic("X" .. control('f'))
+  return true
+end
+
 function plan_stuck_teleport()
   if can_teleport() then
     return teleport()
@@ -5231,6 +5242,7 @@ plan_move = cascade {
   {plan_swamp_go_to_rune, "try_swamp_go_to_rune"},
   {plan_swamp_clouds_hack, "swamp_clouds_hack"},
   {plan_slime_dig_to_rune, "slime_dig_to_rune"},
+  {plan_slime_forget_map, "try_slime_forget_map"},
   {plan_slime_go_to_rune, "try_slime_go_to_rune"},
   {plan_stuck_teleport, "stuck_teleport"},
   {plan_stuck, "stuck"},
