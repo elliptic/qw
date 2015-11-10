@@ -442,7 +442,7 @@ function absolute_resist_value(str, n)
       return 200
     end
   elseif str == "rCorr" then
-    return (slime_soon() and 400 or 25)
+    return (slime_soon() and 1200 or 50)
   elseif str == "SInv" then
     return 200
   elseif str == "Spirit" then
@@ -478,7 +478,7 @@ function max_resist_value(str, d)
   elseif str == "MR" then
     return 75*d
   elseif str == "rCorr" then
-    return (ires < 1 and (SLIMY_RUNE and 400 or 25) or 0)
+    return (ires < 1 and (SLIMY_RUNE and 1200 or 50) or 0)
   elseif str == "SInv" then
     return ((ires < 1) and 200 or 0)
   elseif str == "Spirit" then
@@ -749,16 +749,16 @@ function amulet_value(it, cur, it2)
     end
   end
   if subtype == "amulet of faith" then
-    return 10000,10000 -- for now, so we never unequip this
+    return 1000,1000 -- fixed value so we don't unequip for a randart one
   end
   if subtype == "amulet of stasis" then
     return -1,-1
   end
   if it.artefact and not it.fully_identified or not (it.artefact or name:find("amulet of")) then
     if cur then
-      return 5000,5000
+      return 800,800
     else
-      return -1,10000
+      return -1,(SLIMY_RUNE and 1200 or 1000)
     end
   end
   local val1,val2 = total_resist_value(it, cur, it2)
@@ -924,7 +924,7 @@ function should_upgrade(it,old_it)
     return should_equip(it)
   end
   if not it.fully_identified and not should_drop(it) then
-    return true
+    return (old_it.subtype() ~= "amulet of faith")
   end
   return (equip_value(it,true,old_it) > equip_value(old_it,true,old_it))
 end
