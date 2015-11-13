@@ -3174,13 +3174,13 @@ end
 
 function want_to_stay_in_abyss()
   if ABYSSAL_RUNE and you.xl() > 20
-     and where:find("Abyss") and count_permafood() <= 5 then
+     and where:find("Abyss") and count_permafood() <= 10 then
     say("Giving up on abyssal rune: low on food")
     ABYSSAL_RUNE = false
   end
   return ABYSSAL_RUNE and you.xl() > 20
          and not you.have_rune("abyssal") and you.have_rune("silver")
-         and count_permafood() > 5 and not hp_is_low(60)
+         and count_permafood() > 10 and not hp_is_low(60)
 end
 
 function rejecting_slime()
@@ -3298,7 +3298,7 @@ function plan_eat_chunk()
 end
 
 function plan_eat_permafood()
-  if where == "Zot:5" then
+  if where == "Zot:5" or where:find("Zot") and count_permafood() >= 10 then
     return plan_orbrun_eat_permafood()
   end
   if want_permafood() then
