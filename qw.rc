@@ -4267,7 +4267,7 @@ function plan_enter_abyss()
 end
 
 function plan_go_down_abyss()
-  if view.feature_at(0,0) == "abyssal_stair" and want_to_stay_in_abyss() then
+  if view.feature_at(0,0) == "abyssal_stair" and where ~= ABYSS_RUNE_DEPTH and want_to_stay_in_abyss() then
     expect_new_location = true
     magic(">")
     return true
