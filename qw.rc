@@ -111,6 +111,8 @@ note_all_spells = true
 
 fire_order = launcher, rock, javelin, tomahawk
 
+auto_eat_chunks = false
+
 ####################################
 # not sure exactly how important or correct these settings are
 
