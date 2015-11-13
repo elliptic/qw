@@ -22,6 +22,7 @@
 : WATER_RUNE_SECOND = false
 # experimental: get abyssal rune
 : ABYSSAL_RUNE = false
+: ABYSS_RUNE_DEPTH = "Abyss:4"
 # experimental: get slimy rune
 : SLIMY_RUNE = false
 # depth to attempt to dive in ziggurats (0 to turn off)
@@ -4195,7 +4196,7 @@ function plan_go_to_abyss_portal()
 end
 
 function plan_go_to_abyss_downstairs()
-  if (where == "Abyss:1" or where == "Abyss:2") and want_to_stay_in_abyss() then
+  if where:find("Abyss") and where ~= ABYSS_RUNE_DEPTH and want_to_stay_in_abyss() then
     magic("X>\r")
     return true
   end
