@@ -642,8 +642,8 @@ function armour_value(it, cur, it2)
       elseif evp >= 3 then
         value = value - 100
       end
-    elseif intrinsic_heavy_dodgy() then
-      if evp >= 20 and intrinsic_heavy_dodgy() then
+    else
+      if evp >= 20 then
         value = value - 200
       end
       if name:find("pearl dragon") then
@@ -1422,7 +1422,7 @@ function intrinsic_gourmand()
           or you.race() == "Felid")
 end
 
--- these next few functions determine armour/dodging skilling
+-- whether we want to use really heavy armour
 function intrinsic_dodgy()
   local sp = you.race()
   return (sp == "Deep Elf" or sp:find("Draconian") or sp == "Felid"
@@ -1431,16 +1431,8 @@ function intrinsic_dodgy()
           or sp == "Spriggan" or sp == "Troll")
 end
 
-function intrinsic_heavy_dodgy()
-  return (you.race() == "Minotaur" or you.race() == "Deep Dwarf")
-end
-
 function intrinsic_heavy()
-  return (not intrinsic_dodgy() and not intrinsic_heavy_dodgy())
-end
-
-function intrinsic_like_dex()
-  return (intrinsic_dodgy() or intrinsic_heavy_dodgy())
+  return (not intrinsic_dodgy())
 end
 
 function want_buckler()
@@ -2275,6 +2267,15 @@ function armour_ac()
   arm = items.equipped_at("Armour")
   if arm then
     return arm.ac
+  else
+    return 0
+  end
+end
+
+function armour_evp()
+  arm = items.equipped_at("Armour")
+  if arm then
+    return arm.encumbrance
   else
     return 0
   end
@@ -3625,7 +3626,7 @@ function body_armour_is_great(arm)
   else
     return (name:find("gold dragon") or name:find("crystal plate")
             or name:find("plate armour of fire")
-            or name:find("pearl dragon") and intrinsic_heavy_dodgy())
+            or name:find("pearl dragon"))
   end
 end
 
@@ -3637,7 +3638,7 @@ function body_armour_is_good(arm)
   if intrinsic_dodgy() then
     return (name:find("of resistance") or name:find("of fire"))
   else
-    return (name:find("pearl dragon") or name:find("plate"))
+    return name:find("plate")
   end
 end
 
@@ -3733,7 +3734,7 @@ function plan_use_good_consumables()
         if base_mutation("slow regeneration") > 0 and you.race() ~= "Deep Dwarf"
            and you.race() ~= "Ghoul" or
            base_mutation("dopey") > 1 or
-           intrinsic_like_dex() and base_mutation("clumsy") > 1 or
+           base_mutation("clumsy") > 1 or
            base_mutation("teleportitis") > 0 or
            base_mutation("deformed body") > 0 and you.race() ~= "Naga"
            and you.race() ~= "Centaur" or
@@ -5316,25 +5317,27 @@ function handle_skills()
   end
   local at_min_delay = (you.base_skill(weapon_skill) >= min_delay_skill())
   local ac = armour_ac()
+  local _,mdex = you.dexterity()
   if you.base_skill("Shields") < target_shield_skill()
      and (at_min_delay or you.base_skill(weapon_skill)
                           >= 2*you.base_skill("Shields"))
      and you.base_skill("Fighting") >= you.base_skill("Shields") then
     you.train_skill("Shields", 1)
-  elseif intrinsic_heavy_dodgy() and at_min_delay and ac < 12
-     and you.base_skill("Armour") >= 12
-     and you.base_skill("Armour") >= you.base_skill("Dodging")
-     and you.base_skill("Fighting") >= you.base_skill("Dodging") then
+  elseif intrinsic_heavy() and
+         (at_min_delay or mdex >= 15 and you.base_skill(weapon_skill)
+                                         >= 3*you.base_skill("Dodging"))
+         and you.base_skill("Armour") >= you.base_skill("Dodging")
+         and you.base_skill("Fighting") >= you.base_skill("Dodging") then
     you.train_skill("Dodging", 1)
   elseif intrinsic_dodgy() and
          (at_min_delay or you.base_skill(weapon_skill)
                           >= 2*you.base_skill("Dodging"))
          and you.base_skill("Fighting") >= you.base_skill("Dodging") then
     you.train_skill("Dodging", 1)
-  elseif (at_min_delay or ac >= 8 and you.base_skill(weapon_skill)
+  elseif intrinsic_heavy() and
+         (at_min_delay or ac >= 8 and you.base_skill(weapon_skill)
                                       >= 3*you.base_skill("Armour"))
-         and you.base_skill("Fighting") >= you.base_skill("Armour")
-         and not intrinsic_dodgy() then
+         and you.base_skill("Fighting") >= you.base_skill("Armour") then
     you.train_skill("Armour", 1)
   elseif at_min_delay or you.base_skill(weapon_skill)
                          >= 2*you.base_skill("Fighting") then
@@ -5381,7 +5384,7 @@ end
 
 function choose_stat_gain()
   local str, mstr = you.strength()
-  if intrinsic_dodgy() or mstr >= 20 and intrinsic_heavy_dodgy() then
+  if intrinsic_dodgy() or mstr >= 20 and mstr >= armour_evp()+2 then
     return "d"
   else
     return "s"
