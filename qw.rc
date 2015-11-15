@@ -4088,7 +4088,7 @@ function plan_stairdance_up()
 end
 
 function plan_simple_go_down()
-  if travel_destination then
+  if travel_destination or unshafting() then
     return false
   end
   if (found_branch("L") and ready_for_lair() or where == "D:11") and not
@@ -4495,8 +4495,13 @@ function plan_stuck()
   -- panic("Stuck!")
 end
 
+function unshafting()
+  return (where_shafted_from and (where_shafted_from ~= you.where())
+          and not where:find("Slime"))
+end
+
 function plan_unshaft()
-  if where_shafted_from and (where_shafted_from ~= you.where()) then
+  if unshafting() then
     --say("Trying to unshaft to " .. where_shafted_from .. ".")
     expect_new_location = true
     magic("G<")
