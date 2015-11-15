@@ -3073,7 +3073,7 @@ end
 function dd_want_to_teleport()
   --say("HW: " .. dd_hw_meter)
   return ((immediate_danger and dd_hw_meter > 300
-           or immediate_danger and you.corrosion() >= 3
+           or immediate_danger and you.corrosion() >= 3 and hp_is_low(70)
            or you.god() ~= "Trog" and immediate_danger and hp_is_low(25)
            or you.god() == "Trog" and (you.slowed() or too_hungry_to_berserk())
               and want_to_berserk()
@@ -3092,7 +3092,7 @@ function want_to_teleport()
   if you.race() == "Deep Dwarf" then
     return dd_want_to_teleport()
   end
-  return ((immediate_danger and you.corrosion() >= 3
+  return ((immediate_danger and you.corrosion() >= 3 and hp_is_low(70)
            or you.god() ~= "Trog" and immediate_danger and hp_is_low(25)
            or you.god() == "Trog" and (you.slowed() or too_hungry_to_berserk())
               and want_to_berserk()
