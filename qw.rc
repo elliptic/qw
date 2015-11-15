@@ -22,7 +22,7 @@
 : WATER_RUNE_SECOND = false
 # experimental: get abyssal rune
 : ABYSSAL_RUNE = false
-: ABYSS_RUNE_DEPTH = "Abyss:4"
+: ABYSS_RUNE_DEPTH = "Abyss:3"
 # experimental: get slimy rune
 : SLIMY_RUNE = false
 # depth to attempt to dive in ziggurats (0 to turn off)
