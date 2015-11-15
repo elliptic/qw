@@ -4210,7 +4210,7 @@ function plan_go_to_abyss_exit()
 end
 
 function plan_dive()
-  if in_branch("M") and where ~= "Slime:6" then
+  if in_branch("M") and where ~= "Slime:6" and not travel_destination then
     expect_new_location = true
     magic("G>")
     return true
