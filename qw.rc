@@ -95,6 +95,7 @@ force_more_message =
 show_travel_trail = false
 skill_focus = false
 autoinscribe += slay:mikee
+autoinscribe += (inedible|mutagenic|forbidden).*(chunk|corpse):noeat
 flush.failure = false
 char_set = ascii
 cset = cloud:xa4
@@ -2315,20 +2316,7 @@ end
 
 function on_edible_corpse()
   for it in at_feet() do
-    if string.find(it.name(), "corpse") then
-      return food.edible(it)
-    end
-  end
-  return false
-end
-
-function on_valuable_corpse()
-  if not intrinsic_dodgy() then
-    return false
-  end
-  for it in at_feet() do
-    if it.name() == "mottled dragon corpse" or
-       it.name() == "steam dragon corpse" then
+    if string.find(it.name(), "corpse") and not string.find(it.name(), "noeat") then
       return true
     end
   end
@@ -3419,10 +3407,6 @@ function plan_abyss_rest()
   return false
 end
 
-function want_pray()
-  return false
-end
-
 function want_to_burn_spellbooks()
   return BURN_BOOKS and (you.god() == "Trog") and can_read() and see_spellbooks_to_burn()
 end
@@ -3431,17 +3415,16 @@ function want_blood()
   return (count_item("potion","of blood") < 10)
 end
 
+-- this function could probably be simplified
 function vp_handle_corpses()
   if want_blood() and on_bottleable_corpses() then
     chop()
   elseif want_permafood() and on_edible_corpse() and not on_dangerous_corpse() then
     magic("eY")
-  elseif want_pray()
-         and not view.feature_at(0,0):find("altar")
-         and not you.silenced() and not on_valuable_corpse() then
-    pray()
-  else
+  elseif on_bottleable_corpses() then
     chop()
+  else
+    return false
   end
   return true
 end
@@ -3453,14 +3436,11 @@ function plan_handle_corpses()
   if you.race() == "Vampire" then
     return vp_handle_corpses()
   end
-  if want_pray() and (not want_chunk() or on_dangerous_corpse())
-     and not string.find(view.feature_at(0, 0), "altar")
-     and not you.silenced() and not on_valuable_corpse() then
-    pray()
-  else
+  if on_edible_corpse() then
     chop()
+    return true
   end
-  return true
+  return false
 end
 
 function plan_find_altar()
@@ -3511,7 +3491,7 @@ function plan_join_god()
 end
 
 function plan_find_corpses()
-  magic(control('f') .. "@corpse$&&!!rott&&!!skel" .. "\ra\r")
+  magic(control('f') .. "@corpse$&&!!rott&&!!skel&&!!noeat" .. "\ra\r")
   return true
 end
 
