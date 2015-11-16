@@ -418,6 +418,10 @@ function absolute_resist_value(str, n)
   if n == 0 then
     return 0
   end
+  if slime_soon() and (str == "rF" or str == "rElec" or str == "rPois" or
+                       str == "rN" or str == "MR" or str == "SInv") then
+    return 0
+  end
   local val = 0
   if str == "rF" or str == "rC" then
     if n < 0 then
