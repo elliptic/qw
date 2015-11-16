@@ -4085,9 +4085,6 @@ function plan_simple_go_down()
   if where == "Vaults:4" and you.num_runes() < 2 then
     return false
   end
-  if in_branch("A") and you.have_rune("barnacled") then
-    return false
-  end
   expect_new_location = true
   magic("G>")
   return true
