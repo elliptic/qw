@@ -3069,12 +3069,23 @@ end
 function dd_want_to_teleport()
   --say("HW: " .. dd_hw_meter)
   return ((immediate_danger and dd_hw_meter > 300
-           or immediate_danger and you.corrosion() >= 3 and hp_is_low(70)
+           or immediate_danger and bad_corrosion()
            or you.god() ~= "Trog" and immediate_danger and hp_is_low(25)
            or you.god() == "Trog" and (you.slowed() or too_hungry_to_berserk())
               and want_to_berserk()
               and not can_berserk())
           and count_bia(4) == 0)
+end
+
+function bad_corrosion()
+  if you.corrosion() == 0 then
+    return false
+  elseif where:find("Slime") then
+    return (you.corrosion() >= 6 and hp_is_low(70))
+  else
+    return (you.corrosion() >= 3 and hp_is_low(50) or
+            you.corrosion() >= 4 and hp_is_low(70))
+  end
 end
 
 function want_to_teleport()
@@ -3088,7 +3099,7 @@ function want_to_teleport()
   if you.race() == "Deep Dwarf" then
     return dd_want_to_teleport()
   end
-  return ((immediate_danger and you.corrosion() >= 3 and hp_is_low(70)
+  return ((immediate_danger and bad_corrosion()
            or you.god() ~= "Trog" and immediate_danger and hp_is_low(25)
            or you.god() == "Trog" and (you.slowed() or too_hungry_to_berserk())
               and want_to_berserk()
