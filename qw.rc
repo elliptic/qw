@@ -559,7 +559,7 @@ end
 
 function slime_soon()
   return you.where():find("Slime") or
-         (SLIMY_RUNE and you.where():find("Lair") and you.num_runes() >= 3
+         (SLIMY_RUNE and you.where():find("Lair") and you.have_rune("silver")
           and not you.have_rune("slimy"))
 end
 
