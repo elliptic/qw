@@ -4218,6 +4218,9 @@ function plan_go_to_abyss_downstairs()
 end
 
 function plan_go_to_abyss_exit()
+  if want_to_stay_in_abyss() then
+    return false
+  end
   magic("X<\r")
   return true
 end
