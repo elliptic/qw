@@ -563,6 +563,14 @@ function slime_soon()
           and not you.have_rune("slimy"))
 end
 
+function abyss_soon()
+  return you.where():find("Abyss") or
+         (ABYSSAL_RUNE
+          and (you.where():find("Depths") or you.where():find("D:") and
+               (you.have_rune("slimy") or not SLIMY_RUNE))
+          and you.have_rune("silver") and not you.have_rune("abyssal"))
+end
+
 -- list of armour slots, this is used to normalize names for them and also
 -- to iterate over the slots
 good_slots = {cloak="Cloak", helmet="Helmet",
@@ -778,6 +786,15 @@ function amulet_value(it, cur, it2)
      or subtype == "amulet of clarity"
      or subtype == "amulet of regeneration" and you.race() ~= "Deep Dwarf" then
     value = value + 50
+    if subtype == "amulet of resist mutation" and ABYSSAL_RUNE then
+      if cur then
+        if abyss_soon() then
+          value = value + 450
+        end
+      else
+        val2 = val2 + 450
+      end
+    end
   elseif subtype == "amulet of inaccuracy" then
     value = value - 250
   end
@@ -3181,14 +3198,14 @@ function want_to_berserk()
 end
 
 function want_to_stay_in_abyss()
-  if ABYSSAL_RUNE and you.xl() > 20
-     and where:find("Abyss") and count_permafood() <= 10 then
+  if ABYSSAL_RUNE and abyss_soon() and not you.have_rune("abyssal")
+     and count_permafood() <= 10 then
     say("Giving up on abyssal rune: low on food")
     ABYSSAL_RUNE = false
   end
-  return ABYSSAL_RUNE and you.xl() > 20
-         and not you.have_rune("abyssal") and you.have_rune("silver")
-         and count_permafood() > 10 and not hp_is_low(60)
+  return (ABYSSAL_RUNE
+          and you.have_rune("silver") and not you.have_rune("abyssal")
+          and count_permafood() > 10 and not hp_is_low(50))
 end
 
 function rejecting_slime()
@@ -4289,7 +4306,7 @@ function plan_zig_leave_level()
 end
 
 function plan_exit_abyss()
-  if view.feature_at(0,0) == "exit_abyss" then
+  if view.feature_at(0,0) == "exit_abyss" and not want_to_stay_in_abyss() then
     expect_new_location = true
     magic("<")
     return true
@@ -5189,6 +5206,8 @@ plan_abyss_eatrest = cascade {
   {plan_handle_corpses, "handle_corpses"},
   {plan_find_corpses, "try_find_corpses"},
   {plan_eat_anyway, "eat_anyway"},
+  {plan_go_down_abyss, "go_down_abyss"},
+  {plan_go_to_abyss_downstairs, "try_go_to_abyss_downstairs"},
 } -- hack
 
 plan_orbrun_eatrest = cascade {
@@ -5205,8 +5224,6 @@ plan_explore = cascade {
   {plan_go_to_portal_entrance, "try_go_to_portal_entrance"},
   {plan_enter_abyss, "enter_abyss"},
   {plan_go_to_abyss_portal, "try_go_to_abyss_portal"},
-  {plan_go_down_abyss, "go_down_abyss"},
-  {plan_go_to_abyss_downstairs, "try_go_to_abyss_downstairs"},
   {plan_dive, "try_dive"},
   {plan_autoexplore, "try_autoexplore"},
 } -- hack
@@ -5641,7 +5658,7 @@ function ready()
     sense_sigmund()
     if have_message then
       plan_message()
-    elseif you.where():find("Abyss") and not want_to_stay_in_abyss() then
+    elseif you.where():find("Abyss") then
       plan_abyss_move()
     elseif you.have_orb() then
       plan_orbrun_move()
