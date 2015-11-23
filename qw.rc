@@ -18,8 +18,11 @@
 : AUTO_START = false
 # experimental: do second lair rune branch before depths
 : EARLY_SECOND_RUNE = true
-# do non-water lair rune first, or pick randomly?
-: WATER_RUNE_SECOND = false
+# lair rune preferences, current options are:
+# * random - no preference, chooses randomly
+# * nowater - does Snake/Spider first
+# * smart - currently prefers Spider > Snake/Swamp > Shoals
+: RUNE_PREFERENCE = "random"
 # experimental: get abyssal rune
 : ABYSSAL_RUNE = false
 : ABYSS_RUNE_DEPTH = "Abyss:3"
@@ -4400,13 +4403,20 @@ function plan_continue_travel()
 end
 
 function choose_lair_rune_branch()
-  if crawl.random2(2) == 0 then
+  if RUNE_PREFERENCE == "smart" then
+    if crawl.random2(2) == 0 then
+      branch_options = { "N", "P", "S", "A" }
+    else
+      branch_options = { "N", "S", "P", "A" }
+    end
+  elseif RUNE_PREFERENCE == "nowater" then
     branch_options = { "P", "N", "S", "A" }
-  else
-    branch_options = { "S", "A", "P", "N" }
-  end
-  if WATER_RUNE_SECOND then
-    branch_options = { "P", "N", "S", "A" }
+  else -- "random"
+    if crawl.random2(2) == 0 then
+      branch_options = { "P", "N", "S", "A" }
+    else
+      branch_options = { "S", "A", "P", "N" }
+    end
   end
   for _, branch_code in ipairs(branch_options) do
     if found_branch(branch_code) and
@@ -4414,16 +4424,6 @@ function choose_lair_rune_branch()
       return branch_code
     end
   end
-  --tries = 0
-  --while tries < 100 do
-  --  i = 1 + crawl.random2(4)
-  --  branch_code = branch_options[i]
-  --  if found_branch(branch_code) and
-  --     not util.contains(c_persist.branches_entered, branch_code) then
-  --    return branch_code
-  --  end
-  --  tries = tries + 1
-  --end
   return nil
 end
 
