@@ -3293,7 +3293,7 @@ function plan_wait_spit()
   if you.berserk() or you.confused() or you.breath_timeout() then
     return false
   end
-  if you.xl() > 8 or starving() or you.hunger_name() == "near starving"
+  if you.xl() > 11 or starving() or you.hunger_name() == "near starving"
      or you.hunger_name() == "very hungry" or you.hunger_name() == "hungry" then
     return false
   end
