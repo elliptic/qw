@@ -1303,6 +1303,7 @@ local bia_monsters = {
   {20, "thorn hunter"},
   {20, "sun demon"},
   {20, "Polyphemus"},
+  {20, "Ilsuiw"},
 
   {100, "deep troll shaman"},
   {100, "spriggan air mage"},
