@@ -3278,8 +3278,44 @@ function plan_wait_for_melee()
   if plan_cure_poison() then
     return true
   end
-  -- don't actually wait yet, because we might try to throw something
+  -- don't actually wait yet, because we might use a ranged attack instead
   is_waiting = true
+  return false
+end
+
+function plan_wait_spit()
+  if not is_waiting then
+    return false
+  end
+  if you.mutation("spit poison") < 1 then
+    return false
+  end
+  if you.berserk() or you.confused() or you.breath_timeout() then
+    return false
+  end
+  if you.xl() > 8 or starving() or you.hunger_name() == "near starving"
+     or you.hunger_name() == "very hungry" or you.hunger_name() == "hungry" then
+    return false
+  end
+  dist = 10
+  cur_e = none
+  for _,e in ipairs(enemy_list) do
+    if supdist(e.x,e.y) < dist and e.m:res_poison() < 1 then
+      dist = supdist(e.x,e.y)
+      cur_e = e
+    end
+  end
+  ab_range = 6
+  ab_name = "Spit Poison"
+  if you.mutation("spit poison") > 2 then
+    ab_range = 7
+    ab_name = "Breathe Poison Gas"
+  end
+  if dist <= ab_range then
+    if use_ability(ab_name, "r" .. vector_move(cur_e.x, cur_e.y) .. "\r") then
+      return true
+    end
+  end
   return false
 end
 
@@ -5254,6 +5290,7 @@ plan_move = cascade {
   {plan_stairdance_up, "plan_stairdance_up"},
   {plan_emergency, "emergency"},
   {plan_wait_for_melee, "wait_for_melee"},
+  {plan_wait_spit, "try_wait_spit"},
   {plan_wait_throw, "try_wait_throw"},
   {plan_wait_wait, "wait_wait"},
   {plan_attack, "attack"},
