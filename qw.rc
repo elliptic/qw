@@ -4209,7 +4209,7 @@ function plan_enter_branch()
   if found_branch("L") and ready_for_lair() and not
      util.contains(c_persist.branches_entered, "L") and in_branch("D") then
     br = "L"
-  elseif found_branch("O") and you.god() == "Trog" and not
+  elseif found_branch("O") and not
          util.contains(c_persist.branches_entered, "O") and in_branch("D") and
          util.contains(c_persist.branches_entered, "L") then
     br = "O"
