@@ -152,47 +152,10 @@ bindkey = [.] CMD_NO_CMD_DEFAULT
 : end
 
 ####################################
-# autopickup/drop_filter stuff, just used for scrolls/potions/wands
+# autopickup is all handled via lua
 
-autopickup = ?!/
-
-ae := autopickup_exceptions
-df := drop_filter
-ae =
-df =
-# keep: identify,teleportation,remove curse,enchant weapon,
-#       enchant armour,acquirement,recharging,holy word
-ae += scrolls? of (summoning|vulnerability|brand weapon)
-ae += scrolls? of (magic mapping|fog|fear|silence)
-ae += scrolls? of (blinking|amnesia)
-ae += scrolls? of (curse armour|curse jewellery|curse weapon)
-ae += scrolls? of (immolation|noise|random uselessness|torment)
-df += scrolls? of (summoning|vulnerability|brand weapon)
-df += scrolls? of (magic mapping|fog|fear|silence)
-df += scrolls? of (blinking|amnesia)
-df += scrolls? of (curse armour|curse jewellery|curse weapon)
-df += scrolls? of (immolation|noise|random uselessness|torment)
-# keep: curing,heal wounds,haste,cancellation,resistance,experience,
-#       might,beneficial mutation,cure mutation
-ae += potions? of (brilliance|magic|berserk rage)
-ae += potions? of (flight|invisibility|agility)
-ae += potions? of (ambrosia|decay|degeneration|mutation)
-ae += potions? of (poison|lignification)
-df += potions? of (brilliance|magic|berserk rage)
-df += potions? of (flight|invisibility|agility)
-df += potions? of (ambrosia|decay|degeneration|mutation)
-df += potions? of (poison|lignification)
-: if you.race() ~= "Vampire" then
-ae += potions? of blood
-df += potions? of blood
-: end
-# keep: heal wounds,hasting,teleportation,digging/disint
-ae += wand of (random effects|slowing|magic darts|flame|frost|confusion)
-ae += wand of (enslavement|paralysis|invisibility|lightning|fireball)
-ae += wand of (cold|draining|fire|polymorph)
-df += wand of (random effects|slowing|magic darts|flame|frost|confusion)
-df += wand of (enslavement|paralysis|invisibility|lightning|fireball)
-df += wand of (cold|draining|fire|polymorph)
+autopickup =
+autopickup_exceptions =
 
 ################################################################
 # now the lua, beginning with options to set while qw is running
@@ -862,11 +825,14 @@ function ring_value(it, cur, it2)
   return value+val1,value+val2
 end
 
--- assumes that the wand is of a type that you would normally want
 function want_wand(it)
   sub = it.subtype()
   if sub == nil then
     return true
+  end
+  if sub ~= "teleportation" and sub ~= "heal wounds" and sub ~= "hasting"
+     and sub ~= "digging" and sub ~= "disintegration" then
+    return false
   end
   if it.name():find("empty") or it.plus == 0 then
     for it2 in inventory() do
@@ -887,6 +853,35 @@ function want_wand(it)
         end
       end
     end
+  end
+  return true
+end
+
+function want_potion(it)
+  sub = it.subtype()
+  if sub == nil then
+    return true
+  end
+  if sub == "blood" and you.race() == "Vampire" then
+    return true
+  end
+  if sub ~= "curing" and sub ~= "heal wounds" and sub ~= "haste"
+     and sub ~= "resistance" and sub ~= "experience" and sub ~= "might"
+     and sub ~= "beneficial mutation" and sub ~= "cure mutation" then
+    return false
+  end
+  return true
+end
+
+function want_scroll(it)
+  sub = it.subtype()
+  if sub == nil then
+    return true
+  end
+  if sub ~= "identify" and sub ~= "teleportation" and sub ~= "remove curse"
+     and sub ~= "enchant weapon" and sub ~= "enchant armour"
+     and sub ~= "acquirement" and sub ~= "recharging" and sub ~= "holy word" then
+    return false
   end
   return true
 end
@@ -991,15 +986,14 @@ function autopickup(it, name)
   ring = false
   if class == "armour" or class == "weapon" or class == "jewellery" then
     return not item_is_dominated(it)
-  elseif class == "food" then
+  elseif class == "food" or class == "gold" then
     return true
-  elseif class == "potion" or class == "scroll" then
-    return
+  elseif class == "potion" then
+    return want_potion(it)
+  elseif class == "scroll" then
+    return want_scroll(it)
   elseif class == "wand" then
-    if not want_wand(it) then
-      return false
-    end
-    return
+    return want_wand(it)
   elseif class == "missile" then
     return want_missile(it)
   else
@@ -3579,16 +3573,13 @@ function plan_autoexplore()
   return true
 end
 
-function plan_drop_filtered_items()
-  magic("d,,\r")
-  upgrade_phase = false
-  return true
-end
-
 function plan_drop_other_items()
+  upgrade_phase = false
   for it in inventory() do
     if it.class(true) == "missile" and not want_missile(it) or
-       it.class(true) == "wand" and not want_wand(it) then
+       it.class(true) == "wand" and not want_wand(it) or
+       it.class(true) == "potion" and not want_potion(it) or
+       it.class(true) == "scroll" and not want_scroll(it) then
       say("DROPPING " .. it.name() .. ".")
       magic("d" .. letter(it) .. "\r")
       return true
@@ -4146,6 +4137,25 @@ function plan_stairdance_up()
     say("STAIRDANCE")
     magic("<")
     return true
+  end
+  return false
+end
+
+function plan_shop()
+  if view.feature_at(0,0) ~= "enter_shop" or free_inventory_slots() == 0 then
+    return false
+  end
+  if you.berserk() then
+    return false
+  end
+  for n,e in ipairs(items.shop_inventory()) do
+    it = e[1]
+    price = e[2]
+    if price <= you.gold() and autopickup(it, it.name()) then
+      --say("BUYING " .. it.name() .. " (" .. price .. " gold).")
+      magic("<" .. letter(n-1) .. "\ry")
+      return
+    end
   end
   return false
 end
@@ -5192,7 +5202,6 @@ plan_pre_explore2 = cascade {
   {plan_read_id, "read_id"},
   {plan_quaff_id, "quaff_id"},
   {plan_use_id_scrolls, "use_id_scrolls"},
-  {plan_drop_filtered_items, "try_drop_filtered_items"},
   {plan_drop_other_items, "drop_other_items"},
 } -- hack
 
@@ -5287,7 +5296,8 @@ plan_explore2 = cascade {
 } -- hack
 
 plan_move = cascade {
-  {plan_stairdance_up, "plan_stairdance_up"},
+  {plan_shop, "shop"},
+  {plan_stairdance_up, "stairdance_up"},
   {plan_emergency, "emergency"},
   {plan_wait_for_melee, "wait_for_melee"},
   {plan_wait_spit, "try_wait_spit"},
