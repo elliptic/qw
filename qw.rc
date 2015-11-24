@@ -4168,9 +4168,6 @@ function plan_simple_go_down()
      util.contains(c_persist.branches_entered, "L") then
     return false
   end
-  if where == "Orc:3" then
-    return false
-  end
   if where == "Vaults:4" and you.num_runes() < 2 then
     return false
   end
@@ -4438,7 +4435,7 @@ function choose_lair_rune_branch()
 end
 
 function plan_new_travel()
-  local back_to_D_places = { "Temple", "Orc:3", "Orc:4", "Vaults:4"}
+  local back_to_D_places = { "Temple", "Orc:4", "Vaults:4"}
   if util.contains(back_to_D_places, where) then
     travel_destination = "D"
   end
