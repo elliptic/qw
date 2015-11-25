@@ -3511,18 +3511,24 @@ function plan_handle_corpses()
   return false
 end
 
+function magicfind(target)
+  clear_autopickup_funcs()
+  magic(control('f') .. target .. "\ra\r")
+  add_autopickup_func(autopickup)
+end
+
 function plan_find_altar()
   if not want_altar() then
     return false
   end
   if you.race() == "Deep Dwarf" then
     if DD_MAKHLEB_ONLY then
-      magic(control('f') .. "@altar&&makhleb" .. "\ra\r")
+      magicfind("@altar&&makhleb")
     else
-      magic(control('f') .. "@altar&&<<trog||makhleb>>" .. "\ra\r")
+      magicfind("@altar&&<<trog||makhleb>>")
     end
   else
-    magic(control('f') .. "@altar&&trog" .. "\ra\r")
+    magicfind("@altar&&trog")
   end
   return true
 end
@@ -3564,7 +3570,7 @@ function plan_join_god()
 end
 
 function plan_find_corpses()
-  magic(control('f') .. "@corpse$&&!!rott&&!!skel&&!!noeat" .. "\ra\r")
+  magicfind("@corpse$&&!!rott&&!!skel&&!!noeat")
   return true
 end
 
@@ -4226,7 +4232,7 @@ function plan_go_to_portal_entrance()
   for _, por in ipairs(c_persist.portals_found) do
     for _, val in ipairs(portal_data) do
       if val[1] == por then
-        magic(control('f') .. "@" .. val[2] .. "\ra\r")
+        magicfind("@" .. val[2])
         return true
       end
     end
@@ -4241,7 +4247,7 @@ function plan_go_to_zig()
   if you.num_runes() < rune_goal() then
     return false
   end
-  magic(control('f') .. "gateway to a ziggurat" .. "\ra\r")
+  magicfind("gateway to a ziggurat")
   return true
 end
 
@@ -4258,7 +4264,7 @@ function plan_go_to_abyss_portal()
     return false
   else
     expect_new_location = true
-    magic(control('f') .. "one-way gate to the infinite horrors of the Abyss" .. "\ra\r")
+    magicfind("one-way gate to the infinite horrors of the Abyss")
     return true
   end
 end
@@ -4733,7 +4739,7 @@ function plan_swamp_go_to_rune()
   if where ~= "Swamp:4" or you.have_rune("decaying") then
     return false
   end
-  magic(control('f') .. "@decaying rune" .. "\ra\r")
+  magicfind("@decaying rune")
   return true
 end
 
