@@ -3321,7 +3321,7 @@ function plan_wait_throw()
     return false
   end
   if items.fired_item() then
-    magic("ff") -- can fail for various reasons
+    magic("Q-ff") -- reset quiver before throwing
     return true
   else
     return false
