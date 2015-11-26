@@ -4002,7 +4002,7 @@ function plan_upgrade_armour()
       elseif should_drop(it) then
         drop = true
       end
-      if it.name():find("helmet") and (you.mutation("horns") > 0
+      if good_slots[st] == "Helmet" and it.ac == 1 and (you.mutation("horns") > 0
          or you.mutation("beak") > 0 or you.mutation("antennae") > 0) then
         equip = false
         drop = true
