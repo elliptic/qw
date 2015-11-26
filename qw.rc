@@ -4154,7 +4154,7 @@ function plan_shop()
   if view.feature_at(0,0) ~= "enter_shop" or free_inventory_slots() == 0 then
     return false
   end
-  if you.berserk() then
+  if you.berserk() or you.caught() then
     return false
   end
   for n,e in ipairs(items.shop_inventory()) do
