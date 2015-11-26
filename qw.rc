@@ -1261,13 +1261,12 @@ local scary_monsters = {
   {100, "seraph"},
   {100, "juggernaut"},
   {100, "royal jelly"},
+  {100, "iron giant"},
 } -- hack
 
 -- these scary monsters are slow, so wait to berserk until they are adjacent
 local scary_slow_monsters = {
   {4, "worm"},
-  {10, "goliath beetle"},
-  {12, "boring beetle"},
 } -- hack
 
 -- BiA these even at low piety
@@ -1337,6 +1336,7 @@ local bia_monsters = {
   {100, "seraph"},
   {100, "death cob"},
   {100, "royal jelly"},
+  {100, "spark wasp"},
 } -- hack
 
 -- Trog's Hand these
@@ -1382,6 +1382,7 @@ local elec_resistance_monsters = {
   {20, "storm dragon"},
   {20, "desc", "black draconian"},
   {100, "electric golem"},
+  {100, "spark wasp"},
 } -- hack
 
 local pois_resistance_monsters = {
