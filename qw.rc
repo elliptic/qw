@@ -40,6 +40,8 @@
 : FULL_INVENTORY_PANIC = true
 # when choosing a god on DD, only choose Makhleb
 : DD_MAKHLEB_ONLY = false
+# quit after this number of turns while stuck
+: QUIT_TURNS = 1000
 
 # qw can play any starting combo. These ones are recommended:
 combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
@@ -4560,7 +4562,7 @@ function plan_stuck()
     return random_step("starving")
   end
   stuck_turns = stuck_turns + 1
-  if stuck_turns > 5000 then
+  if stuck_turns > QUIT_TURNS then
     magic(control('q') .. "yes\r")
     return true
   end
