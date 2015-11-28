@@ -3578,6 +3578,9 @@ function plan_find_corpses()
 end
 
 function plan_autoexplore()
+  if free_inventory_slots() == 0 then
+    return false
+  end
   magic("o")
   return true
 end
@@ -4571,6 +4574,14 @@ function plan_stuck()
   -- panic("Stuck!")
 end
 
+function plan_full_inventory_panic()
+  if FULL_INVENTORY_PANIC and free_inventory_slots() == 0 then
+    panic("Inventory is full!")
+  else
+    return false
+  end
+end
+
 function unshafting()
   return (where_shafted_from and (where_shafted_from ~= you.where())
           and not where:find("Slime"))
@@ -5209,6 +5220,7 @@ plan_pre_explore2 = cascade {
   {plan_quaff_id, "quaff_id"},
   {plan_use_id_scrolls, "use_id_scrolls"},
   {plan_drop_other_items, "drop_other_items"},
+  {plan_full_inventory_panic, "full_inventory_panic"},
 } -- hack
 
 plan_emergency = cascade {
@@ -5707,9 +5719,6 @@ function ready()
   expect_new_location = false
   expect_portal = false
   check_messages()
-  if FULL_INVENTORY_PANIC and free_inventory_slots() == 0 then
-    panic("Inventory is full!")
-  end
   if time_passed and SINGLE_STEP then
     stop()
   end
