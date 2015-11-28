@@ -1107,13 +1107,48 @@ local portal_data = {
   --{"Lab", "labyrinth entrance", "labyrinth"},
 } -- hack
 
--- monster lists: XL cutoff (>= to ignore), monster name
---   if name is "desc" then look for the pattern given in the third field
---   inside the monster desc instead
+-- monster lists: XL cutoff (>= to ignore), monster name (or function)
+function in_desc(str)
+  return function (m)
+    return m:desc():find(str)
+  end
+end
+
+local res_func_table = {
+  rF=you.res_fire,
+  rC=you.res_cold,
+  rPois=you.res_poison,
+  rElec=you.res_shock,
+  rN=you.res_draining,
+  --rCorr=you.res_corr, -- returns a boolean
+  --MR=you.res_magic, -- (doesn't exist yet...)
+} --hack
+
+function check_resist(name,resist,value)
+  return function (m)
+    return (m:name() == name and res_func_table[resist]() < value)
+  end
+end
+
+function slow_berserk(name)
+  return function (m)
+    return (m:name() == name and count_nearby(0,0,1) > 0)
+  end
+end
+
+function hydra_check_flaming(m)
+  if m:desc():find("hydra") then
+    weap = items.equipped_at("Weapon")
+    return (not (weap and weap.ego() == "flaming")) -- assume chopping for now
+  end
+  return false
+end
 
 -- berserk these
 local scary_monsters = {
   {3, "Terence"},
+
+  {4, slow_berserk("worm")},
 
   {5, "gnoll"},
   {5, "Ijyb"},
@@ -1122,6 +1157,7 @@ local scary_monsters = {
   {5, "Natasha"},
   {5, "Robin"},
 
+  {7, check_resist("ice beast","rC",1)},
   {7, "orc wizard"},
   {7, "Grinder"},
   {7, "Dowan"},
@@ -1148,7 +1184,7 @@ local scary_monsters = {
   {12, "spiny frog"},
   {12, "black mamba"},
   {12, "Snorg"},
-  {12, "fire drake"},
+  {12, check_resist("fire drake","rF",1)},
   {12, "Harold"},
   {12, "komodo dragon"},
   {12, "Gastronok"},
@@ -1172,6 +1208,7 @@ local scary_monsters = {
   {15, "orc knight"},
   {15, "boulder beetle"},
   {15, "swamp worm"},
+  {15, in_desc("hydra")},
 
   {17, "fire dragon"},
   {17, "ice dragon"},
@@ -1187,8 +1224,8 @@ local scary_monsters = {
   {17, "deep troll"},
   {17, "thorn hunter"},
   {17, "sun demon"},
-  {17, "white ugly thing"},
-  {17, "white very ugly thing"},
+  {17, check_resist("white ugly thing","rC",1)},
+  {17, check_resist("white very ugly thing","rC",1)},
 
   {20, "greater naga"},
   {20, "naga sharpshooter"},
@@ -1196,7 +1233,7 @@ local scary_monsters = {
   {20, "Wiglaf"},
   {20, "Rupert"},
   {20, "Aizul"},
-  {20, "desc", "hydra"},
+  {20, hydra_check_flaming},
   {20, "Azrael"},
   {20, "Frances"},
   {20, "Saint Roka"},
@@ -1218,31 +1255,37 @@ local scary_monsters = {
   {20, "ettin"},
   {20, "Polyphemus"},
 
+  {24, check_resist("storm dragon","rElec",1)},
+  {24, check_resist("fire giant","rF",1)},
+  {24, check_resist("frost giant","rC",1)},
+  {24, check_resist("azure jelly","rC",1)},
+
+  {100, check_resist("Xtahua","rF",1)},
   {100, "deep elf annihilator"},
   {100, "deep elf sorcerer"},
   {100, "the Enchantress"},
   {100, "Vashnia"},
   {100, "Sojobo"},
-  {100, "desc", "berserk[^e]"},
+  {100, in_desc("berserk[^e]")},
   {100, "Roxanne"},
   {100, "Norris"},
   {100, "Erolcha"},
-  {100, "desc", "statue"},
+  {100, in_desc("statue")},
   {100, "Nessos"},
   {100, "Sonja"},
   {100, "Louise"},
   {100, "Mennas"},
-  {100, "Margery"},
+  {100, check_resist("Margery","rF",2)},
   {100, "Frederick"},
   {100, "Boris"},
   {100, "Mara"},
   {100, "boggart"},
   {100, "lich"},
   {100, "ancient lich"},
-  {100, "desc", "'s ghost"},
-  {100, "desc", "' ghost"},
-  {100, "desc", "'s illusion"},
-  {100, "desc", "' illusion"},
+  {100, in_desc("'s ghost")},
+  {100, in_desc("' ghost")},
+  {100, in_desc("'s illusion")},
+  {100, in_desc("' illusion")},
   {100, "oklob plant"},
   {100, "hellion"},
   {100, "tormentor"},
@@ -1264,16 +1307,11 @@ local scary_monsters = {
   {100, "iron giant"},
 } -- hack
 
--- these scary monsters are slow, so wait to berserk until they are adjacent
-local scary_slow_monsters = {
-  {4, "worm"},
-} -- hack
-
 -- BiA these even at low piety
 local bia_necessary_monsters = {
-  {15, "desc", "hydra"},
+  {15, hydra_check_flaming},
   {20, "orb spider"},
-  {100, "desc", "statue"},
+  {100, in_desc("statue")},
 } -- hack
 
 -- BiA these
@@ -1286,7 +1324,8 @@ local bia_monsters = {
   {15, "death yak"},
   {15, "red devil"},
 
-  {17, "desc", "hydra"},
+  {17, hydra_check_flaming},
+  {17, "Nikola"},
 
   {20, "orc warlord"},
   {20, "Aizul"},
@@ -1296,22 +1335,22 @@ local bia_monsters = {
   {20, "Jory"},
   {20, "Norris"},
   {20, "Arachne"},
-  {20, "Nikola"},
+  {20, check_resist("Nikola","rElec",1)},
   {20, "Vashnia"},
   {20, "Asterion"},
   {20, "orb spider"},
   {20, "thorn hunter"},
-  {20, "sun demon"},
+  {20, check_resist("sun demon","rF",1)},
   {20, "Polyphemus"},
   {20, "Ilsuiw"},
 
   {100, "deep troll shaman"},
-  {100, "spriggan air mage"},
+  {100, check_resist("spriggan air mage","rElec")},
   {100, "the Enchantress"},
   {100, "Sojobo"},
   {100, "Roxanne"},
   {100, "Erolcha"},
-  {100, "desc", "statue"},
+  {100, in_desc("statue")},
   {100, "Nessos"},
   {100, "Sonja"},
   {100, "Louise"},
@@ -1323,8 +1362,8 @@ local bia_monsters = {
   {100, "boggart"},
   {100, "lich"},
   {100, "ancient lich"},
-  {100, "desc", "'s ghost"},
-  {100, "desc", "' ghost"},
+  {100, in_desc("'s ghost")},
+  {100, in_desc("' ghost")},
   {100, "oklob plant"},
   {100, "Hell Sentinel"},
   {100, "Ice Fiend"},
@@ -1336,7 +1375,7 @@ local bia_monsters = {
   {100, "seraph"},
   {100, "death cob"},
   {100, "royal jelly"},
-  {100, "spark wasp"},
+  {100, check_resist("spark wasp","rElec",1)},
 } -- hack
 
 -- Trog's Hand these
@@ -1368,10 +1407,10 @@ local hand_monsters = {
 
 -- potion of resistance these
 local fire_resistance_monsters = {
-  {100, "Margery"},
+  {100, check_resist("Margery","rF",2)},
   {100, "orb of fire"},
-  {100, "hellephant"},
-  {100, "Xtahua"},
+  {100, check_resist("hellephant","rF",2)},
+  {100, check_resist("Xtahua","rF",2)},
 } -- hack
 
 local cold_resistance_monsters = {
@@ -1380,7 +1419,7 @@ local cold_resistance_monsters = {
 
 local elec_resistance_monsters = {
   {20, "storm dragon"},
-  {20, "desc", "black draconian"},
+  {20, in_desc("black draconian")},
   {100, "electric golem"},
   {100, "spark wasp"},
 } -- hack
@@ -1862,9 +1901,14 @@ function check_monsters(r, mlist)
         local name = e.m:name()
         local desc = e.m:desc()
         for _, value in ipairs(mlist) do
-          if xl < value[1] and (value[2] == name or value[2] == "desc"
-                                and desc:find(value[3])) then
-            return true
+          if xl < value[1] then
+            if type(value[2]) == "string" then
+              if value[2] == name then
+                return true
+              end
+            elseif value[2](e.m) then
+              return true
+            end
           end
         end
       end
@@ -3196,7 +3240,6 @@ function want_to_berserk()
   return (hp_is_low(50) and sense_danger(2) and
           (you.race() ~= "Deep Dwarf" or dd_want_to_heal_wounds()) or
           check_monsters(2, scary_monsters) or
-          check_monsters(1, scary_slow_monsters) or
           (invisi_sigmund and not options.autopick_on))
 end
 
