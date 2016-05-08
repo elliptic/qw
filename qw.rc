@@ -1173,7 +1173,6 @@ local scary_monsters = {
   {12, "spiny frog"},
   {12, "black mamba"},
   {12, "Snorg"},
-  {12, check_resist("fire drake","rF",1)},
   {12, "Harold"},
   {12, "komodo dragon"},
   {12, "Gastronok"},
@@ -1280,7 +1279,7 @@ local scary_monsters = {
   {100, "tormentor"},
   {100, "Hell Sentinel"},
   {100, "Ice Fiend"},
-  {100, "Shadow Fiend"},
+  {100, "Tzitzimitl"},
   {100, "Brimstone Fiend"},
   {100, "curse toe"},
   {100, "curse skull"},
@@ -1292,7 +1291,7 @@ local scary_monsters = {
   {100, "caustic shrike"},
   {100, "seraph"},
   {100, "juggernaut"},
-  {100, "royal jelly"},
+  {100, "Royal Jelly"},
   {100, "iron giant"},
 } -- hack
 
@@ -1357,13 +1356,12 @@ local bia_monsters = {
   {100, "Hell Sentinel"},
   {100, "Ice Fiend"},
   {100, "Brimstone Fiend"},
-  {100, "Shadow Fiend"},
+  {100, "Tzitzimitl"},
   {100, "Tiamat"},
   {100, "orb of fire"},
   {100, "caustic shrike"},
   {100, "seraph"},
-  {100, "death cob"},
-  {100, "royal jelly"},
+  {100, "Royal Jelly"},
   {100, check_resist("spark wasp","rElec",1)},
 } -- hack
 
@@ -4157,7 +4155,7 @@ function can_use_stairs(mname)
      or mname:find("statue") or mname:find("ballistomycete")
      or mname == "burning bush" or mname == "lightning spire"
      or mname:find("tentacle") or mname == "silent spectre"
-     or mname == "Geryon" or mname == "royal jelly"
+     or mname == "Geryon" or mname == "Royal Jelly"
      or mname:find("'s ghost") or mname:find("' ghost")
      or mname == "swamp worm" or mname == "electric eel"
      or mname == "kraken" or mname == "lava snake" then
