@@ -3555,6 +3555,7 @@ end
 
 function magicfind(target)
   clear_autopickup_funcs()
+  expect_new_location = true
   magic(control('f') .. target .. "\ra\r")
   add_autopickup_func(autopickup)
 end
