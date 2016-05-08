@@ -281,7 +281,6 @@ function item_resist(str, it)
       end
     elseif str == "rN" then
       if ego == "positive energy" or subtype == "ring of positive energy"
-         or subtype == "amulet of warding"
          or name:find("pearl dragon") then
         return 1
       else
@@ -295,7 +294,7 @@ function item_resist(str, it)
         return 0
       end
     elseif str == "rCorr" then
-      if subtype == "amulet of resist corrosion" then
+      if subtype == "ring of resist corrosion" then
         return 1
       else
         return 0
@@ -741,32 +740,22 @@ function amulet_value(it, cur, it2)
   if subtype == "amulet of faith" then
     return 1000,1000 -- fixed value so we don't unequip for a randart one
   end
-  if subtype == "amulet of stasis" then
-    return -1,-1
-  end
   if it.artefact and not it.fully_identified or not (it.artefact or name:find("amulet of")) then
     if cur then
       return 800,800
     else
-      return -1,(SLIMY_RUNE and 1200 or 1000)
+      return -1,1000
     end
   end
   local val1,val2 = total_resist_value(it, cur, it2)
-  if subtype == "amulet of resist mutation"
-     or subtype == "amulet of clarity"
-     or subtype == "amulet of regeneration" and you.race() ~= "Deep Dwarf" then
+  if subtype == "amulet of regeneration" and you.race() ~= "Deep Dwarf" then
     value = value + 50
-    if subtype == "amulet of resist mutation" and ABYSSAL_RUNE then
-      if cur then
-        if abyss_soon() then
-          value = value + 450
-        end
-      else
-        val2 = val2 + 450
-      end
-    end
+  elseif subtype == "amulet of dismissal" or subtype == "amulet of reflection" then
+    value = value + 25
   elseif subtype == "amulet of inaccuracy" then
     value = value - 250
+  elseif subtype == "amulet of harm" then
+    value = value - 150
   end
   return value+val1,value+val2
 end
