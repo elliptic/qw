@@ -4487,7 +4487,7 @@ function choose_lair_rune_branch()
 end
 
 function plan_new_travel()
-  local back_to_D_places = { "Temple", "Orc:4", "Vaults:4"}
+  local back_to_D_places = { "Temple", "Orc:2", "Vaults:4"}
   if util.contains(back_to_D_places, where) then
     travel_destination = "D"
   end
