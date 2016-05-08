@@ -882,7 +882,7 @@ function want_scroll(it)
   end
   if sub ~= "identify" and sub ~= "teleportation" and sub ~= "remove curse"
      and sub ~= "enchant weapon" and sub ~= "enchant armour"
-     and sub ~= "acquirement" and sub ~= "recharging" and sub ~= "holy word" then
+     and sub ~= "acquirement" and sub ~= "recharging" then
     return false
   end
   return true
@@ -3175,10 +3175,6 @@ function want_to_orbrun_teleport()
   return (hp_is_low(33) and sense_danger(2))
 end
 
-function want_to_orbrun_holy_word()
-  return (danger and want_to_orbrun_heal_wounds())
-end
-
 function dd_want_to_heal_wounds()
   if (not danger) and (you.regenerating() or dd_prefer_hand()) then
     return false
@@ -4777,13 +4773,6 @@ function plan_orbrun_teleport()
   return false
 end
 
-function plan_orbrun_holy_word()
-  if can_read() and want_to_orbrun_holy_word() then
-    return holy_word()
-  end
-  return false
-end
-
 function plan_swamp_clear_exclusions()
   if where ~= "Swamp:4" then
     return false
@@ -4978,10 +4967,6 @@ function teleport()
     return true
   end
   return false
-end
-
-function holy_word()
-  return read_by_name("holy word")
 end
 
 function plan_cure_poison()
@@ -5293,7 +5278,6 @@ plan_orbrun_emergency = cascade {
   {plan_cure_confusion, "cure_confusion"},
   {plan_orbrun_teleport, "orbrun_teleport"},
   {plan_dd_recharge_teleport, "dd_recharge_teleport"},
-  {plan_orbrun_holy_word, "orbrun_holy_word"},
   {plan_orbrun_heal_wounds, "orbrun_heal_wounds"},
   {plan_orbrun_haste, "orbrun_haste"},
   {plan_dd_orbrun_recharge_hasting, "orbrun_dd_recharge_hasting"},
