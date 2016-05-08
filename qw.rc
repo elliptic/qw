@@ -1345,7 +1345,7 @@ local bia_monsters = {
   {20, "Ilsuiw"},
 
   {100, "deep troll shaman"},
-  {100, check_resist("spriggan air mage","rElec")},
+  {100, check_resist("spriggan air mage","rElec",1)},
   {100, "the Enchantress"},
   {100, "Sojobo"},
   {100, "Roxanne"},
