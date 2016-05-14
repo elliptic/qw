@@ -38,8 +38,10 @@
 : SINGLE_STEP = false
 # panic (stop) at full inventory
 : FULL_INVENTORY_PANIC = true
-# when choosing a god on DD, only choose Makhleb
-: DD_MAKHLEB_ONLY = false
+# acceptable gods (for non-DD)
+: GOD_LIST = { "Trog", }
+# acceptable gods (for DD)
+: DD_GOD_LIST = { "Trog", "Makhleb", "Ru", }
 # quit after this number of turns while stuck
 : QUIT_TURNS = 1000
 
@@ -3585,24 +3587,21 @@ function magicfind(target)
   add_autopickup_func(autopickup)
 end
 
+function god_options()
+  return (you.race() == "Deep Dwarf" and DD_GOD_LIST or GOD_LIST)
+end
+
 function plan_find_altar()
   if not want_altar() then
     return false
   end
-  if you.race() == "Deep Dwarf" then
-    if DD_MAKHLEB_ONLY then
-      magicfind("@altar&&makhleb")
-    else
-      magicfind("@altar&&<<trog||makhleb>>")
-    end
-  else
-    magicfind("@altar&&trog")
-  end
+  str = "@altar&&<<of " .. table.concat(god_options(), "||of ") .. ">>"
+  magicfind(str)
   return true
 end
 
 function plan_abandon_god()
-  if you.god() ~= "No God" and you.god() ~= "Trog" and you.god() ~= "Makhleb" then
+  if you.god() ~= "No God" and not util.contains(god_options(), you.god()) then
     magic("aXYY")
     return true
   end
@@ -3624,15 +3623,16 @@ function plan_join_god()
   if not want_altar() then
     return false
   end
-  if view.feature_at(0, 0) == "altar_trog"
-     and not (DD_MAKHLEB_ONLY and you.race() == "Deep Dwarf") or
-     you.race() == "Deep Dwarf" and view.feature_at(0, 0) == "altar_makhleb" then
-    if you.silenced() then
-      rest()
-    else
-      magic("pYY")
+  feat = view.feature_at(0,0)
+  for _,god in ipairs(god_options()) do
+    if feat == ("altar_" .. string.lower(god)) then
+      if you.silenced() then
+        rest()
+      else
+        magic("pYY")
+      end
+      return true
     end
-    return true
   end
   return false
 end
@@ -4301,7 +4301,7 @@ function plan_simple_go_down()
 end
 
 function want_altar()
-  return (you.god() ~= "Trog" and you.god() ~= "Makhleb" and you.race() ~= "Demigod")
+  return (you.race() ~= "Demigod" and not util.contains(god_options(), you.god()))
 end
 
 function plan_go_to_temple()
