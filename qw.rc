@@ -4228,7 +4228,7 @@ end
 
 function plan_go_to_temple()
   local c = c_persist.plan_fail_count["try_go_to_temple"]
-  if c and c >= 10 then
+  if c and c >= 100 then
     return false
   end
   if found_branch("T") and want_altar() and not
