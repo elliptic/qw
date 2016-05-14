@@ -18,6 +18,8 @@
 : AUTO_START = false
 # experimental: do second lair rune branch before depths
 : EARLY_SECOND_RUNE = true
+# experimental: wait to do Orc until after D:15
+: LATE_ORC = true
 # lair rune preferences, current options are:
 # * random - no preference, chooses randomly
 # * nowater - does Snake/Spider first
@@ -4390,7 +4392,7 @@ function plan_enter_branch()
   if found_branch("L") and ready_for_lair() and not
      util.contains(c_persist.branches_entered, "L") and in_branch("D") then
     br = "L"
-  elseif found_branch("O") and not
+  elseif found_branch("O") and not LATE_ORC and not
          util.contains(c_persist.branches_entered, "O") and in_branch("D") and
          util.contains(c_persist.branches_entered, "L") then
     br = "O"
@@ -4663,6 +4665,9 @@ function plan_new_travel()
       else
         travel_destination = "U"
       end
+    elseif LATE_ORC and found_branch("O") and not
+           util.contains(c_persist.branches_entered, "O") then
+      travel_destination = "O"
     else
       travel_destination = "L"
     end
