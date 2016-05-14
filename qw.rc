@@ -221,7 +221,7 @@ function equip_value(it, cur, it2)
   if class == "armour" then
     return armour_value(it, cur, it2)
   elseif class == "weapon" then
-    return weapon_value(it, cur, it2)
+    return weapon_value(it, cur, it2, false)
   elseif class == "jewellery" then
     if it.name():find("amulet") then
       return amulet_value(it, cur, it2)
@@ -650,7 +650,7 @@ function armour_value(it, cur, it2)
   return value+val1,value+val2
 end
 
-function weapon_value(it, cur, it2)
+function weapon_value(it, cur, it2, hydra_swap)
   local name = it.name()
   local value = 1000
   if it.weap_skill ~= wskill() then
@@ -658,7 +658,9 @@ function weapon_value(it, cur, it2)
     if weap and weap.weap_skill == wskill() or wskill() == "Unarmed Combat"
        or it.weap_skill == "Crossbows" or it.weap_skill == "Bows"
        or it.weap_skill == "Slings" then
-      return -1,-1
+      if not (hydra_swap and it.weap_skill == "Maces & Flails" and wskill() == "Axes") then
+        return -1,-1
+      end
     end
   end
   if it.hands == 2 and want_buckler() then
@@ -684,6 +686,15 @@ function weapon_value(it, cur, it2)
     val1 = val1 + (cur and 500 or -250)
   end
   local ego = it.ego()
+  if hydra_swap then
+    if ego == "vampirism" then
+      return -1,-1 -- should not do this if undead
+    elseif it.weap_skill ~= "Maces & Flails" and ego ~= "flaming" then
+      return -1,-1
+    elseif ego == "flaming" and (it.weap_skill == "Axes" or it.weap_skill == "Long Blades") then
+      value = value + 500
+    end
+  end
   if ego then -- names are mostly in weapon_brands_verbose[]
     if ego == "distortion" then
       return -1,-1
@@ -885,11 +896,28 @@ function want_scroll(it)
 end
 
 function item_is_dominated(it)
+  local slotname = equip_slot(it)
+  if slotname == "Weapon" and you.xl() < 18 then
+    local hminv,hmaxv = weapon_value(it, nil, nil, true)
+    if hmaxv > 0 then
+      local hydra_dominated = false
+      for it2 in inventory() do
+        if equip_slot(it2) == slotname and slot(it2) ~= slot(it) then
+          local hminv2,hmaxv2 = weapon_value(it2, nil, nil, true)
+          if hminv2 >= hmaxv then
+            hydra_dominated = true
+          end
+        end
+      end
+      if not hydra_dominated then
+        return false
+      end
+    end
+  end
   local minv,maxv = equip_value(it)
   if maxv <= 0 then
     return true
   end
-  local slotname = equip_slot(it)
   local num_slots = 1
   if slotname == "Ring" then
     num_slots = max_rings()
@@ -951,6 +979,9 @@ function should_upgrade(it,old_it)
     return should_equip(it)
   end
   if not it.fully_identified and not should_drop(it) then
+    if equip_slot(it) == "Weapon" and it.weap_skill ~= wskill() then
+      return (count_item("scroll", "remove curse") > 0)
+    end
     return (old_it.subtype() ~= "amulet of faith")
   end
   return (equip_value(it,true,old_it) > equip_value(old_it,true,old_it))
@@ -3879,6 +3910,53 @@ function plan_wield_weapon()
   return false
 end
 
+function plan_swap_weapon()
+  if you.race() == "Troll" or you.berserk() or transformed() or not items.equipped_at("Weapon") then
+    return false
+  end
+  local hydra_near = false
+  local x,y
+  for x = -5,5 do
+    for y = -5,5 do
+      m = monster_array[x][y]
+      if m and string.find(m:desc(), "hydra") then
+        hydra_near = true
+      end
+    end
+  end
+  twohands = true
+  if items.equipped_at("Shield") and you.race() ~= "Formicid" then
+    twohands = false
+  end
+  it_old = items.equipped_at("Weapon")
+  swappable = can_swap("Weapon")
+  if not swappable or it_old.ego() == "vampirism" then
+    return false
+  end
+  cur_val = weapon_value(it_old,true,it_old,hydra_near)
+  max_val = cur_val
+  max_it = nil
+  for it in inventory() do
+    if it and it.class(true) == "weapon" and not it.equipped then
+      if (twohands or it.hands < 2) and not it.name():find("vamp") then
+        val2 = weapon_value(it,true,it_old,hydra_near)
+        if val2 > max_val then
+          max_val = val2
+          max_it = it
+        end
+      end
+    end
+  end
+  if max_it then
+    l = items.index_to_letter(max_it.slot)
+    say("SWAPPING to " .. max_it.name() .. ".")
+    magic("w" .. l .. "YY")
+    -- this might have a 0-turn fail because of unIDed vamp/holy
+    return nil
+  end
+  return false
+end
+
 function plan_upgrade_weapon()
   if you.race() == "Troll" then
     return false
@@ -5263,6 +5341,7 @@ plan_emergency = cascade {
   {plan_hydra_destruction, "try_hydra_destruction"},
   {plan_dd_recharge_heal_wounds, "dd_recharge_heal_wounds"},
   {plan_wield_weapon, "wield_weapon"},
+  {plan_swap_weapon, "swap_weapon"},
   {plan_water_step, "water_step"},
   {plan_berserk, "berserk"},
   {plan_other_step, "other_step"},
