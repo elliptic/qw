@@ -411,7 +411,7 @@ function absolute_resist_value(str, n)
   elseif str == "rElec" then
     return 75
   elseif str == "rPois" then
-    return ((you.num_runes() < 2) and 225 or 75)
+    return ((easy_runes() < 2) and 225 or 75)
   elseif str == "rN" then
     return 25*n
   elseif str == "MR" then
@@ -453,7 +453,7 @@ function max_resist_value(str, d)
   elseif str == "rElec" then
     return ((ires < 1) and 75 or 0)
   elseif str == "rPois" then
-    return ((ires < 1) and ((you.num_runes() < 2) and 225 or 75) or 0)
+    return ((ires < 1) and ((easy_runes() < 2) and 225 or 75) or 0)
   elseif str == "rN" then
     return ((ires < 3) and 25*d or 0)
   elseif str == "MR" then
@@ -518,6 +518,13 @@ end
 
 function rune_goal()
   return 3 + (ABYSSAL_RUNE and 1 or 0) + (SLIMY_RUNE and 1 or 0)
+end
+
+function easy_runes()
+  return (you.have_rune("decaying") and 1 or 0)
+         + (you.have_rune("serpentine") and 1 or 0)
+         + (you.have_rune("barnacled") and 1 or 0)
+         + (you.have_rune("gossamer") and 1 or 0)
 end
 
 function zot_soon()
@@ -4207,7 +4214,7 @@ function plan_simple_go_down()
      util.contains(c_persist.branches_entered, "L") then
     return false
   end
-  if where == "Vaults:4" and you.num_runes() < 2 then
+  if where == "Vaults:4" and easy_runes() < 2 then
     return false
   end
   expect_new_location = true
@@ -4482,7 +4489,7 @@ function plan_new_travel()
     travel_destination = "L"
   end
   if where == "Lair:8" then
-    if travel.find_deepest_explored("D") == 15 and you.num_runes() < 2 then
+    if travel.find_deepest_explored("D") == 15 and easy_runes() < 2 then
       travel_destination = choose_lair_rune_branch()
     elseif SLIMY_RUNE and you.have_rune("silver") and
            not you.have_rune("slimy") and not rejecting_slime() then
@@ -4510,10 +4517,10 @@ function plan_new_travel()
     travel_destination = "D"
   end
   if where == "D:15" then
-    if you.num_runes() == 1 and not util.contains(c_persist.branches_entered, "V")
-       or you.num_runes() == 2 and util.contains(c_persist.branches_entered, "U") then
+    if easy_runes() == 1 and not util.contains(c_persist.branches_entered, "V")
+       or easy_runes() == 2 and util.contains(c_persist.branches_entered, "U") and not you.have_rune("silver") then
       travel_destination = "V"
-    elseif you.num_runes() >= 1 and not util.contains(c_persist.branches_entered, "U") and not (EARLY_SECOND_RUNE and you.num_runes() == 1) then
+    elseif easy_runes() >= 1 and not util.contains(c_persist.branches_entered, "U") and not (EARLY_SECOND_RUNE and easy_runes() == 1) then
       travel_destination = "U"
     elseif you.have_rune("silver") then
       if SLIMY_RUNE and not you.have_rune("slimy") then
