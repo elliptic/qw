@@ -757,7 +757,7 @@ function amulet_value(it, cur, it2)
       return -1,-1
     end
   end
-  if subtype == "amulet of faith" then
+  if subtype == "amulet of faith" and you.god() ~= "Ru" then
     return 1000,1000 -- fixed value so we don't unequip for a randart one
   end
   if it.artefact and not it.fully_identified or not (it.artefact or name:find("amulet of")) then
@@ -1755,6 +1755,12 @@ function can_hand()
           you.god() ~= "Trog"))
 end
 
+function can_ru_healing()
+  return (not (you.berserk() or you.confused() or you.silenced() or
+          starving() or you.exhausted() or you.piety_rank() < 3 or
+          you.god() ~= "Ru"))
+end
+
 function can_bia()
   return (not (you.berserk() or you.confused() or you.silenced() or
           starving() or you.piety_rank() < 4 or
@@ -2582,6 +2588,10 @@ function hand()
   use_ability("Trog's Hand")
 end
 
+function ru_healing()
+  use_ability("Draw Out Power")
+end
+
 function bia()
   use_ability("Brothers in Arms")
 end
@@ -2657,6 +2667,33 @@ function dd_prefer_hand()
     return false
   end
   return (you.piety_rank() == 6 or you.base_mp() < 3)
+end
+
+function dd_prefer_ru_healing()
+  if you.god() ~= "Ru" or you.piety_rank() < 3 then
+    return false
+  end
+  if you.status("very heavily drained") then
+    return false
+  end
+  if you.base_mp() < 3 then
+    return true
+  end
+  if you.status("heavily drained") then
+    return false
+  end
+  if not you.status("drained") then
+    return true
+  end
+  local hp,mhp = you.hp()
+  return (mhp - hp >= 45)
+end
+
+function prefer_ru_healing()
+  if you.race() == "Deep Dwarf" then
+    return dd_prefer_ru_healing()
+  end
+  return (not (you.status("drained") or you.status("heavily drained") or you.status("very heavily drained")))
 end
 
 function plan_dd_hand_for_healing()
@@ -2856,16 +2893,31 @@ function plan_cure_bad_poison()
   return false
 end
 
+function heal_general()
+  if can_ru_healing() and prefer_ru_healing() then
+    ru_healing()
+    return true
+  end
+  if heal_wounds() then
+    return true
+  end
+  if can_ru_healing() and you.race() ~= "Deep Dwarf" then
+    ru_healing()
+    return true
+  end
+  return false
+end
+
 function plan_heal_wounds()
   if want_to_heal_wounds() then
-    return heal_wounds()
+    return heal_general()
   end
   return false
 end
 
 function plan_orbrun_heal_wounds()
   if want_to_orbrun_heal_wounds() then
-    return heal_wounds()
+    return heal_general()
   end
   return false
 end
@@ -3203,7 +3255,7 @@ function want_to_orbrun_teleport()
 end
 
 function dd_want_to_heal_wounds()
-  if (not danger) and (you.regenerating() or dd_prefer_hand()) then
+  if (not danger) and (you.regenerating() or dd_prefer_hand() or (dd_prefer_ru_healing() and you.exhausted())) then
     return false
   end
   local hp,mhp = you.hp()
@@ -3211,7 +3263,7 @@ function dd_want_to_heal_wounds()
     return (hp_is_low(25) or (hp_is_low(50) and mhp - hp >= 30) or
             (mhp - hp >= 20 and hp <= 20))
   else
-    if dd_prefer_hand() and (not you.teleporting()) and not hp_is_low(66) then
+    if (dd_prefer_hand() or (dd_prefer_ru_healing() and you.exhausted())) and (not you.teleporting()) and not hp_is_low(66) then
       return false
     end
     if you.god() == "Makhleb" and you.piety_rank() >= 1 and
@@ -3234,6 +3286,9 @@ end
 function want_to_orbrun_heal_wounds()
   if danger then
     return (hp_is_low(25) or hp_is_low(50) and you.teleporting())
+  elseif you.race() == "Deep Dwarf" and you.god() == "Ru" then
+    local hp,mhp = you.hp()
+    return (mhp - hp >= 30)
   else
     return (hp_is_low(50))
   end
@@ -4193,10 +4248,12 @@ function plan_go_down()
 end
 
 function ready_for_lair()
-  if you.god() ~= "Trog" and you.piety_rank() < 4 then
-    return false
+  if you.god() == "Trog" or
+     (you.god() == "Makhleb" and you.piety_rank() >= 4) or
+     (you.god() == "Ru" and you.piety_rank() >= 3) then
+    return true
   end
-  return true
+  return false
 end
 
 function want_to_stairdance_up()
@@ -4628,6 +4685,40 @@ function plan_fly()
         say("FLYING.")
         return true
       end
+    end
+  end
+  return false
+end
+
+function plan_sacrifice()
+  if you.god() ~= "Ru" or starving() then
+    return false
+  end
+  -- sacrifices that we won't do for now: words, drink, courage, durability, hand, resistance, purity, health, artifice (on DD)
+  good_sacrifices = {
+    "Sacrifice Artifice", -- 70
+    "Sacrifice Arcana", -- 25
+    "Sacrifice Love", -- 25
+    "Sacrifice Stealth", -- 15
+    "Sacrifice Essence", -- variable
+    "Sacrifice Nimbleness", -- 30
+    "Sacrifice Skill", -- 35
+    "Sacrifice an Eye", -- 20
+    "Sacrifice Experience", -- 30
+    "Reject Sacrifices",
+  } -- hack
+  for _,sacrifice in ipairs(good_sacrifices) do
+    if sacrifice == "Sacrifice Nimbleness" then
+      for letter, abil in pairs(you.ability_table()) do
+        if abil == sacrifice then
+          you.train_skill("Fighting",1)
+          say("INVOKING " .. sacrifice .. ".")
+          magic("a" .. letter .. "YY")
+          return true
+        end
+      end
+    elseif (sacrifice ~= "Sacrifice Artifice" or you.race() ~= "Deep Dwarf") and use_ability(sacrifice, "YY") then
+      return true
     end
   end
   return false
@@ -5307,6 +5398,7 @@ end
 
 plan_pre_explore = cascade {
   {plan_fly, "fly"},
+  {plan_sacrifice, "sacrifice"},
   {plan_upgrade_weapon, "upgrade_weapon"},
   {plan_maybe_upgrade_armour, "maybe_upgrade_armour"},
   {plan_use_good_consumables, "use_good_consumables"},
@@ -5505,12 +5597,12 @@ function handle_skills()
   if you.god() == "Xom" then
     choose_single_skill("Fighting")
     you.train_skill(weapon_skill, 1)
-  elseif you.can_train_skill(weapon_skill) then
+  elseif you.can_train_skill(weapon_skill) and you.base_skill(weapon_skill) < 27 then
     choose_single_skill(weapon_skill)
   else
     choose_single_skill("Fighting")
   end
-  local at_min_delay = (you.base_skill(weapon_skill) >= min_delay_skill())
+  local at_min_delay = (you.base_skill(weapon_skill) >= min_delay_skill() + (you.god() == "Ru" and 1 or 0))
   local ac = armour_ac()
   local _,mdex = you.dexterity()
   if you.base_skill("Shields") < target_shield_skill()
@@ -5518,7 +5610,7 @@ function handle_skills()
                           >= 2*you.base_skill("Shields"))
      and you.base_skill("Fighting") >= you.base_skill("Shields") then
     you.train_skill("Shields", 1)
-  elseif intrinsic_heavy() and
+  elseif intrinsic_heavy() and you.can_train_skill("Dodging") and
          (at_min_delay or mdex >= 15 and you.base_skill(weapon_skill)
                                          >= 3*you.base_skill("Dodging"))
          and you.base_skill("Armour") >= you.base_skill("Dodging")
@@ -5550,6 +5642,10 @@ function handle_skills()
      and (you.base_skill("Evocations") < 4 or you.base_mp() < 5) then
     you.train_skill("Evocations", 1)
   end
+  if you.race() == "Deep Dwarf" and you.god() == "Ru"
+     and (you.base_skill("Spellcasting") < 2 or you.base_mp() < 5) then
+    you.train_skill("Spellcasting", 1)
+  end
   if you.race() == "Vine Stalker" and you.base_skill("Evocations") < 12
      and (at_min_delay or you.base_skill(weapon_skill)
                           >= 3*you.base_skill("Evocations")) then
@@ -5559,11 +5655,15 @@ function handle_skills()
      and you.base_skill(weapon_skill) >= 20
      and (you.base_skill(weapon_skill) >= you.base_skill("Fighting")
           or you.base_skill(weapon_skill) >= 26) then
+    you.train_skill("Fighting", 1)
     you.train_skill(weapon_skill, 0)
   end
   -- make sure we don't run out of skills to train
+  if you.base_skill(weapon_skill) >= 26 and you.train_skill(weapon_skill) > 0 then
+    you.train_skill("Fighting", 1)
+  end
   if you.base_skill("Fighting") >= 26 then
-    if intrinsic_dodgy() then
+    if intrinsic_dodgy() or not you.can_train_skill("Dodging") then
       you.train_skill("Armour", 1)
     else
       you.train_skill("Dodging", 1)
@@ -5572,14 +5672,19 @@ function handle_skills()
   if (you.base_skill("Armour") >= 26 or you.race():find("Draconian")
                                      or you.race() == "Felid"
                                      or you.race() == "Octopode")
-     and you.base_skill("Dodging") >= 26 then
-    you.train_skill("Evocations", 1)
+     and (you.base_skill("Dodging") >= 26 or not you.can_train_skill("Dodging")) then
+    if you.god() == "Ru" then
+      you.train_skill("Spellcasting", 1)
+    else
+      you.train_skill("Evocations", 1)
+    end
   end
 end
 
 function choose_stat_gain()
   local str, mstr = you.strength()
-  if intrinsic_dodgy() or mstr >= 20 and mstr >= armour_evp()+2 then
+  if (intrinsic_dodgy() or mstr >= 20 and mstr >= armour_evp()+2)
+     and you.mutation("inability to train dodging") < 1 then
     return "d"
   else
     return "s"
