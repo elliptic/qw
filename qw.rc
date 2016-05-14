@@ -70,11 +70,11 @@ combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
 #combo =
 #include += hyperqwcombo.rc
 
-## The accomplishments of qw:
-# online wins: DDBe GrBe MiBe
-# offline wins: DsBe HOBe HuBe MfBe NaBe TeBe VSBe
+## The accomplishments of qw (with Trog unless noted):
+# online wins: DDBe DDGl^M DDGl^R GrBe HOBe MiBe NaBe
+# offline wins: DsBe HuBe MfBe TeBe VSBe
 # (offline) runes: CeBe DrBe FoBe KoBe TrBe VpBe
-# non-Be offline wins: DDAr DDAs DDCK DDFi DDGl DDMo DDNe DDSk DDSu DDTm DDWn DDWr
+# non-Be offline wins: DDAr DDAs DDCK DDFi DDMo DDNe DDSk DDSu DDTm DDWn DDWr
 
 #####################################
 # enum values :/
