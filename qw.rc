@@ -1103,6 +1103,8 @@ local v5_entry_turn
 
 local slime_forgot_map = false
 
+local offlevel_travel = true
+
 ------------------------------
 -- some tables with hardcoded data about branches/portals/monsters:
 
@@ -3639,7 +3641,8 @@ end
 
 function magicfind(target)
   clear_autopickup_funcs()
-  expect_new_location = true
+  -- this will be turned on again in ready()
+  offlevel_travel = false
   magic(control('f') .. target .. "\ra\r")
   add_autopickup_func(autopickup)
 end
@@ -5873,6 +5876,7 @@ function first_turn()
 end
 
 function ready()
+  offlevel_travel = true
   if not did_first_turn and you.turns() == 0 then
     did_first_turn = true
     first_turn()
@@ -5993,7 +5997,7 @@ function c_answer_prompt(prompt)
     return true
   end
   if prompt:find("Have to go through") then
-    return true
+    return offlevel_travel
   end
   if prompt:find("transient mutations") then
     return true
