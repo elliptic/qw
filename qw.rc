@@ -1041,7 +1041,7 @@ add_autopickup_func(autopickup)
 -- some global variables:
 
 local dump_count = you.turns() + 100 - (you.turns() % 100)
-local skill_count = you.turns() - (you.turns() % 20)
+local skill_count = you.turns() - (you.turns() % 5)
 local danger
 local immediate_danger
 local where = you.where()
@@ -5587,102 +5587,103 @@ function choose_single_skill(sk)
                 "Translocations","Transmutations","Fire Magic","Ice Magic",
                 "Air Magic","Earth Magic","Poison Magic","Invocations",
                 "Evocations","Stealth"}
-  for i,sk2 in ipairs(skill_list) do
+  for _,sk2 in ipairs(skill_list) do
     if sk ~= sk2 then
       you.train_skill(sk2, 0)
     end
   end
 end
 
-function handle_skills()
+function choose_skills()
+  skills = {}
   local weapon_skill = wskill()
-  -- need to have at least one skill selected or bad things might happen
-  -- early xom characters might get their weapon removed at any point, so
-  -- always train fighting
-  if you.god() == "Xom" then
-    choose_single_skill("Fighting")
-    you.train_skill(weapon_skill, 1)
-  elseif you.can_train_skill(weapon_skill) and you.base_skill(weapon_skill) < 27 then
-    choose_single_skill(weapon_skill)
-  else
-    choose_single_skill("Fighting")
-  end
   local at_min_delay = (you.base_skill(weapon_skill) >= min_delay_skill() + (you.god() == "Ru" and 1 or 0))
   local ac = armour_ac()
   local _,mdex = you.dexterity()
+  -- Choose at most one martial skill.
   if you.base_skill("Shields") < target_shield_skill()
      and (at_min_delay or you.base_skill(weapon_skill)
                           >= 2*you.base_skill("Shields"))
      and you.base_skill("Fighting") >= you.base_skill("Shields") then
-    you.train_skill("Shields", 1)
+    table.insert(skills, "Shields")
   elseif intrinsic_heavy() and you.can_train_skill("Dodging") and
          (at_min_delay or mdex >= 15 and you.base_skill(weapon_skill)
                                          >= 3*you.base_skill("Dodging"))
          and you.base_skill("Armour") >= you.base_skill("Dodging")
          and you.base_skill("Fighting") >= you.base_skill("Dodging") then
-    you.train_skill("Dodging", 1)
+    table.insert(skills, "Dodging")
   elseif intrinsic_dodgy() and
          (at_min_delay or you.base_skill(weapon_skill)
                           >= 2*you.base_skill("Dodging"))
          and you.base_skill("Fighting") >= you.base_skill("Dodging") then
-    you.train_skill("Dodging", 1)
+    table.insert(skills, "Dodging")
   elseif intrinsic_heavy() and
          (at_min_delay or ac >= 8 and you.base_skill(weapon_skill)
                                       >= 3*you.base_skill("Armour"))
          and you.base_skill("Fighting") >= you.base_skill("Armour") then
-    you.train_skill("Armour", 1)
+    table.insert(skills, "Armour")
   elseif at_min_delay or you.base_skill(weapon_skill)
                          >= 2*you.base_skill("Fighting") then
-    you.train_skill("Fighting", 1)
+    table.insert(skills, "Fighting")
+  elseif (not at_min_delay) or you.base_skill(weapon_skill) < 20
+         or you.base_skill(weapon_skill) < you.base_skill("Fighting") then
+    table.insert(skills, weapon_skill)
   end
-  if you.god() == "Makhleb" and you.piety_rank() >= 2 and you.base_skill("Invocations") < 12 then
-    you.train_skill("Invocations", 1)
+  -- Choose at most one MP skill.
+  mp_skill = "Evocations"
+  if you.god() == "Makhleb" then
+    mp_skill = "Invocations"
+  elseif you.god() == "Ru" then
+    mp_skill = "Spellcasting"
   end
-  -- logic for training skills for MP could be improved probably
-  if you.race() == "Deep Dwarf" and you.can_train_skill("Invocations") and
-      (you.base_skill("Invocations") < 4 or you.base_mp() < 5) then
-    you.train_skill("Invocations", 1)
+  mp_skill_level = you.base_skill(mp_skill)
+  bmp = you.base_mp()
+  if you.god() == "Makhleb" and you.piety_rank() >= 2 and mp_skill_level < 12 then
+    table.insert(skills, mp_skill)
+  elseif you.race() == "Deep Dwarf"
+         and (you.god() == "Makhleb" or you.god() == "Trog")
+         and (mp_skill_level < 4 or bmp < 5) then
+    table.insert(skills, mp_skill)
+  elseif you.race() == "Deep Dwarf" and you.god() == "Ru"
+         and (mp_skill_level < 2 or bmp < 5) then
+    table.insert(skills, mp_skill)
+  elseif you.race() == "Vine Stalker" and you.god() ~= "No God"
+         and mp_skill_level < 12
+         and (at_min_delay or you.base_skill(weapon_skill)
+                              >= 3*you.base_skill("Evocations")) then
+    table.insert(skills, mp_skill)
   end
-  if you.race() == "Deep Dwarf" and you.god() == "Trog"
-     and (you.base_skill("Evocations") < 4 or you.base_mp() < 5) then
-    you.train_skill("Evocations", 1)
-  end
-  if you.race() == "Deep Dwarf" and you.god() == "Ru"
-     and (you.base_skill("Spellcasting") < 2 or you.base_mp() < 5) then
-    you.train_skill("Spellcasting", 1)
-  end
-  if you.race() == "Vine Stalker" and you.base_skill("Evocations") < 12
-     and (at_min_delay or you.base_skill(weapon_skill)
-                          >= 3*you.base_skill("Evocations")) then
-    you.train_skill("Evocations", 1)
-  end
-  if at_min_delay
-     and you.base_skill(weapon_skill) >= 20
-     and (you.base_skill(weapon_skill) >= you.base_skill("Fighting")
-          or you.base_skill(weapon_skill) >= 26) then
-    you.train_skill("Fighting", 1)
-    you.train_skill(weapon_skill, 0)
-  end
-  -- make sure we don't run out of skills to train
-  if you.base_skill(weapon_skill) >= 26 and you.train_skill(weapon_skill) > 0 then
-    you.train_skill("Fighting", 1)
-  end
-  if you.base_skill("Fighting") >= 26 then
-    if intrinsic_dodgy() or not you.can_train_skill("Dodging") then
-      you.train_skill("Armour", 1)
-    else
-      you.train_skill("Dodging", 1)
+  skills2 = {}
+  safe_count = 0
+  for _,sk in ipairs(skills) do
+    if you.can_train_skill(sk) and you.base_skill(sk) < 27 then
+      table.insert(skills2, sk)
+      if you.base_skill(sk) < 26.5 then
+        safe_count = safe_count + 1
+      end
     end
   end
-  if (you.base_skill("Armour") >= 26 or you.race():find("Draconian")
-                                     or you.race() == "Felid"
-                                     or you.race() == "Octopode")
-     and (you.base_skill("Dodging") >= 26 or not you.can_train_skill("Dodging")) then
-    if you.god() == "Ru" then
-      you.train_skill("Spellcasting", 1)
-    else
-      you.train_skill("Evocations", 1)
+  if you.god() == "Xom" and safe_count == 1 and util.contains(skills2, weapon_skill) and you.base_skill(weapon_skill) < 26.5 and you.base_skill("Fighting") < 26.5 then
+    -- Just in case Xom unwields our weapon in early game before we abandon,
+    -- though currently we abandon Xom on T0.
+    table.insert(skills2, "Fighting")
+  end
+  -- Try to avoid getting stuck in the skill screen.
+  if safe_count == 0 then
+    if you.base_skill("Fighting") < 26.5 then
+      table.insert(skills2, "Fighting")
+    elseif you.base_skill(mp_skill) < 26.5 then
+      table.insert(skills2, mp_skill)
     end
+  end
+  return skills2
+end
+
+function handle_skills()
+  skills = choose_skills()
+  choose_single_skill(skills[1])
+  for _,sk in ipairs(skills) do
+    you.train_skill(sk, 1)
   end
 end
 
@@ -5881,7 +5882,7 @@ function ready()
     crawl.dump_char()
   end
   if you.turns() >= skill_count then
-    skill_count = skill_count+20
+    skill_count = skill_count+5
     handle_skills()
   end
   local time_passed
