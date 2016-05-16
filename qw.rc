@@ -688,6 +688,9 @@ function weapon_value(it, cur, it2, hydra_swap)
     if ap and ap["Fragile"] then
       return -1,-1
     end
+    if intrinsic_evil() and name:find("holy") then
+      return -1,-1
+    end
   end
   local val1,val2 = total_resist_value(it, cur, it2)
   if it.artefact and not it.fully_identified or
