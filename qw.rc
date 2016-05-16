@@ -3979,7 +3979,7 @@ function plan_swap_weapon()
   for x = -5,5 do
     for y = -5,5 do
       m = monster_array[x][y]
-      if m and string.find(m:desc(), "hydra") then
+      if m and string.find(m:desc(), "hydra") and will_tab(0,0,x,y) then
         hydra_near = true
       end
     end
