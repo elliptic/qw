@@ -960,7 +960,8 @@ function item_is_dominated(it)
                  sub == "ring of ice" or
                  sub == "ring of poison resistance" or
                  sub == "ring of see invisible" or
-                 sub == "ring of sustain abilities" then
+                 sub == "ring of sustain abilities" or
+                 sub == "ring of resist corrosion" then
                 return true
               elseif sub == "ring of protection from fire" or
                      sub == "ring of protection from cold" then
