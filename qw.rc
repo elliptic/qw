@@ -58,6 +58,11 @@ combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
 #combo = DDBe.handaxe, DDGl.waraxe, GrBe.handaxe, GrBe.handaxe
 #combo += MiBe.handaxe, MiBe.handaxe
 
+# A larger test suite:
+#combo = DDBe.handaxe, DDGl.waraxe, DDGl.waraxe, DDGl.waraxe
+#combo += DsBe.handaxe, GrBe.handaxe, HOBe.handaxe, HuBe.handaxe
+#combo += MfBe.spear, MiBe.handaxe, NaBe.handaxe, VSBe.handaxe
+
 # For random berserkers, use these combos:
 #combo = CeBe.handaxe, DDBe.handaxe, DEBe.handaxe, DrBe.handaxe, DsBe.handaxe
 #combo += FeBe.claws, FoBe.handaxe, GrBe.handaxe, GhBe.claws, HaBe.falchion
