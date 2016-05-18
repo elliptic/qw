@@ -1753,6 +1753,9 @@ function can_zap()
   if you.berserk() or you.confused() or transformed() then
     return false
   end
+  if you.mutation("inability to use devices") > 0 then
+    return false
+  end
   local x = you.mutation("MP-powered wands")
   if x > 0 then
     local a,b = you.mp()
