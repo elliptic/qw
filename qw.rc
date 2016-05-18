@@ -5500,7 +5500,7 @@ plan_emergency = cascade {
   {plan_resistance, "resistance"},
   {plan_bia, "bia"},
   {plan_sgd, "sgd"},
-  {plan_apocalypse, "apocalypse"},
+  {plan_apocalypse, "try_apocalypse"},
   {plan_hydra_destruction, "try_hydra_destruction"},
   {plan_dd_recharge_heal_wounds, "dd_recharge_heal_wounds"},
   {plan_wield_weapon, "wield_weapon"},
