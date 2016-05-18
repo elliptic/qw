@@ -1787,6 +1787,13 @@ function can_ru_healing()
           you.god() ~= "Ru"))
 end
 
+function can_apocalypse()
+  local mp,mmp = you.mp()
+  return (not (you.berserk() or you.confused() or you.silenced() or
+          starving() or you.exhausted() or you.piety_rank() < 5 or
+          mp < 8 or you.god() ~= "Ru"))
+end
+
 function can_bia()
   return (not (you.berserk() or you.confused() or you.silenced() or
           starving() or you.piety_rank() < 4 or
@@ -2626,6 +2633,10 @@ function sgd()
   use_ability("Greater Servant of Makhleb")
 end
 
+function apocalypse()
+  use_ability("Apocalypse")
+end
+
 -- Will fail if the book is in a non-fire cloud already.
 function burn_spellbooks()
   use_ability("Burn Spellbooks")
@@ -2642,6 +2653,14 @@ end
 function plan_sgd()
   if can_sgd() and want_to_sgd() then
     sgd()
+    return true
+  end
+  return false
+end
+
+function plan_apocalypse()
+  if can_apocalypse() and want_to_apocalypse() then
+    apocalypse()
     return true
   end
   return false
@@ -3231,6 +3250,15 @@ function want_to_sgd()
     if count_sgd(4) == 0 and not you.teleporting() then
       return true
     end
+  end
+  return false
+end
+
+function want_to_apocalypse()
+  if you.race() ~= "Deep Dwarf"
+     and not (you.status("drained") or you.status("heavily drained") or you.status("very heavily drained"))
+     and (check_monsters(LOS, bia_monsters) or hp_is_low(25) and immediate_danger) then
+    return true
   end
   return false
 end
@@ -5466,6 +5494,7 @@ plan_emergency = cascade {
   {plan_resistance, "resistance"},
   {plan_bia, "bia"},
   {plan_sgd, "sgd"},
+  {plan_apocalypse, "apocalypse"},
   {plan_hydra_destruction, "try_hydra_destruction"},
   {plan_dd_recharge_heal_wounds, "dd_recharge_heal_wounds"},
   {plan_wield_weapon, "wield_weapon"},
