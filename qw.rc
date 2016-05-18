@@ -24,6 +24,7 @@
 # * random - no preference, chooses randomly
 # * nowater - does Snake/Spider first
 # * smart - currently prefers Spider > Snake/Swamp > Shoals
+# * dsmart - Swamp/Spider > Snake > Shoals (DsBe data)
 : RUNE_PREFERENCE = "random"
 # experimental: get abyssal rune
 : ABYSSAL_RUNE = false
@@ -4622,6 +4623,12 @@ function choose_lair_rune_branch()
       branch_options = { "N", "P", "S", "A" }
     else
       branch_options = { "N", "S", "P", "A" }
+    end
+  elseif RUNE_PREFERENCE == "dsmart" then
+    if crawl.random2(2) == 0 then
+      branch_options = { "N", "S", "P", "A" }
+    else
+      branch_options = { "S", "N", "P", "A" }
     end
   elseif RUNE_PREFERENCE == "nowater" then
     branch_options = { "P", "N", "S", "A" }
