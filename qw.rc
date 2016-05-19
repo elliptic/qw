@@ -615,7 +615,7 @@ function armour_value(it, cur, it2)
       if not want_buckler() then
         return -1,-1
       end
-    elseif not want_shield() then
+    elseif (not want_shield()) and (have_two_hander() or you.base_skill("Shields") == 0) then
       return -1,-1
     end
   end
@@ -2336,6 +2336,16 @@ function empty_ring_slots()
   return max_rings() - table.getn(ring_list())
 end
 
+function have_two_hander()
+  for it in inventory() do
+    if it.class(true) == "weapon" and it.weap_skill == wskill()
+       and it.hands == 2 then
+      return true
+    end
+  end
+  return false
+end
+
 function find_item(cls,name)
   if cls == "wand" then return find_wand(name) end
   for it in inventory() do
@@ -2370,6 +2380,10 @@ end
 function target_shield_skill()
   local shield = items.equipped_at("Shield")
   if not shield then
+    return 0
+  end
+  if shield.encumbrance == 1 and not want_buckler()
+     or shield.encumbrance ~= 1 and not want_shield() then
     return 0
   end
   local size = 5
@@ -3921,7 +3935,7 @@ function plan_use_good_consumables()
           end
         end
         for _,slotname in pairs(good_slots) do
-          if slotname ~= "Armour" then
+          if slotname ~= "Armour" and slotname ~= "Shield" then
             it2 = items.equipped_at(slotname)
             if it2 and not it2.artefact and it2.plus < 2 and it2.plus >= 0
                then
