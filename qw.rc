@@ -6079,5 +6079,8 @@ function c_answer_prompt(prompt)
   if prompt:find("transient mutations") then
     return true
   end
+  if prompt:find("Keep disrobing") then
+    return false
+  end
 end
 }
