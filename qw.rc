@@ -4047,8 +4047,8 @@ function plan_swap_weapon()
   end
   local hydra_near = false
   local x,y
-  for x = -5,5 do
-    for y = -5,5 do
+  for x = -3,3 do
+    for y = -3,3 do
       m = monster_array[x][y]
       if m and string.find(m:desc(), "hydra") and will_tab(0,0,x,y) then
         hydra_near = true
