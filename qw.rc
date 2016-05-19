@@ -932,7 +932,8 @@ function item_is_dominated(it)
       for it2 in inventory() do
         if equip_slot(it2) == slotname and slot(it2) ~= slot(it) then
           local hminv2,hmaxv2 = weapon_value(it2, nil, nil, true)
-          if hminv2 >= hmaxv then
+          if hminv2 >= hmaxv
+             and not (you.base_skill("Shields") > 0 and it.hands == 1 and it2.hands == 2) then
             hydra_dominated = true
           end
         end
