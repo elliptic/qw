@@ -1866,10 +1866,12 @@ function mon_speed_num(m)
   local sdesc = m:speed_description()
   local num
   if sdesc == "extremely fast" then
-    num = 5
+    num = 6
   elseif sdesc == "very fast" then
+    num = 5
+  elseif sdesc == "fast" then
     num = 4
-  elseif sdesc == "fast" or sdesc == "normal" then
+  elseif sdesc == "normal" then
     num = 3
   elseif sdesc == "slow" then
     num = 2
