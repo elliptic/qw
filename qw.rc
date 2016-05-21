@@ -1106,6 +1106,7 @@ local target_memory_y
 local last_wait = 0
 local wait_count = 0
 local old_turn_count = you.turns()
+local hiding_turn_count = -100
 
 local travel_destination = nil
 
@@ -2215,8 +2216,24 @@ function count_ranged(cx, cy, r)
   for _,e in ipairs(enemy_list) do
     local dist = supdist(cx-e.x,cy-e.y)
     if dist > 1 and dist <= r then
-      if dist == 2 and (e.m:reach_range() >= 2 or is_fast(e.m))
-         or is_ranged(e.m) then
+      if dist == 2 and is_fast(e.m)
+         or (is_ranged(e.m) or dist == 2 and e.m:reach_range() >= 2)
+            and view.cell_see_cell(cx,cy,e.x,e.y) then
+        i = i+1
+      end
+    end
+  end
+  return i
+end
+
+function count_longranged(cx, cy, r)
+  local e
+  local i = 0
+  for _,e in ipairs(enemy_list) do
+    local dist = supdist(cx-e.x,cy-e.y)
+    if dist >= 4 and dist <= r then
+      if is_ranged(e.m) and view.cell_see_cell(cx,cy,e.x,e.y) and not
+         (e.m:desc():find("wandering") or e.m:desc():find("sleeping") or e.m:desc():find("dormant") or e.m:name() == "electric eel" or e.m:name() == "lava snake" or e.m:is_stationary()) then
         i = i+1
       end
     end
@@ -2229,7 +2246,7 @@ function count_unalert(cx, cy, r)
   local i = 0
   for _,e in ipairs(enemy_list) do
     local dist = supdist(cx-e.x,cy-e.y)
-    if dist <= r then
+    if dist <= r and dist > 1 and view.cell_see_cell(cx,cy,e.x,e.y) then
       if e.m:desc():find("wandering") and not e.m:desc():find("mushroom")
          or e.m:desc():find("sleeping") or e.m:desc():find("dormant") then
         i = i+1
@@ -3093,11 +3110,14 @@ function assess_square(x,y)
   cloud = view.cloud_at(x,y)
   -- nonadjacent monsters who might be able to attack you (ranged/reaching/fast)
   a.ranged = count_ranged(x,y,LOS)
+  -- alert ranged monsters at distance >= 4
+  a.longranged = count_longranged(x,y,LOS)
   -- adjacent monsters
   a.adjacent = count_nearby(x,y,1)
   -- wandering or sleeping monsters
   a.unalert = count_unalert(x,y,LOS)
-  -- corners - avoid these if not cleaving
+
+  -- corners - avoid these if possible
   a.cornerish = is_cornerish(x,y)
   if have_reaching() then
     -- slow adjacent nonranged monsters, for kiting
@@ -3126,6 +3146,7 @@ end
 --   cloud       - stepping out of harmful cloud
 --   water       - stepping out of shallow water when it would cause fumbling
 --   reaching    - kiting slower monsters with reaching
+--   hiding      - moving out of sight of alert ranged enemies at distance >= 4
 --   stealth     - moving out of sight of sleeping or wandering monsters
 --   outnumbered - stepping away from a square adjacent to multiple monsters
 --                 (when not cleaving)
@@ -3145,6 +3166,8 @@ function step_reason(a1,a2)
   elseif have_reaching() and a1.slow_adjacent > 0 and a2.adjacent == 0
          and a2.ranged == 0 then
     return "reaching"
+  elseif a2.ranged == 0 and a2.adjacent == 0 and a1.longranged > 0 then
+    return "hiding"
   elseif a2.ranged == 0 and a2.adjacent == 0 and a2.unalert < a1.unalert then
     return "stealth"
   elseif cleaving() then
@@ -3202,7 +3225,7 @@ function plan_choose_tactical_step()
   if a0.cloud_safe and not (a0.fumble and sense_danger(3))
      and (not have_reaching() or a0.slow_adjacent == 0)
      and (a0.adjacent <= 1 or cleaving())
-     and a0.unalert == 0 then
+     and a0.unalert == 0 and a0.longranged == 0 then
     return false
   end
   local bestx,besty,bestreason
@@ -3258,6 +3281,9 @@ end
 
 function plan_other_step()
   if tactical_reason ~= "none" then
+    if tactical_reason == "hiding" then
+      hiding_turn_count = you.turns()
+    end
     say("Stepping ~*~*~tactically~*~*~ (" .. tactical_reason .. ").")
     magic(tactical_step .. "Y")
     return true
@@ -3801,6 +3827,11 @@ function plan_find_corpses()
 end
 
 function plan_autoexplore()
+  if you.turns() < hiding_turn_count + 10 then
+    say("Waiting for ranged monster.")
+    magic("s")
+    return true
+  end
   if free_inventory_slots() == 0 then
     return false
   end
