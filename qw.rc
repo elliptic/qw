@@ -2222,6 +2222,21 @@ function count_ranged(cx, cy, r)
   return i
 end
 
+function count_unalert(cx, cy, r)
+  local e
+  local i = 0
+  for _,e in ipairs(enemy_list) do
+    local dist = supdist(cx-e.x,cy-e.y)
+    if dist <= r then
+      if e.m:desc():find("wandering") and not e.m:desc():find("mushroom")
+         or e.m:desc():find("sleeping") or e.m:desc():find("dormant") then
+        i = i+1
+      end
+    end
+  end
+  return i
+end
+
 function count_nearby(cx, cy, r)
   local x, y
   local i = 0
@@ -3063,7 +3078,7 @@ end
 
 function assess_square(x,y)
   a = {}
-  -- distance tu current square
+  -- distance to current square
   a.supdist = supdist(x,y)
   -- can we move there?
   a.can_move = (a.supdist == 0) or not view.withheld(x,y)
@@ -3078,6 +3093,8 @@ function assess_square(x,y)
   a.ranged = count_ranged(x,y,LOS)
   -- adjacent monsters
   a.adjacent = count_nearby(x,y,1)
+  -- wandering or sleeping monsters
+  a.unalert = count_unalert(x,y,LOS)
   -- corners - avoid these if not cleaving
   a.cornerish = is_cornerish(x,y)
   if have_reaching() then
@@ -3107,6 +3124,7 @@ end
 --   cloud       - stepping out of harmful cloud
 --   water       - stepping out of shallow water when it would cause fumbling
 --   reaching    - kiting slower monsters with reaching
+--   stealth     - moving out of sight of sleeping or wandering monsters
 --   outnumbered - stepping away from a square adjacent to multiple monsters
 --                 (when not cleaving)
 function step_reason(a1,a2)
@@ -3125,6 +3143,8 @@ function step_reason(a1,a2)
   elseif have_reaching() and a1.slow_adjacent > 0 and a2.adjacent == 0
          and a2.ranged == 0 then
     return "reaching"
+  elseif a2.ranged == 0 and a2.adjacent == 0 and a2.unalert < a1.unalert then
+    return "stealth"
   elseif cleaving() then
     return false
   elseif a1.adjacent == 1 then
@@ -3152,6 +3172,10 @@ function step_improvement(reason,a1,a2)
     return true
   elseif cleaving() and a2.ranged > a1.ranged then
     return false
+  elseif a2.adjacent+a2.ranged == 0 and a2.unalert < a1.unalert then
+    return true
+  elseif a2.adjacent+a2.ranged == 0 and a2.unalert > a1.unalert then
+    return false
   elseif a2.enemy_distance < a1.enemy_distance then
     return true
   elseif a2.enemy_distance > a1.enemy_distance then
@@ -3175,7 +3199,8 @@ function plan_choose_tactical_step()
   local a0 = assess_square(0,0)
   if a0.cloud_safe and not (a0.fumble and sense_danger(3))
      and (not have_reaching() or a0.slow_adjacent == 0)
-     and (a0.adjacent <= 1 or cleaving()) then
+     and (a0.adjacent <= 1 or cleaving())
+     and a0.unalert == 0 then
     return false
   end
   local bestx,besty,bestreason
