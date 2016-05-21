@@ -3572,6 +3572,9 @@ function plan_wait_throw()
   if not is_waiting then
     return false
   end
+  if distance_to_enemy(0,0) < 3 then
+    return false
+  end
   if items.fired_item() then
     magic("Q-ff") -- reset quiver before throwing
     return true
