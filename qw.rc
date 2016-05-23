@@ -3164,10 +3164,14 @@ end
 function step_reason(a1,a2)
   if not (a2.can_move and a2.safe and a2.supdist > 0) then
     return false
+  elseif (a2.fumble or a2.slow) and a1.cloud_safe then
+    return false
+  elseif a2.ranged == 0 and a2.adjacent == 0 and a1.longranged > 0 then
+    return "hiding"
+  elseif a2.ranged == 0 and a2.adjacent == 0 and a2.unalert < a1.unalert then
+    return "stealth"
   elseif not a1.cloud_safe then
     return "cloud"
-  elseif a2.fumble or a2.slow then
-    return false
   elseif a1.fumble then
     if a2.ranged > a1.ranged and a2.enemy_distance > a1.enemy_distance then
       return false
@@ -3177,10 +3181,6 @@ function step_reason(a1,a2)
   elseif have_reaching() and a1.slow_adjacent > 0 and a2.adjacent == 0
          and a2.ranged == 0 then
     return "reaching"
-  elseif a2.ranged == 0 and a2.adjacent == 0 and a1.longranged > 0 then
-    return "hiding"
-  elseif a2.ranged == 0 and a2.adjacent == 0 and a2.unalert < a1.unalert then
-    return "stealth"
   elseif cleaving() then
     return false
   elseif a1.adjacent == 1 then
@@ -3290,11 +3290,20 @@ function plan_water_step()
   return false
 end
 
-function plan_other_step()
-  if tactical_reason ~= "none" then
+function plan_coward_step()
+  if tactical_reason == "hiding" or tactical_reason == "stealth" then
     if tactical_reason == "hiding" then
       hiding_turn_count = you.turns()
     end
+    say("Stepping ~*~*~tactically~*~*~ (" .. tactical_reason .. ").")
+    magic(tactical_step .. "Y")
+    return true
+  end
+  return false
+end
+
+function plan_other_step()
+  if tactical_reason ~= "none" then
     say("Stepping ~*~*~tactically~*~*~ (" .. tactical_reason .. ").")
     magic(tactical_step .. "Y")
     return true
@@ -5581,12 +5590,13 @@ plan_pre_explore2 = cascade {
 plan_emergency = cascade {
   {plan_cure_starving, "cure_starving"},
   {plan_cure_confusion, "cure_confusion"},
+  {plan_choose_tactical_step, "choose_tactical_step"},
+  {plan_coward_step, "coward_step"},
   {plan_remove_terrible_jewellery, "remove_terrible_jewellery"},
   {plan_teleport, "teleport"},
   {plan_dd_recharge_teleport, "dd_recharge_teleport"},
   {plan_cure_bad_poison, "cure_bad_poison"},
   {plan_heal_wounds, "heal_wounds"},
-  {plan_choose_tactical_step, "choose_tactical_step"},
   {plan_cloud_step, "cloud_step"},
   {plan_hand, "hand"},
   {plan_resistance, "resistance"},
