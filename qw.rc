@@ -2096,6 +2096,11 @@ function tabbable_square(x,y)
   return false
 end
 
+function mons_tabbable_square(x,y)
+  local feat = view.feature_at(x,y)
+  return (feat ~= "deep_water" and feat ~= "lava" and not is_solid(x,y))
+end
+
 function try_move(dx, dy)
   if view.is_safe_square(dx, dy) and not view.withheld(dx, dy) and
      not monster_in_way(dx,dy) then
@@ -2105,7 +2110,7 @@ function try_move(dx, dy)
   end
 end
 
-function will_tab(cx, cy, ex, ey)
+function will_tab(cx, cy, ex, ey, square_func)
   local dx = ex - cx
   local dy = ey - cy
   if abs(dx) <= 1 and abs(dy) <= 1 then
@@ -2114,8 +2119,8 @@ function will_tab(cx, cy, ex, ey)
   local function attempt_move(fx, fy)
     if fx == 0 and fy == 0 then return end
     if supdist(cx+fx,cy+fy) > LOS then return end
-    if tabbable_square(cx+fx, cy+fy) then
-      return will_tab(cx+fx, cy+fy, ex, ey)
+    if square_func(cx+fx, cy+fy) then
+      return will_tab(cx+fx, cy+fy, ex, ey, square_func)
     end
   end
   local move = nil
@@ -2200,7 +2205,7 @@ function is_candidate_for_attack(x, y, no_untabbable)
     end
   end
   if no_untabbable then
-    if will_tab(0,0,x,y) then
+    if will_tab(0,0,x,y,tabbable_square) then
       remove_ignore(x,y)
     else
       add_ignore(x,y)
@@ -2234,7 +2239,9 @@ function count_longranged(cx, cy, r)
     if dist >= 4 and dist <= r then
       if is_ranged(e.m) and view.cell_see_cell(cx,cy,e.x,e.y) and not
          (e.m:desc():find("wandering") or e.m:desc():find("sleeping") or e.m:desc():find("dormant") or e.m:name() == "electric eel" or e.m:name() == "lava snake" or e.m:is_stationary()) then
-        i = i+1
+        if will_tab(e.x,e.y,0,0,mons_tabbable_square) then
+          i = i+1
+        end
       end
     end
   end
@@ -2594,6 +2601,10 @@ function should_rest()
   end
   if dangerous_to_rest() then
     return false
+  end
+  if you.turns() < hiding_turn_count + 10 then
+    say("Waiting for ranged monster.")
+    return true
   end
   return (hp_is_low(90) and
           (you.race() ~= "Deep Dwarf" and you.hunger_name() ~= "bloodless"
@@ -3505,13 +3516,13 @@ function plan_wait_for_melee()
       wait_count = 0
       return false
     end
-    if will_tab(0,0,e.x,e.y) and not
+    if will_tab(e.x,e.y,0,0,mons_tabbable_square) and not
        (e.m:name() == "wandering mushroom" or
         e.m:name():find("ballistomycete") or
         e.m:name():find("vortex") or
         e.m:desc():find("fleeing")) then
       count = count + 1
-      if e.m:desc():find("sleeping") then
+      if e.m:desc():find("sleeping") or e.m:desc():find("dormant") then
         sleeping_count = sleeping_count + 1
       end
     end
@@ -3830,11 +3841,6 @@ function plan_find_corpses()
 end
 
 function plan_autoexplore()
-  if you.turns() < hiding_turn_count + 10 then
-    say("Waiting for ranged monster.")
-    magic("s")
-    return true
-  end
   if free_inventory_slots() == 0 then
     return false
   end
@@ -4111,7 +4117,7 @@ function plan_swap_weapon()
   for x = -3,3 do
     for y = -3,3 do
       m = monster_array[x][y]
-      if m and string.find(m:desc(), "hydra") and will_tab(0,0,x,y) then
+      if m and string.find(m:desc(), "hydra") and will_tab(0,0,x,y,tabbable_square) then
         hydra_near = true
       end
     end
