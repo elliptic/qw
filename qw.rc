@@ -3110,6 +3110,10 @@ function assess_square(x,y)
   a = {}
   -- distance to current square
   a.supdist = supdist(x,y)
+  -- is current square near a BiA/SGD?
+  if a.supdist == 0 then
+    a.near_ally = (count_bia(3) + count_sgd(3) > 0)
+  end
   -- can we move there?
   a.can_move = (a.supdist == 0) or not view.withheld(x,y)
                                    and not monster_in_way(x,y)
@@ -3166,9 +3170,9 @@ function step_reason(a1,a2)
     return false
   elseif (a2.fumble or a2.slow) and a1.cloud_safe then
     return false
-  elseif a2.ranged == 0 and a2.adjacent == 0 and a1.longranged > 0 then
+  elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0 and a1.longranged > 0 then
     return "hiding"
-  elseif a2.ranged == 0 and a2.adjacent == 0 and a2.unalert < a1.unalert then
+  elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0 and a2.unalert < a1.unalert then
     return "stealth"
   elseif not a1.cloud_safe then
     return "cloud"
@@ -3236,7 +3240,7 @@ function plan_choose_tactical_step()
   if a0.cloud_safe and not (a0.fumble and sense_danger(3))
      and (not have_reaching() or a0.slow_adjacent == 0)
      and (a0.adjacent <= 1 or cleaving())
-     and a0.unalert == 0 and a0.longranged == 0 then
+     and (a0.near_ally or a0.unalert == 0 and a0.longranged == 0) then
     return false
   end
   local bestx,besty,bestreason
