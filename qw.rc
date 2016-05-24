@@ -6174,5 +6174,10 @@ function c_answer_prompt(prompt)
   if prompt:find("Keep disrobing") then
     return false
   end
+  if prompt:find("Really unwield") or prompt:find("Really take off")
+     or prompt:find("Really remove") or prompt:find("Really wield")
+     or prompt:find("Really wear") or prompt:find("Really put on") then
+    return true
+  end
 end
 }
