@@ -383,7 +383,8 @@ function equip_slot(it)
   elseif class == "weapon" then
     return "Weapon"
   elseif class == "jewellery" then
-    if it.subtype():find("amulet") then
+    local sub = it.subtype()
+    if sub and sub:find("amulet") or not sub and it.name():find("amulet") then
       return "Amulet"
     else
       return "Ring" -- not the actual slot name
