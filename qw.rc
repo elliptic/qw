@@ -233,7 +233,7 @@ function equip_value(it, cur, it2)
   elseif class == "weapon" then
     return weapon_value(it, cur, it2, false)
   elseif class == "jewellery" then
-    if it.name():find("amulet") then
+    if equip_slot(it) == "Amulet" then
       return amulet_value(it, cur, it2)
     else
       return ring_value(it, cur, it2)
@@ -383,7 +383,7 @@ function equip_slot(it)
   elseif class == "weapon" then
     return "Weapon"
   elseif class == "jewellery" then
-    if it.name():find("amulet") then
+    if it.subtype():find("amulet") then
       return "Amulet"
     else
       return "Ring" -- not the actual slot name
@@ -2366,8 +2366,7 @@ function ring_list()
     return rings
   end
   for it in inventory() do
-    if it.equipped and it.class(true) == "jewellery" and it.name():find("ring")
-       then
+    if it.equipped and equip_slot(it) == "Ring" then
       table.insert(rings, it)
     end
   end
@@ -4234,7 +4233,7 @@ function plan_upgrade_amulet()
   it_old = items.equipped_at("Amulet")
   swappable = can_swap("Amulet")
   for it in inventory() do
-    if it and it.class(true) == "jewellery" and it.name():find("amulet")
+    if it and equip_slot(it) == "Amulet"
           and (it.fully_identified or count_item("scroll", "remove curse") > 1)
           and not it.equipped then
       local equip = false
@@ -4265,7 +4264,7 @@ function plan_upgrade_rings()
   local it_rings = ring_list()
   local empty = (empty_ring_slots() > 0)
   for it in inventory() do
-    if it and it.class(true) == "jewellery" and it.name():find("ring")
+    if it and equip_slot(it) == "Ring"
           and (it.fully_identified or count_item("scroll", "remove curse") > 1)
           and not it.equipped then
       local equip = false
