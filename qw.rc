@@ -6182,5 +6182,8 @@ function c_answer_prompt(prompt)
      or prompt:find("Really wear") or prompt:find("Really put on") then
     return true
   end
+  if prompt:find("Keep reading") then
+    return true
+  end
 end
 }
