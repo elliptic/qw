@@ -1894,10 +1894,13 @@ function is_fast(m)
 end
 
 function is_ranged(m)
+  local name = m:name()
+  if name:find("kraken") then
+    return false
+  end
   if m:has_known_ranged_attack() then
     return true
   end
-  local name = m:name()
   if name == "Maurice" or name == "crimson imp" or name == "boulder beetle" then
     return true
   end
