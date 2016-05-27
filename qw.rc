@@ -419,7 +419,7 @@ function absolute_resist_value(str, n)
       val = 250
     end
     if str == "rF" and zot_soon() then
-      val = val * 2
+      val = val * 2.5
     elseif str == "rC" and slime_soon() then
       val = val * 1.5
     end
@@ -461,7 +461,7 @@ function max_resist_value(str, d)
       val = 350
     end
     if str == "rF" then
-      val = val * 2
+      val = val * 2.5
     elseif str == "rC" and SLIMY_RUNE then
       val = val * 1.5
     end
@@ -498,7 +498,7 @@ function min_resist_value(str, d)
     return 0
   end
   if str == "rF" then
-    return -300
+    return -375
   elseif str == "rC" then
     return (SLIMY_RUNE and -225 or -150)
   elseif str == "MR" then
