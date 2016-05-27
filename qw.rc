@@ -45,6 +45,9 @@
 : GOD_LIST = { "Trog", }
 # acceptable gods (for DD)
 : DD_GOD_LIST = { "Trog", "Makhleb", "Ru", }
+# cycle through combos DDFi.waraxe, GrBe.handaxe, DDGl.waraxe, MiBe.handaxe
+# using c_persist.options
+: COMBO_CYCLE = false
 # quit after this number of turns while stuck
 : QUIT_TURNS = 1000
 
@@ -131,6 +134,8 @@ note_all_spells = true
 fire_order = launcher, rock, javelin, tomahawk
 
 auto_eat_chunks = false
+
+read_persist_options = true
 
 ####################################
 # not sure exactly how important or correct these settings are
@@ -6037,6 +6042,21 @@ function first_turn_persist()
     if key ~= "record" then
       c_persist[key] = nil
     end
+  end
+  if COMBO_CYCLE then
+    local next_combo
+    if you.class() == "Fighter" then
+      next_combo = "GrBe.handaxe"
+    elseif you.race() == "Gargoyle" then
+      next_combo = "DDGl.waraxe"
+    elseif you.class() == "Gladiator" then
+      next_combo = "MiBe.handaxe"
+    elseif you.race() == "Minotaur" then
+      next_combo = "DDFi.waraxe"
+    else -- fallback in case we started with something else
+      next_combo = "DDFi.waraxe"
+    end
+    c_persist.options = "combo = " .. next_combo
   end
 end
 
