@@ -2744,6 +2744,9 @@ function plan_hydra_destruction()
   if not can_destruction() then
     return false
   end
+  if you.skill("Invocations") < 8 then
+    return false
+  end
   if count_sgd(4) > 0 then
     return false
   end
