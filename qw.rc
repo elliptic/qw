@@ -3351,7 +3351,7 @@ function want_to_bia()
 end
 
 function want_to_sgd()
-  if you.skill("Invocations") >= 8 and
+  if you.skill("Invocations") >= 12 and
      (check_monsters(LOS, bia_monsters) or hp_is_low(50) and immediate_danger) then
     if count_sgd(4) == 0 and not you.teleporting() then
       return true
@@ -5818,7 +5818,7 @@ function choose_skills()
   end
   mp_skill_level = you.base_skill(mp_skill)
   bmp = you.base_mp()
-  if you.god() == "Makhleb" and you.piety_rank() >= 2 and mp_skill_level < 12 then
+  if you.god() == "Makhleb" and you.piety_rank() >= 2 and mp_skill_level < 15 then
     table.insert(skills, mp_skill)
   elseif you.race() == "Deep Dwarf"
          and (you.god() == "Makhleb" or you.god() == "Trog")
