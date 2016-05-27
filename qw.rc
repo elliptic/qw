@@ -3802,11 +3802,9 @@ function plan_handle_corpses()
 end
 
 function magicfind(target)
-  clear_autopickup_funcs()
   -- this will be turned on again in ready()
   offlevel_travel = false
   magic(control('f') .. target .. "\ra\r")
-  add_autopickup_func(autopickup)
 end
 
 function god_options()
