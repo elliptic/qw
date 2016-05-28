@@ -865,6 +865,26 @@ function ring_value(it, cur, it2)
   return value+val1,value+val2
 end
 
+function count_charges(wand_type, ignore_it)
+  count = 0
+  for it in inventory() do
+    if it.class(true) == "wand"
+       and (ignore_it == nil or slot(it) ~= slot(ignore_it))
+       and it.subtype() == wand_type then
+      if it.plus then
+        count = count + it.plus
+      elseif it.plus == nil and not it.name():find("empty") then
+        if it.name():find("zapped") then
+          count = count + 3
+        else
+          count = count + 6
+        end
+      end
+    end
+  end
+  return count
+end
+
 function want_wand(it)
   if you.mutation("inability to use devices") > 0 then
     return false
@@ -884,18 +904,10 @@ function want_wand(it)
         return false
       end
     end
-  elseif sub == "digging" or sub == "disintegration" then
-    for it2 in inventory() do
-      if it2.class(true) == "wand" and slot(it2) ~= slot(it) then
-        sub2 = it2.subtype()
-        if sub2 == "digging" or sub2 == "disintegration" then
-          if not it2.name():find("empty") and not it2.name():find("zapped")
-             and (it2.plus == nil or it2.plus > 0) then
-            return false
-          end
-        end
-      end
-    end
+  elseif sub == "digging" then
+    return (count_charges("digging", it) < 18)
+  elseif sub == "disintegration" then
+    return (count_charges("digging") + count_charges("disintegration", it) < 18)
   end
   return true
 end
@@ -3939,7 +3951,9 @@ function plan_use_id_scrolls()
     if it.class(true) == "wand" and not it.fully_identified and
        (it.name():find("empty") or it.name():find("teleportation") or
         it.name():find("heal wounds") and you.race() ~= "Vine Stalker" or
-        it.name():find("hasting")) then
+        it.name():find("hasting") or
+        (it.name():find("digging") or it.name():find("disintegration"))
+        and (where:find("Depths") or where:find("Zot"))) then
       oldname = it.name()
       if read2(id_scroll, letter(it)) then
         say("IDENTIFYING " .. oldname)
@@ -5188,6 +5202,48 @@ function plan_swamp_clouds_hack()
   return plan_stuck_teleport()
 end
 
+function plan_drac_dig()
+  if where ~= "Depths:5" and not where:find("Zot") then
+    return false
+  end
+  local e
+  for _,e in ipairs(enemy_list) do
+    local name = e.m:name()
+    if name:find("draconian")
+       and (name:find("caller") or name:find("zealot") or name:find("scorcher"))
+       and not will_tab(0,0,e.x,e.y,tabbable_square) then
+      local grate_count = 0
+      local dx,dy
+      local closest_grate = 20
+      local gx,gy,cgx,cgy
+      for dx = -1,1 do
+        for dy = -1,1 do
+          gx = e.x + dx
+          gy = e.y + dy
+          if supdist(gx,gy) <= LOS and view.feature_at(gx,gy) == "iron_grate" then
+            grate_count = grate_count + 1
+            if abs(gx) + abs(gy) < closest_grate and you.see_cell_solid_see(gx,gy) then
+              cgx = gx
+              cgy = gy
+              closest_grate = abs(gx) + abs(gy)
+            end
+          end
+        end
+      end
+      if grate_count >= 3 and closest_grate < 20 then
+        local c = find_item("wand", "digging") or
+                  find_item("wand", "disintegration")
+        if c and can_zap() then
+          say("ZAPPING " .. item(c).name() .. ".")
+          magic("V" .. letter(c) .. "r" .. vector_move(cgx,cgy) .. "\r")
+          return true
+        end
+      end
+    end
+  end
+  return false
+end
+
 function plan_slime_dig_to_rune()
   if where ~= "Slime:6" or you.have_rune("slimy") then
     return false
@@ -5621,6 +5677,7 @@ plan_emergency = cascade {
   {plan_wield_weapon, "wield_weapon"},
   {plan_swap_weapon, "swap_weapon"},
   {plan_water_step, "water_step"},
+  {plan_drac_dig, "try_drac_dig"},
   {plan_berserk, "berserk"},
   {plan_other_step, "other_step"},
 } -- hack
