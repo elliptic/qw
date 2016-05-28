@@ -5766,7 +5766,7 @@ plan_move = cascade {
   {plan_pre_explore, "pre_explore"},
   {plan_step_towards_lair, "step_towards_lair"},
   {plan_continue_tab, "continue_tab"},
-  --{plan_abandon_god, "abandon_god"},
+  {plan_abandon_god, "abandon_god"},
   {plan_unwield_weapon, "unwield_weapon"},
   {plan_join_god, "join_god"},
   {plan_find_altar, "try_find_altar"},
