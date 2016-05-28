@@ -45,9 +45,10 @@
 : GOD_LIST = { "Trog", }
 # acceptable gods (for DD)
 : DD_GOD_LIST = { "Trog", "Makhleb", "Ru", }
-# cycle through combos DDFi.waraxe, GrBe.handaxe, DDGl.waraxe, MiBe.handaxe
-# using c_persist.options
+# cycle through combos using c_persist.options
 : COMBO_CYCLE = false
+# combos to cycle through
+: COMBO_CYCLE_LIST = { "DDFi.waraxe", "GrBe.handaxe", "DDFi.waraxe", "MiBe.handaxe" }
 # quit after this number of turns while stuck
 : QUIT_TURNS = 1000
 
@@ -6102,19 +6103,7 @@ function first_turn_persist()
     end
   end
   if COMBO_CYCLE then
-    local next_combo
-    if you.class() == "Fighter" then
-      next_combo = "GrBe.handaxe"
-    elseif you.race() == "Gargoyle" then
-      next_combo = "DDGl.waraxe"
-    elseif you.class() == "Gladiator" then
-      next_combo = "MiBe.handaxe"
-    elseif you.race() == "Minotaur" then
-      next_combo = "DDFi.waraxe"
-    else -- fallback in case we started with something else
-      next_combo = "DDFi.waraxe"
-    end
-    c_persist.options = "combo = " .. next_combo
+    c_persist.options = "combo = " .. COMBO_CYCLE_LIST[1 + (c_persist.record.counter % (#COMBO_CYCLE_LIST))]
   end
 end
 
