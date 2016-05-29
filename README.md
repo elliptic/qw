@@ -10,7 +10,7 @@ abilities aren't used, and qw will convert to Trog at the first opportunity if i
 it wins 4-5% of its games in offline testing.
 
 ## running on remote DCSS server
-* go to e.g. http://crawl.s-z.org/
+* go to e.g. http://crawl.akrasiac.org:8080/
 * click "(edit rc)" link for DCSS trunk
 * replace text that were here with contents of qw.rc file from this repo
 * in ": DELAYED = false" and ": AUTO_START = false" lines change "false" to "true"
