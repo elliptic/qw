@@ -3861,7 +3861,7 @@ function plan_join_god()
       if you.silenced() then
         rest()
       else
-        magic("pYY")
+        magic("pYYY")
       end
       return true
     end
