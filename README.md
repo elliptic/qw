@@ -4,17 +4,19 @@ to win DCSS with no human assistance. A substantial amount of code here was
 contributed by elliott or borrowed from N78291's bot "xw", and many others
 have contributed as well.
 
-The current version of qw works in 0.16 trunk and can start as any
+The current version of qw works in 0.19 trunk and can start as any
 species/background combination. Note though that spells and most racial
-abilities aren't used, and qw will convert to Trog at the first opportunity if it doesn't start as a Berserker. Its best combos are DDBe and GrBe, with which
-it wins 4-5% of its games in offline testing.
+abilities aren't used, and qw is not very good at most combos! Its best
+combos are DDBe, GrBe, MiBe, and DDFi^Makhleb, which all manage winrates
+in the 4-9% range. It also has some basic ability with Ru.
 
 ## running on remote DCSS server
 * go to e.g. http://crawl.akrasiac.org:8080/
 * click "(edit rc)" link for DCSS trunk
 * replace text that were here with contents of qw.rc file from this repo
 * in ": DELAYED = false" and ": AUTO_START = false" lines change "false" to "true"
-* you may also want to edit lines setting "combo" variable
+* you may also want to edit some of the configuration lines near the top
+  of qw.rc (for instance to choose which combos qw will play)
 * save and run DCSS trunk (either in webtiles or in console)
 * enjoy!
 
