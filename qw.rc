@@ -3414,7 +3414,7 @@ function bad_corrosion()
 end
 
 function want_to_teleport()
-  if count_hostile_sgd(LOS) > 0 then
+  if count_hostile_sgd(LOS) > 0 and you.xl() < 21 then
     sgd_timer = you.turns()
     return true
   end
