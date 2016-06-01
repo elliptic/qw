@@ -12,7 +12,7 @@
 : DELAYED = false
 # Delay per action in milliseconds.
 # Set this to at least 100 or so when playing online.
-: DELAY_TIME = 100
+: DELAY_TIME = 125
 # whether to start playing immediately when a new game is started
 # unfortunately this doesn't work if the game starts with a -more-
 : AUTO_START = false
