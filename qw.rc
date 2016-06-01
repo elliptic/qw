@@ -1215,10 +1215,14 @@ function slow_berserk(name)
   end
 end
 
+function check_flaming()
+  weap = items.equipped_at("Weapon")
+  return (weap and weap.ego() == "flaming") -- assume chopping for now
+end
+
 function hydra_check_flaming(m)
   if m:desc():find("hydra") then
-    weap = items.equipped_at("Weapon")
-    return (not (weap and weap.ego() == "flaming")) -- assume chopping for now
+    return (not check_flaming())
   end
   return false
 end
@@ -2760,7 +2764,7 @@ function plan_hydra_destruction()
   if you.skill("Invocations") < 8 then
     return false
   end
-  if count_sgd(4) > 0 then
+  if count_sgd(4) > 0 or hydra_check_flaming() or you.xl() >= 20 then
     return false
   end
   local x,y
