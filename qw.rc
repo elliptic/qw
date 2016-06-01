@@ -1457,6 +1457,8 @@ local bia_monsters = {
   {100, "seraph"},
   {100, "Royal Jelly"},
   {100, check_resist("spark wasp","rElec",1)},
+  {100, "juggernaut"},
+  {100, "iron giant"},
 } -- hack
 
 -- Trog's Hand these
