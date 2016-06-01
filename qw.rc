@@ -41,10 +41,12 @@
 : SINGLE_STEP = false
 # panic (stop) at full inventory
 : FULL_INVENTORY_PANIC = true
-# acceptable gods (for non-DD)
-: GOD_LIST = { "Trog", }
-# acceptable gods (for DD)
+# acceptable gods (will not abandon)
+: GOD_LIST = { "Trog", "Makhleb", "Ru", }
 : DD_GOD_LIST = { "Trog", "Makhleb", "Ru", }
+# preferred gods (will join)
+: GOD_DESIRED = { "Trog", }
+: DD_GOD_DESIRED = { "Trog", "Makhleb", "Ru", }
 # cycle through combos using c_persist.options
 : COMBO_CYCLE = false
 # combos to cycle through
@@ -3830,11 +3832,15 @@ function god_options()
   return (you.race() == "Deep Dwarf" and DD_GOD_LIST or GOD_LIST)
 end
 
+function god_desired()
+  return (you.race() == "Deep Dwarf" and DD_GOD_DESIRED or GOD_DESIRED)
+end
+
 function plan_find_altar()
   if not want_altar() then
     return false
   end
-  str = "@altar&&<<of " .. table.concat(god_options(), "||of ") .. ">>"
+  str = "@altar&&<<of " .. table.concat(god_desired(), "||of ") .. ">>"
   magicfind(str)
   return true
 end
@@ -3863,7 +3869,7 @@ function plan_join_god()
     return false
   end
   feat = view.feature_at(0,0)
-  for _,god in ipairs(god_options()) do
+  for _,god in ipairs(god_desired()) do
     if feat == ("altar_" .. string.lower(god)) then
       if you.silenced() then
         rest()
