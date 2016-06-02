@@ -41,6 +41,8 @@
 : SINGLE_STEP = false
 # panic (stop) at full inventory
 : FULL_INVENTORY_PANIC = true
+# use a shield at all cost
+: SHIELD_CRAZY = true
 # acceptable gods (will not abandon)
 : GOD_LIST = { "Trog", "Makhleb", "Ru", }
 : DD_GOD_LIST = { "Trog", "Makhleb", "Ru", }
@@ -1592,6 +1594,9 @@ function want_buckler()
   if you.race() == "Felid" then
     return false
   end
+  if SHIELD_CRAZY then
+    return true
+  end
   if wskill() == "Short Blades" or wskill() == "Unarmed Combat" then
     return true
   end
@@ -1605,6 +1610,9 @@ end
 function want_shield()
   if not want_buckler() then
     return false
+  end
+  if SHIELD_CRAZY then
+    return true
   end
   return (you.race() == "Troll" or you.race() == "Formicid")
 end
@@ -5876,7 +5884,7 @@ function choose_skills()
   elseif at_min_delay or you.base_skill(weapon_skill)
                          >= 2*you.base_skill("Fighting") then
     table.insert(skills, "Fighting")
-  elseif (not at_min_delay) or you.base_skill(weapon_skill) < 20
+  elseif (not at_min_delay) or you.base_skill(weapon_skill) < (SHIELD_CRAZY and 18 or 20)
          or you.base_skill(weapon_skill) < you.base_skill("Fighting") then
     table.insert(skills, weapon_skill)
   end
