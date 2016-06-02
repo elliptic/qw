@@ -4430,6 +4430,9 @@ function plan_go_up()
   if feat:find("stone_stairs_up") or feat == "escape_hatch_up"
      or feat == "exit_zot" or feat == "exit_dungeon"
      or feat == "exit_depths" then
+    if you.mesmerised() then
+      return false
+    end
     expect_new_location = true
     magic("<")
     return true
