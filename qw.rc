@@ -5861,7 +5861,6 @@ function choose_skills()
   local weapon_skill = wskill()
   local at_min_delay = (you.base_skill(weapon_skill) >= min_delay_skill() + (you.god() == "Ru" and 1 or 0))
   local ac = armour_ac()
-  local _,mdex = you.dexterity()
   -- Choose at most one martial skill.
   if you.base_skill("Shields") < target_shield_skill()
      and (at_min_delay or you.base_skill(weapon_skill)
@@ -5869,10 +5868,9 @@ function choose_skills()
      and you.base_skill("Fighting") >= you.base_skill("Shields") then
     table.insert(skills, "Shields")
   elseif intrinsic_heavy() and you.can_train_skill("Dodging") and
-         (at_min_delay or mdex >= 15 and you.base_skill(weapon_skill)
-                                         >= 3*you.base_skill("Dodging"))
-         and you.base_skill("Armour") >= you.base_skill("Dodging")
-         and you.base_skill("Fighting") >= you.base_skill("Dodging") then
+         (at_min_delay or you.base_skill(weapon_skill)
+                          >= 4*you.base_skill("Dodging"))
+         and 2*you.base_skill("Fighting") >= 3*you.base_skill("Dodging") then
     table.insert(skills, "Dodging")
   elseif intrinsic_dodgy() and
          (at_min_delay or you.base_skill(weapon_skill)
@@ -5951,8 +5949,7 @@ end
 
 function choose_stat_gain()
   local str, mstr = you.strength()
-  if (intrinsic_dodgy() or mstr >= 20 and mstr >= armour_evp()+2)
-     and you.mutation("inability to train dodging") < 1 then
+  if intrinsic_dodgy() then
     return "d"
   else
     return "s"
