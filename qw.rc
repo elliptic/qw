@@ -5948,7 +5948,6 @@ function handle_skills()
 end
 
 function choose_stat_gain()
-  local str, mstr = you.strength()
   if intrinsic_dodgy() then
     return "d"
   else
