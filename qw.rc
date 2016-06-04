@@ -88,7 +88,6 @@ combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
 # online wins: DDBe DDGl^M DDGl^R DsBe GrBe HOBe MiBe MiFi^R NaBe
 # offline wins: HuBe MfBe TeBe VSBe
 # (offline) runes: CeBe DrBe FoBe KoBe TrBe VpBe
-# non-Be offline wins: DDAr DDAs DDCK DDFi DDMo DDNe DDSk DDSu DDTm DDWn DDWr
 
 #####################################
 # enum values :/
