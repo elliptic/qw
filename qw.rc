@@ -1154,6 +1154,8 @@ local slime_forgot_map = false
 
 local offlevel_travel = true
 
+local last_min_delay_skill = 18
+
 ------------------------------
 -- some tables with hardcoded data about branches/portals/monsters:
 
@@ -2492,16 +2494,25 @@ end
 function min_delay_skill()
   weap = items.equipped_at("Weapon")
   if not weap then
-    return 26
+    return 27
+  end
+  if weap.weap_skill ~= wskill() then
+    return last_min_delay_skill
   end
   if weap.weap_skill == "Short Blades" and weap.delay == 12 then
+    last_min_delay_skill = 14
     return 14
   end
   local mindelay = math.floor(weap.delay / 2)
   if mindelay > 7 then
     mindelay = 7
   end
-  return 2 * (weap.delay - mindelay)
+  last_min_delay_skill = 2 * (weap.delay - mindelay)
+  return last_min_delay_skill
+end
+
+function at_min_delay()
+  return (you.base_skill(wskill()) >= min(27, min_delay_skill() + (you.god() == "Ru" and 1 or 0)))
 end
 
 function cleaving()
@@ -2519,6 +2530,19 @@ function armour_ac()
   else
     return 0
   end
+end
+
+function base_ac()
+  local total = 0
+  for _,slotname in pairs(good_slots) do
+    if slotname ~= "Shield" then
+      it = items.equipped_at(slotname)
+      if it then
+        total = total + it.ac
+      end
+    end
+  end
+  return total
 end
 
 function armour_evp()
@@ -5867,40 +5891,66 @@ function choose_single_skill(sk)
   end
 end
 
+function skill_value(sk)
+  if sk == "Dodging" then
+    local str,_ = you.strength()
+    if str < 1 then
+      str = 1
+    end
+    local dex,_ = you.dexterity()
+    local evp_adj = max(armour_evp() - 3, 0)
+    local penalty_factor
+    if evp_adj >= str then
+      penalty_factor = str / (2 * evp_adj)
+    else
+      penalty_factor = 1 - evp_adj / (2 * str)
+    end
+    if you.race() == "Tengu" and you.xl() >= 14 then
+      penalty_factor = penalty_factor * 1.2 -- flying EV mult
+    end
+    return 18 * math.log(1 + dex/18) / (20 + 2 * body_size()) * penalty_factor
+  elseif sk == "Armour" then
+    local str,_ = you.strength()
+    if str < 0 then
+      str = 0
+    end
+    local val1 = 2/225 * armour_evp()^2 / (3 + str)
+    local val2 = base_ac()/22
+    return val1 + val2
+  elseif sk == "Fighting" then
+    return 0.75
+  elseif sk == "Shields" then
+    local shield = items.equipped_at("Shield")
+    if not shield then
+      return 0
+    end
+    return (at_target_shield_skill() and 0.2 or 0.75)
+  elseif sk == wskill() then
+    return (at_min_delay() and 0.5 or 1.5)
+  end
+end
+
 function choose_skills()
   skills = {}
-  local weapon_skill = wskill()
-  local at_min_delay = (you.base_skill(weapon_skill) >= min_delay_skill() + (you.god() == "Ru" and 1 or 0))
-  local ac = armour_ac()
-  -- Choose at most one martial skill.
-  if you.base_skill("Shields") < target_shield_skill()
-     and (at_min_delay or you.base_skill(weapon_skill)
-                          >= 2*you.base_skill("Shields"))
-     and you.base_skill("Fighting") >= you.base_skill("Shields") then
-    table.insert(skills, "Shields")
-  elseif intrinsic_heavy() and you.can_train_skill("Dodging") and
-         (at_min_delay or you.base_skill(weapon_skill)
-                          >= 4*you.base_skill("Dodging"))
-         and 2*you.base_skill("Fighting") >= 3*you.base_skill("Dodging") then
-    table.insert(skills, "Dodging")
-  elseif intrinsic_dodgy() and
-         (at_min_delay or you.base_skill(weapon_skill)
-                          >= 2*you.base_skill("Dodging"))
-         and you.base_skill("Fighting") >= you.base_skill("Dodging") then
-    table.insert(skills, "Dodging")
-  elseif intrinsic_heavy() and
-         (at_min_delay or ac >= 8 and you.base_skill(weapon_skill)
-                                      >= 3*you.base_skill("Armour"))
-         and you.base_skill("Fighting") >= you.base_skill("Armour") then
-    table.insert(skills, "Armour")
-  elseif at_min_delay or you.base_skill(weapon_skill)
-                         >= 2*you.base_skill("Fighting") then
-    table.insert(skills, "Fighting")
-  elseif (not at_min_delay) or you.base_skill(weapon_skill) < (SHIELD_CRAZY and 18 or 20)
-         or you.base_skill(weapon_skill) < you.base_skill("Fighting") then
-    table.insert(skills, weapon_skill)
+  -- Choose one martial skill to train.
+  martial_skills = { wskill(), "Fighting", "Shields", "Armour", "Dodging", }
+  local best_sk
+  local best_utility = 0
+  local utility
+  for _,sk in ipairs(martial_skills) do
+    if you.skill_cost(sk) then
+      utility = skill_value(sk) / you.skill_cost(sk)
+      if utility > best_utility then
+        best_utility = utility
+        best_sk = sk
+      end
+    end
   end
-  -- Choose at most one MP skill.
+  if best_utility > 0 then
+    table.insert(skills, best_sk)
+  end
+
+  -- Choose one MP skill to train.
   mp_skill = "Evocations"
   if you.god() == "Makhleb" then
     mp_skill = "Invocations"
@@ -5920,8 +5970,8 @@ function choose_skills()
     table.insert(skills, mp_skill)
   elseif you.race() == "Vine Stalker" and you.god() ~= "No God"
          and mp_skill_level < 12
-         and (at_min_delay or you.base_skill(weapon_skill)
-                              >= 3*mp_skill_level) then
+         and (at_min_delay() or you.base_skill(weapon_skill)
+                                >= 3*mp_skill_level) then
     table.insert(skills, mp_skill)
   end
   skills2 = {}
