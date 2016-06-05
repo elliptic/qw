@@ -85,8 +85,8 @@ combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
 #include += hyperqwcombo.rc
 
 ## The accomplishments of qw (with Trog unless noted):
-# online wins: DDBe DDGl^M DDGl^R DsBe GrBe HOBe MiBe MiFi^R NaBe
-# offline wins: CeBe HuBe MfBe TeBe VSBe
+# online wins: DDBe DDGl^M DDGl^R DsBe GrBe HOBe MiBe MiFi^R NaBe VSBe
+# offline wins: CeBe HuBe MfBe TeBe
 # (offline) runes: DrBe FoBe KoBe TrBe VpBe
 
 #####################################
