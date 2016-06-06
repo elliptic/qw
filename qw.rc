@@ -615,7 +615,7 @@ function armour_value(it, cur, it2)
     end
   end
 
-  value = value + 100*it.ac
+  value = value + 50*expected_armour_multiplier()*it.ac
   if it.plus then
     value = value + 50*it.plus
   end
@@ -649,25 +649,42 @@ function armour_value(it, cur, it2)
     end
   end
   if good_slots[st] == "Armour" then
+    if unfitting_armour() then
+      value = value - 25*it.ac
+    end
     evp = it.encumbrance
-    if intrinsic_dodgy() then
-      if evp > 7 then
+    ap = armour_plan()
+    if ap == "heavy" or ap == "large" then
+      if evp >= 20 then
+        value = value - 100
+      elseif name:find("pearl dragon") then
+        value = value + 100
+      end
+    elseif ap == "dodgy" then
+      if evp > 11 then
         return -1,-1
-      elseif evp >= 6 then
-        value = value - 250
-      elseif evp >= 3 then
+      elseif evp > 7 then
         value = value - 100
       end
     else
-      if evp >= 20 then
-        value = value - 200
-      end
-      if name:find("pearl dragon") then
-        value = value + 150
+      if evp > 7 then
+        return -1,-1
+      elseif evp > 4 then
+        value = value - 100
       end
     end
-    if name:find("hide") and not name:find("salamander hide") then
-      value = value + 100*it.ac - 50
+    -- pretend that dragon hides are armour
+    if name:find("dragon hide") then
+      local extra_ac = it.ac
+      -- odd base AC
+      if name:find("steam dragon") or name:find("quicksilver dragon")
+         or name:find("swamp dragon") or name:find("ice dragon") then
+        extra_ac = extra_ac + 1
+      end
+      value = value + 50*expected_armour_multiplier()*extra_ac
+      if unfitting_armour() then
+        value = value - 25*extra_ac
+      end
     end
   end
   return value+val1,value+val2
@@ -1578,17 +1595,42 @@ function intrinsic_gourmand()
           or you.race() == "Felid")
 end
 
--- whether we want to use really heavy armour
-function intrinsic_dodgy()
+-- We group all species into four categories:
+-- heavy: species that can use arbitrary armour and aren't particularly great
+--        at dodging
+-- dodgy: species that can use arbitrary armour but are very good at dodging
+-- large: species with armour restrictions that want heavy dragon armours
+-- light: species with no body armour or who don't want anything heavier than
+--        7 encumbrance
+function armour_plan()
   local sp = you.race()
-  return (sp == "Deep Elf" or sp:find("Draconian") or sp == "Felid"
-          or sp == "Halfling" or sp == "High Elf" or sp == "Kobold"
-          or sp == "Merfolk" or sp == "Ogre" or sp == "Octopode"
-          or sp == "Spriggan" or sp == "Troll")
+  if sp == "Ogre" or sp == "Troll" then
+    return "large"
+  elseif sp == "Deep Elf" or sp == "Halfling" or sp == "Kobold"
+         or sp == "Merfolk" then
+    return "dodgy"
+  elseif sp:find("Draconian") or sp == "Felid" or sp == "Octopode"
+         or sp == "Spriggan" then
+    return "light"
+  else
+    return "heavy"
+  end
 end
 
-function intrinsic_heavy()
-  return (not intrinsic_dodgy())
+function expected_armour_multiplier()
+  local ap = armour_plan()
+  if ap == "heavy" then
+    return 2
+  elseif ap == "large" or ap == "dodgy" then
+    return 1.5
+  else
+    return 1.25
+  end
+end
+
+function unfitting_armour()
+  local sp = you.race()
+  return (armour_plan() == "large" or sp == "Centaur" or sp == "Naga")
 end
 
 function want_buckler()
@@ -2582,9 +2624,10 @@ function on_dangerous_corpse()
   return false
 end
 
-function on_edible_corpse()
+function on_edible_corpse(allow_dragon)
   for it in at_feet() do
-    if string.find(it.name(), "corpse") and not string.find(it.name(), "noeat") then
+    if it.name():find("corpse") and
+       (not it.name():find("noeat") or allow_dragon and it.name():find("dragon corpse")) then
       return true
     end
   end
@@ -3858,7 +3901,7 @@ function plan_handle_corpses()
   if you.race() == "Vampire" then
     return vp_handle_corpses()
   end
-  if on_edible_corpse() then
+  if on_edible_corpse(true) then
     chop()
     return true
   end
@@ -3926,7 +3969,7 @@ function plan_join_god()
 end
 
 function plan_find_corpses()
-  magicfind("@/corpse$&&!!rott&&!!skel&&!!noeat")
+  magicfind("@/corpse$&&!!rott&&!!skel&&!!noeat||dragon corpse")
   return true
 end
 
@@ -4041,13 +4084,20 @@ function plan_use_id_scrolls()
 end
 
 function body_armour_is_great(arm)
-  name = arm.name()
-  if intrinsic_dodgy() then
-    return (name:find("dragon"))
-  else
+  local name = arm.name()
+  local ap = armour_plan()
+  if ap == "heavy" then
     return (name:find("gold dragon") or name:find("crystal plate")
             or name:find("plate armour of fire")
-            or name:find("pearl dragon"))
+            or name:find("pearl dragon")
+            or name:find("dragon hide"))
+  elseif ap == "large" then
+    return (name:find("dragon armour") or name:find("dragon hide"))
+  elseif ap == "dodgy" then
+    return (arm.encumbrance <= 11 and (name:find("dragon armour") or name:find("dragon hide")))
+  else
+    return (name:find("dragon armour") or name:find("dragon hide")
+            or name:find("robe of resistance"))
   end
 end
 
@@ -4055,11 +4105,16 @@ function body_armour_is_good(arm)
   if in_branch("Z") then
     return true
   end
-  name = arm.name()
-  if intrinsic_dodgy() then
-    return (name:find("of resistance") or name:find("of fire"))
+  local name = arm.name()
+  local ap = armour_plan()
+  if ap == "heavy" then
+    return (name:find("plate") or name:find("dragon armour"))
+  elseif ap == "large" then
+    return false
+  elseif ap == "dodgy" then
+    return (name:find("ring mail") or name:find("robe of resistance"))
   else
-    return name:find("plate")
+    return name:find("robe of fire resistance")
   end
 end
 
@@ -4404,7 +4459,9 @@ function plan_upgrade_armour()
       it_old = items.equipped_at(good_slots[st])
       swappable = can_swap(good_slots[st])
       if should_upgrade(it,it_old) then
-        equip = true
+        if not (it.name():find("dragon hide") and count_item("scroll", "enchant armour") == 0) then
+          equip = true
+        end
       elseif should_drop(it) then
         drop = true
       end
@@ -6009,10 +6066,19 @@ function handle_skills()
 end
 
 function choose_stat_gain()
-  if intrinsic_dodgy() then
+  local ap = armour_plan()
+  if ap == "heavy" or ap == "large" then
+    return "s"
+  elseif ap == "light" then
     return "d"
   else
-    return "s"
+    local str,_ = you.strength()
+    local dex,_ = you.dexterity()
+    if 3*str < 2*dex then
+      return "s"
+    else
+      return "d"
+    end
   end
 end
 
