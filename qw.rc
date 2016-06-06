@@ -733,12 +733,15 @@ function weapon_value(it, cur, it2, hydra_swap)
   end
   local ego = it.ego()
   if hydra_swap then
-    if ego == "vampirism" then
-      return -1,-1 -- should not do this if undead
-    elseif it.weap_skill ~= "Maces & Flails" and ego ~= "flaming" then
+    if ego == "vampirism" and not intrinsic_undead() then
       return -1,-1
-    elseif ego == "flaming" and (it.weap_skill == "Axes" or it.weap_skill == "Long Blades") then
-      value = value + 500
+    else
+      local hydra_quality = hydra_weapon_status(it)
+      if hydra_quality == -1 then
+        return -1,-1
+      elseif hydra_quality == 1 then
+        value = value + 500
+      end
     end
   end
   if ego then -- names are mostly in weapon_brands_verbose[]
@@ -1237,14 +1240,24 @@ function slow_berserk(name)
   end
 end
 
-function check_flaming()
-  weap = items.equipped_at("Weapon")
-  return (weap and weap.ego() == "flaming") -- assume chopping for now
+function hydra_weapon_status(weap)
+  if not weap then
+    return 0
+  end
+  local sk = weap.weap_skill
+  if sk == "Maces & Flails" or sk == "Short Blades"
+     or sk == "Polearms" and weap.hands == 1 then
+    return 0
+  elseif weap.ego() == "flaming" then
+    return 1
+  else
+    return -1
+  end
 end
 
 function hydra_check_flaming(m)
   if m:desc():find("hydra") then
-    return (not check_flaming())
+    return (hydra_weapon_status(items.equipped_at("Weapon")) ~= 1)
   end
   return false
 end
@@ -1593,6 +1606,11 @@ end
 function intrinsic_gourmand()
   return (you.race() == "Kobold" or you.race() == "Troll"
           or you.race() == "Felid")
+end
+
+function intrinsic_undead()
+  return (you.race() == "Ghoul" or you.race() == "Mummy"
+          or you.race() == "Vampire")
 end
 
 -- We group all species into four categories:
@@ -2854,7 +2872,7 @@ function plan_hydra_destruction()
   if you.skill("Invocations") < 8 then
     return false
   end
-  if count_sgd(4) > 0 or check_flaming() or you.xl() >= 20 then
+  if count_sgd(4) > 0 or (hydra_weapon_status(items.equipped_at("Weapon")) > -1) or you.xl() >= 20 then
     return false
   end
   local x,y
@@ -4243,7 +4261,7 @@ function plan_wield_weapon()
   end
   for it in inventory() do
     if it and it.class(true) == "weapon" then
-      if should_equip(it) and not it.name():find("vamp") then
+      if should_equip(it) and (not it.name():find("vamp") or intrinsic_undead()) then
         l = items.index_to_letter(it.slot)
         say("Wielding weapon " .. it.name() .. ".")
         magic("w" .. l .. "YY")
@@ -4275,7 +4293,7 @@ function plan_swap_weapon()
   end
   it_old = items.equipped_at("Weapon")
   swappable = can_swap("Weapon")
-  if not swappable or it_old.ego() == "vampirism" then
+  if not swappable or (it_old.ego() == "vampirism" and not intrinsic_undead()) then
     return false
   end
   cur_val = weapon_value(it_old,true,it_old,hydra_near)
@@ -4283,7 +4301,7 @@ function plan_swap_weapon()
   max_it = nil
   for it in inventory() do
     if it and it.class(true) == "weapon" and not it.equipped then
-      if (twohands or it.hands < 2) and not it.name():find("vamp") then
+      if (twohands or it.hands < 2) and not (it.name():find("vamp") and not intrinsic_undead()) then
         val2 = weapon_value(it,true,it_old,hydra_near)
         if val2 > max_val then
           max_val = val2
@@ -4322,7 +4340,7 @@ function plan_upgrade_weapon()
         drop = true
       end
       if equip and swappable and (twohands or it.hands < 2) then
-        if it.name():find("vamp") and you.race() ~= "Vampire" and not
+        if it.name():find("vamp") and not intrinsic_undead() and not
            (you.hunger_name() == "full" or you.hunger_name() == "very full" or
             you.hunger_name() == "completely stuffed") then
           say("Eating in order to wield vampiric weapon.")
