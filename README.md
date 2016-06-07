@@ -7,8 +7,8 @@ have contributed as well.
 The current version of qw works in 0.19 trunk and can start as any
 species/background combination. Note though that spells and most racial
 abilities aren't used, and qw is not very good at most combos! Its best
-combo at the moment is DDFi^Makhleb, which managed a winrate of 14.5% in
-offline testing. It is also quite good at some berserkers (9-10% winrate
+combo at the moment is DDFi^Makhleb, which managed a winrate of 15% in
+offline testing. It is also quite good at some berserkers (12-13% winrate
 with DDBe and GrBe) and has won MiFi^Ru.
 
 ## running on remote DCSS server
