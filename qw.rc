@@ -1210,7 +1210,7 @@ local branch_data = {
 -- portal data: where name, full name, feature name
 local portal_data = {
   --{"Bailey", "a flagged portal", "bailey"},
-  --{"Bazaar", "gateway to a bazaar", "bazaar"},
+  {"Bazaar", "gateway to a bazaar", "bazaar"},
   --{"IceCv", "a frozen archway", "ice_cave"},
   {"Ossuary", "covered staircase", "ossuary"},
   {"Sewer", "a glowing drain", "sewer"},
