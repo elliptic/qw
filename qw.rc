@@ -6045,7 +6045,7 @@ function choose_skills()
     table.insert(skills, mp_skill)
   elseif you.race() == "Vine Stalker" and you.god() ~= "No God"
          and mp_skill_level < 12
-         and (at_min_delay() or you.base_skill(weapon_skill)
+         and (at_min_delay() or you.base_skill(wskill())
                                 >= 3*mp_skill_level) then
     table.insert(skills, mp_skill)
   end
