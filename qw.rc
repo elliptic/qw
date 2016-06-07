@@ -104,6 +104,7 @@ restart_after_game = false
 
 view_delay = 0
 use_animations =
+darken_beyond_range = false
 clear_messages = true
 travel_delay = -1
 explore_delay = -1
@@ -195,6 +196,10 @@ function set_options()
   crawl.setopt("message_colour += mute:Read which item")
   crawl.setopt("message_colour += mute:Drink which item")
   crawl.setopt("message_colour += mute:not good enough")
+  crawl.setopt("message_colour += mute:Attack whom")
+  crawl.setopt("message_colour += mute:move target cursor")
+  crawl.setopt("message_colour += mute:Aim:")
+  crawl.setopt("message_colour += mute:You reach to attack")
   crawl.setopt("message_colour ^= mute:Unknown command")
   crawl.enable_more(false)
 end
@@ -210,6 +215,10 @@ function unset_options()
   crawl.setopt("message_colour -= mute:Read which item")
   crawl.setopt("message_colour -= mute:Drink which item")
   crawl.setopt("message_colour -= mute:not good enough")
+  crawl.setopt("message_colour -= mute:Attack whom")
+  crawl.setopt("message_colour -= mute:move target cursor")
+  crawl.setopt("message_colour -= mute:Aim:")
+  crawl.setopt("message_colour -= mute:You reach to attack")
   crawl.setopt("message_colour -= mute:Unknown command")
   crawl.enable_more(true)
 end
