@@ -41,6 +41,8 @@
 : SINGLE_STEP = false
 # panic (stop) at full inventory
 : FULL_INVENTORY_PANIC = true
+# quit after this number of turns while stuck
+: QUIT_TURNS = 1000
 # use a shield at all cost
 : SHIELD_CRAZY = true
 # acceptable gods (will not abandon)
@@ -48,29 +50,18 @@
 : DD_GOD_LIST = { "Trog", "Makhleb", "Ru", }
 # preferred gods (will join)
 : GOD_DESIRED = { "Trog", }
-: DD_GOD_DESIRED = { "Trog", "Makhleb", "Ru", }
+: DD_GOD_DESIRED = { "Trog", "Makhleb", }
+
 # cycle through combos using c_persist.options
 : COMBO_CYCLE = false
-# combos to cycle through
-: COMBO_CYCLE_LIST = { "DDFi.waraxe", "GrBe.handaxe", "DDFi.waraxe", "MiBe.handaxe" }
-# quit after this number of turns while stuck
-: QUIT_TURNS = 1000
+# combos to cycle through - uses the same syntax as the regular combo option
+# with an optional "^<god initials>" suffix to overwrite the GOD_LIST and
+# GOD_DESIRED lists above. Here are some sample choices:
+: COMBO_CYCLE_LIST = "DDFi.waraxe^M, DDBe.handaxe, GrBe.handaxe, MiFi.waraxe^R"
 
-# qw can play any starting combo. These ones are recommended:
-combo = DDBe.handaxe, GrBe.handaxe, MiBe.handaxe
-
-# DDGl is the recommended non-berserker start. It will worship whichever of
-# Makhleb and Trog it finds first.
-#combo = DDGl.waraxe
-
-# For a mix of the above:
-#combo = DDBe.handaxe, DDGl.waraxe, GrBe.handaxe, GrBe.handaxe
-#combo += MiBe.handaxe, MiBe.handaxe
-
-# A larger test suite:
-#combo = DDBe.handaxe, DDGl.waraxe, DDGl.waraxe, DDGl.waraxe
-#combo += DsBe.handaxe, GrBe.handaxe, HOBe.handaxe, HuBe.handaxe
-#combo += MfBe.spear, MiBe.handaxe, NaBe.handaxe, VSBe.handaxe
+# Choose randomly between these combos. This will not apply if the COMBO_CYCLE
+# option was on in your _previous_ game.
+combo = DDFi.waraxe, GrBe.handaxe, MiBe.handaxe
 
 # For random berserkers, use these combos:
 #combo = CeBe.handaxe, DDBe.handaxe, DEBe.handaxe, DrBe.handaxe, DsBe.handaxe
@@ -3942,11 +3933,11 @@ function magicfind(target)
 end
 
 function god_options()
-  return (you.race() == "Deep Dwarf" and DD_GOD_LIST or GOD_LIST)
+  return c_persist.cur_god_list or (you.race() == "Deep Dwarf" and DD_GOD_LIST or GOD_LIST)
 end
 
 function god_desired()
-  return (you.race() == "Deep Dwarf" and DD_GOD_DESIRED or GOD_DESIRED)
+  return c_persist.cur_god_list or (you.race() == "Deep Dwarf" and DD_GOD_DESIRED or GOD_DESIRED)
 end
 
 function plan_find_altar()
@@ -6125,6 +6116,15 @@ function contains_string_in(name,t)
   return false
 end
 
+function split(str, del)
+  local res = { }
+  local v
+  for v in string.gmatch(str, "([^" .. del .. "]+)") do
+    table.insert(res, v)
+  end
+  return res
+end
+
 function control(c)
   return string.char(string.byte(c) - string.byte('a') + 1)
 end
@@ -6278,13 +6278,36 @@ function first_turn_persist()
   --    c_persist.record.mlist[mname] = c_persist.record.mlist[mname] + 1
   --  end
   --end
+  local god_list = c_persist.next_god_list
   for key,_ in pairs(c_persist) do
     if key ~= "record" then
       c_persist[key] = nil
     end
   end
+  c_persist.cur_god_list = god_list
   if COMBO_CYCLE then
-    c_persist.options = "combo = " .. COMBO_CYCLE_LIST[1 + (c_persist.record.counter % (#COMBO_CYCLE_LIST))]
+    local combo_string_list = split(COMBO_CYCLE_LIST, ", ")
+    local combo_string = combo_string_list[1 + (c_persist.record.counter % (#combo_string_list))]
+    local combo_parts = split(combo_string, "^")
+    c_persist.options = "combo = " .. combo_parts[1]
+    if #combo_parts > 1 then
+      c_persist.next_god_list = { }
+      for g in combo_parts[2]:gmatch(".") do
+        table.insert(c_persist.next_god_list, fullgodname(g))
+      end
+    end
+  end
+end
+
+function fullgodname(g)
+  if g == "M" then
+    return "Makhleb"
+  elseif g == "R" then
+    return "Ru"
+  elseif g == "T" then
+    return "Trog"
+  else
+    return "???"
   end
 end
 
