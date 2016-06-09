@@ -698,7 +698,7 @@ function weapon_value(it, cur, it2, hydra_swap)
     if weap and weap.weap_skill == wskill() or wskill() == "Unarmed Combat"
        or it.weap_skill == "Crossbows" or it.weap_skill == "Bows"
        or it.weap_skill == "Slings" then
-      if not (hydra_swap and it.weap_skill == "Maces & Flails" and wskill() == "Axes") then
+      if not (hydra_swap and (it.weap_skill == "Maces & Flails" and wskill() == "Axes" or it.weap_skill == "Short Blades" and wskill() == "Long Blades")) then
         return -1,-1
       end
     end
