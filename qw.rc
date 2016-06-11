@@ -1224,7 +1224,7 @@ local res_func_table = {
   rPois=you.res_poison,
   rElec=you.res_shock,
   rN=you.res_draining,
-  --rCorr=you.res_corr, -- returns a boolean
+  rCorr=(function() return you.res_corr() and 1 or 0 end), -- returns a boolean
   --MR=you.res_magic, -- (doesn't exist yet...)
 } --hack
 
@@ -1494,6 +1494,7 @@ local bia_monsters = {
   {100, check_resist("spark wasp","rElec",1)},
   {100, "juggernaut"},
   {100, "iron giant"},
+  {100, check_resist("entropy weaver", "rCorr", 1)},
 } -- hack
 
 -- Trog's Hand these
