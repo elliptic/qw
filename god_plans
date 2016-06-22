@@ -1,0 +1,119 @@
+already coded:
+--------------
+M:
+- minor destruction: might be worth implementing as a replacement for throwing
+- major destruction: used for hydras currently, a bit tricky to use in general
+- lesser servant: should probably use this sometimes, especially before greater servant is safe
+  - use before harder battles?
+  - not as good on DD or at low HP
+  - don't use if a servant is in sight (or if used recently?)
+- greater servant: currently used on BiA monsters or at low HP
+  - use before harder battles?
+  - not as good on DD or at low HP
+  - don't use if a servant is it sight (or if used recently?)
+  - teleport away from hostile servants
+  - don't teleport with a friendly servant around?
+- train Invo up fairly high for greater servant fail
+- special DD logic
+R:
+- sacrifice logic: preferences given by total ordering on set of possible sacrifices (including reject sacrifices)
+  - doesn't handle the multioption sacrifices very intelligently currently
+- jump ability: should maybe use this to blink to stairs sometimes
+- healing: uses this in place of heal wounds sometimes (complicated logic)
+- apocalypse:
+  - use on very hard monsters
+  - don't use if too drained
+- special DD logic
+- doesn't handle blink/paralyzed (from Ru retaliation) monsters very well at the moment
+T:
+- berserk:
+  - use on hard monsters or when injured
+  - monsters need to be close
+- trog's hand:
+  - use against MR-checking monsters
+  - also to rest quickly in some locations (orb run, abyss, maybe should do this on zot:5 or V:5 too?)
+  - don't use when already in effect
+- BiA:
+  - use on very hard monsters or when a berserk fails
+  - don't use if a friendly BiA is already there
+  - only use at 4* when really necessary
+  - don't teleport with a berserk friendly BiA in sight?
+- special DD logic
+- weapon gifts should maybe mean that enchant weapon shouldn't be wasted on weak stuff as much?
+
+should code:
+------------
+B:
+- smite: not sure whether it is worth using? training invo just for this seems bad
+- recall:
+  - use before most battles?
+  - don't use if used recently
+- water walking should be taken into account in shallow water functions
+- need special code for joining from a priest
+- allies might make coward_step strats worse
+C:
+- first two abilities: not sure whether worth using
+- slouch:
+  - use against fast monsters (oofs, hasted monsters, etc), maybe other times too?
+- step out of time: not sure whether it is worth training invo up for this since it is a bit tricky to use
+- slow movement might make tactical steps worse
+- don't use hasting on orb run
+- train Invo up a little for slouch fail rate
+- should avoid using weapons of speed (Arga)
+O:
+- heroism:
+  - use before most battles?
+  - don't use if already active
+- finesse:
+  - use before hard battles
+  - don't use if already active
+- train Invo up a decent amount for heroism duration and finesse fail, not sure how high exactly
+- maybe stop training skills at 22 because of heroism
+- armour gifts make wand acq more tempting (it already might be better with other gods if lacking wand of tele)
+Q:
+- upheaval:
+  - similar to major destruction but easier to target and more reliable
+  - not sure exactly what the best way is of using this
+- elemental force:
+  - a bit tricky to use because need to count nearby clouds
+  - use before hard battles
+  - don't use if can see friendly elementals
+- apocalypse (except not called that):
+  - pretty tricky to use because of the open space requirements
+  - creating lava might get qw in trouble too
+- probably should use some subset of the abilities and train invo for them, but I'm not sure exactly
+- capstone ability: choose rF?
+- coward abilities might be bad with Q noise, not sure
+Y:
+- recall logic is similar to Beogh
+- pain mirror:
+  - use against very hard enemies?
+  - might waste too much piety
+- life draining:
+  - a bit tricky to check monster susceptibility, also only want to use with lots of monsters on screen
+- probably should train invo up a bit but not that much?
+- coward_step stuff might be worse with allies
+- should avoid using holy weapons
+
+might code:
+-----------
+E: pacified monster handling might be annoying, though could just not use the ability
+H: probably want to wait until the god is more stable, but shouldn't be too hard after that
+J: altar availability makes this not that attractive to code
+L: banish MR check and beaminess might be tricky, as would be corrupt
+U: wait until the god is more stable, but shouldn't be too hard after that
+X: might still be issues with weapon swapping or unwielding causing skill screen stuff, should check this
+Z: recite and sanctuary usage might be tricky
+
+not coding for now:
+-----------
+A: curse logic is hard
+D: stabby is hard
+F: these abilities are a bit tricky and I don't know the god very well
+G: these abilities are a bit tricky and food might be an issue
+K: casty is hard
+N: decks are complicated and use up lots of inventory
+P: evocables are complicated and use up lots of inventory (could maybe do DD of P though)
+S: casty is hard
+V: casty is hard
+ 
