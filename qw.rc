@@ -1372,6 +1372,7 @@ local scary_monsters = {
   {20, "tengu reaver"},
   {20, "ettin"},
   {20, "Polyphemus"},
+  {20, "Bai Suzhen"},
 
   {24, check_resist("storm dragon","rElec",1)},
   {24, check_resist("fire giant","rF",1)},
@@ -1461,6 +1462,7 @@ local bia_monsters = {
   {20, check_resist("sun demon","rF",1)},
   {20, "Polyphemus"},
   {20, "Ilsuiw"},
+  {20, "Bai Suzhen"},
 
   {100, "deep troll shaman"},
   {100, check_resist("spriggan air mage","rElec",1)},
