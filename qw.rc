@@ -3548,6 +3548,9 @@ function plan_burn_spellbooks()
 end
 
 function want_to_bia()
+  if not danger then
+    return false
+  end
   if check_monsters(LOS, bia_necessary_monsters) or you.piety_rank() > 4 and
      ((want_to_berserk() and not can_berserk()) or
      check_monsters(LOS, bia_monsters)) then
