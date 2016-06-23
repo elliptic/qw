@@ -46,7 +46,7 @@
 # use a shield at all cost
 : SHIELD_CRAZY = true
 # acceptable gods (will not abandon)
-: GOD_LIST = { "Trog", "Makhleb", "Ru", }
+: GOD_LIST = { "Trog", "Makhleb", "Ru", "Cheibriados", "Okawaru",}
 : DD_GOD_LIST = { "Trog", "Makhleb", "Ru", }
 # preferred gods (will join)
 : GOD_DESIRED = { "Trog", }
@@ -607,6 +607,9 @@ function armour_value(it, cur, it2)
   elseif ego then -- names in armour_ego_name()
     if ego == "running" then
       value = value + 25
+      if you.god() == "Cheibriados" then
+        return -1,-1
+      end
     elseif ego == "flying" and not intrinsic_flight() then
       if not intrinsic_flight() then
         value = value + 200
@@ -704,6 +707,9 @@ function weapon_value(it, cur, it2, hydra_swap)
       end
     end
   end
+  if you.god() == "Cheibriados" and name:find("quick blade") then
+    return -1,-1
+  end
   if it.hands == 2 and want_buckler() then
     return -1,-1
   end
@@ -759,6 +765,9 @@ function weapon_value(it, cur, it2, hydra_swap)
       value = value + 500 -- this is what we want
     elseif ego == "speed" then
       value = value + 300 -- this is good too
+      if you.god() == "Cheibriados" then
+        return -1,-1
+      end
     elseif ego == "electrocution" then
       value = value + 150 -- not bad
     elseif ego == "flaming" or ego == "freezing" or ego == "draining"
@@ -771,6 +780,8 @@ function weapon_value(it, cur, it2, hydra_swap)
       elseif you.race() ~= "Deep Dwarf" then
         value = value + 75
       end
+    elseif ego == "chaos" and you.god() == "Cheibriados" then
+      return -1,-1
     end
   end
   if it.plus then
@@ -811,8 +822,12 @@ function amulet_value(it, cur, it2)
       return -1,-1
     end
   end
-  if subtype == "amulet of faith" and you.god() ~= "Ru" then
-    return 1000,1000 -- fixed value so we don't unequip for a randart one
+  if subtype == "amulet of faith" then
+    if you.god() == "Cheibriados" then
+      return -1,-1 -- we don't use Chei piety much
+    elseif you.god() ~= "Ru" then
+      return 1000,1000 -- fixed value so we don't unequip for a randart one
+    end
   end
   if it.artefact and not it.fully_identified or not (it.artefact or name:find("amulet of")) then
     if cur then
@@ -3214,7 +3229,7 @@ function heal_wounds()
 end
 
 function haste()
-  if you.hasted() or you.race() == "Formicid" then
+  if you.hasted() or you.race() == "Formicid" or you.god() == "Cheibriados" then
     return false
   end
   if selfzap_by_name("hasting") then
@@ -4568,7 +4583,7 @@ function plan_go_down()
 end
 
 function ready_for_lair()
-  if you.god() == "Trog" or
+  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or
      (you.god() == "Makhleb" and you.piety_rank() >= 4) or
      (you.god() == "Ru" and you.piety_rank() >= 3) then
     return true
@@ -6034,7 +6049,7 @@ function choose_skills()
 
   -- Choose one MP skill to train.
   mp_skill = "Evocations"
-  if you.god() == "Makhleb" then
+  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" then
     mp_skill = "Invocations"
   elseif you.god() == "Ru" then
     mp_skill = "Spellcasting"
@@ -6043,12 +6058,8 @@ function choose_skills()
   bmp = you.base_mp()
   if you.god() == "Makhleb" and you.piety_rank() >= 2 and mp_skill_level < 15 then
     table.insert(skills, mp_skill)
-  elseif you.race() == "Deep Dwarf"
-         and (you.god() == "Makhleb" or you.god() == "Trog")
-         and (mp_skill_level < 4 or bmp < 5) then
-    table.insert(skills, mp_skill)
-  elseif you.race() == "Deep Dwarf" and you.god() == "Ru"
-         and (mp_skill_level < 2 or bmp < 5) then
+  elseif you.race() == "Deep Dwarf" and you.god() ~= "No God"
+         and (bmp < 5 or mp_skill_level < 2 or mp_skill ~= "Spellcasting" and mp_skill_level < 4) then
     table.insert(skills, mp_skill)
   elseif you.race() == "Vine Stalker" and you.god() ~= "No God"
          and mp_skill_level < 12
@@ -6307,8 +6318,12 @@ function first_turn_persist()
 end
 
 function fullgodname(g)
-  if g == "M" then
+  if g == "C" then
+    return "Cheibriados"
+  elseif g == "M" then
     return "Makhleb"
+  elseif g == "O" then
+    return "Okawaru"
   elseif g == "R" then
     return "Ru"
   elseif g == "T" then
