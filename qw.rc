@@ -1900,6 +1900,26 @@ function can_berserk()
           or you.race() == "Formicid"))
 end
 
+function can_heroism()
+  local mp,mmp = you.mp()
+  return (not (you.berserk() or you.confused() or you.silenced() or
+               starving() or
+               you.god() ~= "Okawaru" or
+               you.piety_rank() < 1 or
+               you.status("heroism") or
+               mp < 2))
+end
+
+function can_finesse()
+  local mp,mmp = you.mp()
+  return (not (you.berserk() or you.confused() or you.silenced() or
+               starving() or
+               you.god() ~= "Okawaru" or
+               you.piety_rank() < 5 or
+               you.status("finesse") or
+               mp < 5))
+end
+
 function can_hand()
   return (not (you.berserk() or you.confused() or you.silenced() or
           you.regenerating() or
@@ -2838,6 +2858,14 @@ function berserk()
   use_ability("Berserk")
 end
 
+function heroism()
+  use_ability("Heroism")
+end
+
+function finesse()
+  use_ability("Finesse")
+end
+
 function hand()
   use_ability("Trog's Hand")
 end
@@ -3192,15 +3220,29 @@ function plan_orbrun_heal_wounds()
 end
 
 function plan_orbrun_haste()
-  if want_to_orbrun_haste() then
+  if want_to_orbrun_buff() and not you.status("finesse") then
     return haste()
   end
   return false
 end
 
 function plan_orbrun_might()
-  if want_to_orbrun_might() then
+  if want_to_orbrun_buff() then
     return might()
+  end
+  return false
+end
+
+function plan_orbrun_heroism()
+  if can_heroism() and want_to_orbrun_buff() then
+    return heroism()
+  end
+  return false
+end
+
+function plan_orbrun_finesse()
+  if can_finesse() and want_to_orbrun_buff() then
+    return finesse()
   end
   return false
 end
@@ -3481,6 +3523,22 @@ function plan_berserk()
   return false
 end
 
+function plan_heroism()
+  if can_heroism() and want_to_heroism() then
+    heroism()
+    return true
+  end
+  return false
+end
+
+function plan_finesse()
+  if can_finesse() and want_to_finesse() then
+    finesse()
+    return true
+  end
+  return false
+end
+
 function plan_burn_spellbooks()
   if want_to_burn_spellbooks() then
     burn_spellbooks()
@@ -3496,6 +3554,13 @@ function want_to_bia()
     if count_bia(4) == 0 and not you.teleporting() then
       return true
     end
+  end
+  return false
+end
+
+function want_to_finesse()
+  if danger and check_monsters(LOS, bia_monsters) and not you.teleporting() then
+    return true
   end
   return false
 end
@@ -3604,12 +3669,8 @@ function want_to_orbrun_heal_wounds()
   end
 end
 
-function want_to_orbrun_haste()
+function want_to_orbrun_buff()
   return ((count_pan_lords(LOS) > 0) or check_monsters(LOS, scary_monsters))
-end
-
-function want_to_orbrun_might()
-  return want_to_orbrun_haste()
 end
 
 function want_resistance()
@@ -3629,6 +3690,11 @@ function want_to_berserk()
           (you.race() ~= "Deep Dwarf" or dd_want_to_heal_wounds()) or
           check_monsters(2, scary_monsters) or
           (invisi_sigmund and not options.autopick_on))
+end
+
+function want_to_heroism()
+  return (danger and (hp_is_low(70) or check_monsters(LOS, scary_monsters) or
+                      count_nearby(0,0,LOS) >= 4))
 end
 
 function want_to_stay_in_abyss()
@@ -5825,6 +5891,7 @@ plan_emergency = cascade {
   {plan_cloud_step, "cloud_step"},
   {plan_hand, "hand"},
   {plan_resistance, "resistance"},
+  {plan_heroism, "heroism"},
   {plan_bia, "bia"},
   {plan_sgd, "sgd"},
   {plan_apocalypse, "try_apocalypse"},
@@ -5833,6 +5900,7 @@ plan_emergency = cascade {
   {plan_wield_weapon, "wield_weapon"},
   {plan_swap_weapon, "swap_weapon"},
   {plan_water_step, "water_step"},
+  {plan_finesse, "finesse"},
   {plan_drac_dig, "try_drac_dig"},
   {plan_berserk, "berserk"},
   {plan_other_step, "other_step"},
@@ -5844,7 +5912,9 @@ plan_orbrun_emergency = cascade {
   {plan_orbrun_teleport, "orbrun_teleport"},
   {plan_dd_recharge_teleport, "dd_recharge_teleport"},
   {plan_orbrun_heal_wounds, "orbrun_heal_wounds"},
+  {plan_orbrun_finesse, "orbrun_finesse"},
   {plan_orbrun_haste, "orbrun_haste"},
+  {plan_orbrun_heroism, "orbrun_heroism"},
   {plan_dd_orbrun_recharge_hasting, "orbrun_dd_recharge_hasting"},
   {plan_hand, "hand"},
   {plan_resistance, "resistance"},
@@ -5989,6 +6059,9 @@ function choose_single_skill(sk)
 end
 
 function skill_value(sk)
+  if you.god() == "Okawaru" and sk ~= "Fighting" and sk ~= "Invocations" and you.base_skill(sk) >= 22 then
+    return 0
+  end
   if sk == "Dodging" then
     local str,_ = you.strength()
     if str < 1 then
@@ -6057,6 +6130,10 @@ function choose_skills()
   mp_skill_level = you.base_skill(mp_skill)
   bmp = you.base_mp()
   if you.god() == "Makhleb" and you.piety_rank() >= 2 and mp_skill_level < 15 then
+    table.insert(skills, mp_skill)
+  elseif you.god() == "Okawaru" and you.piety_rank() >= 1 and mp_skill_level < 4 then
+    table.insert(skills, mp_skill)
+  elseif you.god() == "Okawaru" and you.piety_rank() >= 4 and mp_skill_level < 10 then
     table.insert(skills, mp_skill)
   elseif you.race() == "Deep Dwarf" and you.god() ~= "No God"
          and (bmp < 5 or mp_skill_level < 2 or mp_skill ~= "Spellcasting" and mp_skill_level < 4) then
