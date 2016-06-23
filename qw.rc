@@ -76,9 +76,9 @@ combo = DDFi.waraxe, GrBe.handaxe, MiBe.handaxe
 #include += hyperqwcombo.rc
 
 ## The accomplishments of qw:
-# online wins: DDBe DDGl^M DDGl^R DsBe GrBe HOBe HuBe MiBe MiFi^R NaBe TeBe
-#              TrBe VSBe
-# offline wins: CeBe DrBe FoFi^R GhFi^R HEBe MfBe OgBe VpBe
+# online wins: DDBe DDGl^M DDGl^R DsBe GrBe HOBe HuBe MfBe MiBe MiFi^R NaBe
+#              TeBe TrBe VSBe
+# offline wins: CeBe DrBe FoFi^R GhFi^R HEBe OgBe VpBe
 # (offline) runes: DgFi HaBe KoBe MuFi^T OpBe
 
 #####################################
@@ -724,6 +724,9 @@ function weapon_value(it, cur, it2, hydra_swap)
     end
     if intrinsic_evil() and name:find("holy") then
       return -1,-1
+    end
+    if name:find("obsidian axe") then
+      value = value + 300
     end
   end
   local val1,val2 = total_resist_value(it, cur, it2)
