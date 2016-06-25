@@ -5552,6 +5552,33 @@ function plan_drac_dig()
   return false
 end
 
+function plan_stuck_dig()
+  local dx,dy
+  local closest_grate = 20
+  local cx,cy
+  for dx = -LOS,LOS do
+    for dy = -LOS,LOS do
+      if view.feature_at(dx,dy) == "iron_grate" then
+        if abs(dx) + abs(dy) < closest_grate and you.see_cell_solid_see(dx,dy) then
+          cx = dx
+          cy = dy
+          closest_grate = abs(dx) + abs(dy)
+        end
+      end
+    end
+  end
+  if closest_grate < 20 then
+    local c = find_item("wand", "digging") or
+              find_item("wand", "disintegration")
+    if c and can_zap() then
+      say("ZAPPING " .. item(c).name() .. ".")
+      magic("V" .. letter(c) .. "r" .. vector_move(cx,cy) .. "\r")
+      return true
+    end
+  end
+  return false
+end
+
 function plan_slime_dig_to_rune()
   if where ~= "Slime:6" or you.have_rune("slimy") then
     return false
@@ -6092,6 +6119,7 @@ plan_move = cascade {
   {plan_slime_dig_to_rune, "slime_dig_to_rune"},
   {plan_slime_forget_map, "try_slime_forget_map"},
   {plan_slime_go_to_rune, "try_slime_go_to_rune"},
+  {plan_stuck_dig, "stuck_dig"},
   {plan_stuck_teleport, "stuck_teleport"},
   {plan_stuck, "stuck"},
 } -- hack
