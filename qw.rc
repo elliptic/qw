@@ -331,6 +331,42 @@ function item_resist(str, it)
       else
         return 0
       end
+    elseif str == "Str" then
+      if subtype == "ring of strength" then
+        return it.plus or 0
+      elseif ego == "strength" then
+        return 3
+      end
+    elseif str == "Dex" then
+      if subtype == "ring of dexterity" then
+        return it.plus or 0
+      elseif ego == "dexterity" then
+        return 3
+      end
+    elseif str == "Int" then
+      if subtype == "ring of intelligence" then
+        return it.plus or 0
+      elseif ego == "intelligence" then
+        return 3
+      end
+    elseif str == "Slay" then
+      if subtype == "ring of slaying" then
+        return it.plus or 0
+      end
+    elseif str == "AC" then
+      if subtype == "ring of protection" then
+        return it.plus or 0
+      elseif ego == "protection" then
+        return 3 -- wrong for weapons but we scale things differently for weapons
+      end
+    elseif str == "EV" then
+      if subtype == "ring of evasion" then
+        return it.plus or 0
+      end
+    elseif str == "SH" then
+      if subtype == "amulet of reflection" then
+        return it.plus or 0
+      end
     end
   end
   return 0
@@ -372,7 +408,17 @@ end
 -- item is provided, assume the item is equipped and try to pretend that
 -- it is unequipped. Does not include some temporary effects.
 function player_resist(str, it)
-  local it_res = it and item_resist(str, it) or 0
+  local it_res = it and it.equipped and item_resist(str, it) or 0
+  if str == "Str" then
+    stat,_ = you.strength()
+    return stat-it_res
+  elseif str == "Dex" then
+    stat,_ = you.dexterity()
+    return stat-it_res
+  elseif str == "Int" then
+    stat,_ = you.intelligence()
+    return stat-it_res
+  end
   local other_res = intrinsic_resist(str)
   for it2 in inventory() do
     if it2.equipped and slot(it2) ~= slot(it) then
@@ -405,6 +451,17 @@ end
 
 -- The current utility of having a given amount of an artprop.
 function absolute_resist_value(str, n)
+  if str == "Str" or str == "Int" or str == "Dex" then
+    if n > 4 then
+      return 0 -- handled by linear_resist_value()
+    elseif n > 2 then
+      return -100
+    elseif n > 0 then
+      return -250
+    else
+      return -10000
+    end
+  end
   if n == 0 then
     return 0
   end
@@ -526,10 +583,28 @@ function resist_value(str, it, cur, it2)
   end
 end
 
+function linear_resist_value(str)
+  if str == "Slay" or str == "AC" or str == "EV" then
+    return 50
+  elseif str == "SH" then
+    return 40
+  elseif str == "Str" then
+    return 30
+  elseif str == "Dex" then
+    return 20
+  end
+  return 0
+end
+
 function total_resist_value(it, cur, it2)
-  artproplist = { "rF", "rC", "rElec", "rPois", "rN", "MR", "rCorr", "SInv", "Spirit" }
-  local val1, val2 = 0,0,0
-  for _,str in ipairs(artproplist) do
+  resistlist = { "rF", "rC", "rElec", "rPois", "rN", "MR", "rCorr", "SInv", "Spirit", "Str", "Dex", "Int" }
+  linearlist = { "Str", "Dex", "Slay", "AC", "EV", "SH" }
+  local val = 0
+  for _,str in ipairs(linearlist) do
+    val = val + item_resist(str, it)*linear_resist_value(str)
+  end
+  local val1, val2 = val,val
+  for _,str in ipairs(resistlist) do
     local a,b = resist_value(str, it, cur, it2)
     val1 = val1 + a
     val2 = val2 + b
@@ -774,6 +849,8 @@ function weapon_value(it, cur, it2, hydra_swap)
            or ego == "crushing" or ego == "slicing"
            or ego == "piercing" or ego == "chopping" or ego == "slashing" then
       value = value + 75
+    elseif ego == "venom" then
+      value = value + 50
     elseif ego == "antimagic" then
       if you.race() == "Vine Stalker" then
         value = value - 300
@@ -837,9 +914,17 @@ function amulet_value(it, cur, it2)
     end
   end
   local val1,val2 = total_resist_value(it, cur, it2)
-  if subtype == "amulet of regeneration" and you.race() ~= "Deep Dwarf" then
+  if subtype == "amulet of reflection" then
+    value = value + 20 -- for reflection
+    if not it.artefact and not it.plus then
+      value = value + 6*40
+      if not cur then
+        val1 = val1 - 4*40
+      end
+    end
+  elseif subtype == "amulet of regeneration" and you.race() ~= "Deep Dwarf" then
     value = value + 50
-  elseif subtype == "amulet of dismissal" or subtype == "amulet of reflection" then
+  elseif subtype == "amulet of dismissal" then
     value = value + 25
   elseif subtype == "amulet of inaccuracy" then
     value = value - 250
@@ -879,31 +964,21 @@ function ring_value(it, cur, it2)
       return -1,5000
     end
   end
-  if it.plus and it.plus < 0 then
-    return -1,-1
-  end
   local val1,val2 = total_resist_value(it, cur, it2)
-  local plus = it.plus or 0
-  if not it.fully_identified then
-    plus = 6
-  end
-  if subtype == "ring of slaying" or subtype == "ring of protection"
+  if not it.artefact and not it.plus then
+    local linval = 0
+    if subtype == "ring of slaying" or subtype == "ring of protection"
      or subtype == "ring of evasion" then
-    value = value + 50*plus
-    if not it.fully_identified and not cur then
-      val1 = val1 - 50*12
+      linval = 50
+    elseif subtype == "ring of strength" then
+      linval = 30
+    elseif subtype == "ring of dexterity" then
+      linval = 20
     end
-  elseif subtype == "ring of strength" or subtype == "ring of dexterity" then
-    value = value + 20*plus
-    if not it.fully_identified and not cur then
-      val1 = val1 - 20*12
+    value = value + 6*linval
+    if not cur then
+      val1 = val1 - 12*linval
     end
-  --elseif subtype == "ring of sustain abilities"
-  --       or subtype == "ring of stealth"
-  --       or subtype == "ring of magical power" then
-  --  value = value + 10
-  elseif subtype == "ring of loudness" then
-    value = value - 10
   end
   return value+val1,value+val2
 end
@@ -1035,11 +1110,18 @@ function item_is_dominated(it)
                  sub == "ring of resist corrosion" then
                 return true
               elseif sub == "ring of protection from fire" or
-                     sub == "ring of protection from cold" then
+                     sub == "ring of protection from cold" or
+                     sub == "ring of protection from magic" then
                 num_slots = num_slots - 1
                 if num_slots == 0 then
                   return true
                 end
+              end
+            elseif sub == "ring of fire" and sub2 == "ring of protection from fire"
+                   or sub == "ring of ice" and sub2 == "ring of protection from cold" then
+              num_slots = num_slots - 1
+              if num_slots == 0 then
+                return true
               end
             end
           end
@@ -4514,9 +4596,7 @@ function plan_upgrade_rings()
       local equip = false
       local drop = false
       local swap = nil
-      if should_drop(it) then
-        drop = true
-      elseif empty then
+      if empty then
         if should_equip(it) then
           equip = true
         end
@@ -4527,6 +4607,9 @@ function plan_upgrade_rings()
             swap = it_old.slot
           end
         end
+      end
+      if not equip and should_drop(it) then
+        drop = true
       end
       if equip then
         l = items.index_to_letter(it.slot)
