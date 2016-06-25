@@ -3746,7 +3746,7 @@ end
 function want_to_orbrun_heal_wounds()
   if danger then
     return (hp_is_low(25) or hp_is_low(50) and you.teleporting())
-  elseif you.race() == "Deep Dwarf" and you.god() == "Ru" then
+  elseif you.race() == "Deep Dwarf" and you.god() ~= "Trog" and you.god() ~= "Makhleb" then
     local hp,mhp = you.hp()
     return (mhp - hp >= 30)
   else
