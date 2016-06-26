@@ -3961,7 +3961,8 @@ end
 function plan_orbrun_eat_permafood()
   if you.hunger_name() ~= "completely stuffed" and
      you.hunger_name() ~= "very full" and
-     you.hunger_name() ~= "almost alive" then
+     you.hunger_name() ~= "almost alive" and
+     (you.race() ~= "Ghoul" or you.hunger_name() ~= "not hungry") then
     if eat_permafood() then
       return true
     end
