@@ -6669,5 +6669,8 @@ function c_answer_prompt(prompt)
   if prompt:find("Keep reading") then
     return true
   end
+  if prompt:find("Keep eating") then
+    return true
+  end
 end
 }
