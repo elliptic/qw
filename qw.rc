@@ -2823,7 +2823,7 @@ end
 function on_edible_corpse(allow_dragon)
   for it in at_feet() do
     if it.name():find("corpse") and
-       (not it.name():find("noeat") or allow_dragon and it.name():find("dragon corpse")) and (you.god() ~= "Beogh" or not it.name():find("orc")) then
+       (not it.name():find("noeat") or allow_dragon and it.name():find("dragon corpse")) and (you.god() ~= "Beogh" or not it.name():find("orc ")) then
       return true
     end
   end
