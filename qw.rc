@@ -37,6 +37,8 @@
 : ZIG_DIVE = 0
 # burn books with Trog, may theoretically cause navigation problems
 : BURN_BOOKS = true
+# enable certain somewhat spammy notes
+: SPAM = false
 # tab just takes a single action (for testing)
 : SINGLE_STEP = false
 # panic (stop) at full inventory
@@ -803,7 +805,7 @@ function weapon_value(it, cur, it2, hydra_swap)
     if ap and ap["Fragile"] then
       return -1,-1
     end
-    if intrinsic_evil() and name:find("holy") then
+    if (intrinsic_evil() or you.god() == "Yredelemnul") and name:find("holy") then
       return -1,-1
     end
     if name:find("obsidian axe") then
@@ -833,7 +835,7 @@ function weapon_value(it, cur, it2, hydra_swap)
     if ego == "distortion" then
       return -1,-1
     elseif ego == "holy wrath" then
-      if intrinsic_evil() then
+      if intrinsic_evil() or you.god() == "Yredelemnul" then
         return -1,-1
       end
     elseif ego == "vampirism" then
@@ -1992,6 +1994,16 @@ function can_heroism()
                mp < 2))
 end
 
+function can_yred_recall()
+  local mp,mmp = you.mp()
+  return (not (you.berserk() or you.confused() or you.silenced() or
+               starving() or
+               you.god() ~= "Yredelemnul" or
+               you.piety_rank() < 2 or
+               you.status("recalling") or
+               mp < 2))
+end
+
 function can_finesse()
   local mp,mmp = you.mp()
   return (not (you.berserk() or you.confused() or you.silenced() or
@@ -2902,7 +2914,9 @@ function should_rest()
     return false
   end
   if you.turns() < hiding_turn_count + 10 then
-    say("Waiting for ranged monster.")
+    if SPAM then
+      say("Waiting for ranged monster.")
+    end
     return true
   end
   return (hp_is_low(90) and
@@ -2984,6 +2998,10 @@ end
 
 function heroism()
   use_ability("Heroism")
+end
+
+function yred_recall()
+  use_ability("Recall Undead Slaves", "", true)
 end
 
 function finesse()
@@ -3627,7 +3645,9 @@ function plan_coward_step()
     if tactical_reason == "hiding" then
       hiding_turn_count = you.turns()
     end
-    say("Stepping ~*~*~tactically~*~*~ (" .. tactical_reason .. ").")
+    if SPAM then
+      say("Stepping ~*~*~tactically~*~*~ (" .. tactical_reason .. ").")
+    end
     magic(tactical_step .. "Y")
     return true
   end
@@ -3654,6 +3674,14 @@ end
 function plan_heroism()
   if can_heroism() and want_to_heroism() then
     heroism()
+    return true
+  end
+  return false
+end
+
+function plan_yred_recall()
+  if can_yred_recall() and want_to_yred_recall() then
+    yred_recall()
     return true
   end
   return false
@@ -3841,6 +3869,14 @@ end
 function want_to_heroism()
   return (danger and (hp_is_low(70) or check_monsters(LOS, scary_monsters) or
                       count_nearby(0,0,LOS) >= 4))
+end
+
+function want_to_yred_recall()
+  if immediate_danger and hp_is_low(70) then
+    return false
+  end
+  local mp,mmp = you.mp()
+  return (mp == mmp)
 end
 
 function want_to_stay_in_abyss()
@@ -4797,7 +4833,7 @@ function plan_go_down()
 end
 
 function ready_for_lair()
-  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or
+  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or
      (you.god() == "Makhleb" and you.piety_rank() >= 4) or
      (you.god() == "Ru" and you.piety_rank() >= 3) then
     return true
@@ -5920,10 +5956,12 @@ function make_attack(x, y, info)
   return true
 end
 
-function use_ability(name, extra)
+function use_ability(name, extra, mute)
   for letter, abil in pairs(you.ability_table()) do
     if abil == name then
-      say("INVOKING " .. name .. ".")
+      if not mute or SPAM then
+        say("INVOKING " .. name .. ".")
+      end
       magic("a" .. letter .. (extra or ""))
       return true
     end
@@ -6155,6 +6193,7 @@ plan_move = cascade {
   {plan_shop, "shop"},
   {plan_stairdance_up, "stairdance_up"},
   {plan_emergency, "emergency"},
+  {plan_yred_recall, "yred_recall"},
   {plan_wait_for_melee, "wait_for_melee"},
   {plan_wait_spit, "try_wait_spit"},
   {plan_wait_throw, "try_wait_throw"},
@@ -6189,6 +6228,7 @@ plan_move = cascade {
 
 plan_orbrun_move = cascade {
   {plan_orbrun_emergency, "orbrun_emergency"},
+  {plan_yred_recall, "yred_recall"},
   {plan_attack, "attack"},
   {plan_cure_poison, "cure_poison"},
   {plan_orbrun_eatrest, "orbrun_eatrest"},
@@ -6299,7 +6339,7 @@ function choose_skills()
 
   -- Choose one MP skill to train.
   mp_skill = "Evocations"
-  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" then
+  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" then
     mp_skill = "Invocations"
   elseif you.god() == "Ru" then
     mp_skill = "Spellcasting"
@@ -6313,6 +6353,8 @@ function choose_skills()
   elseif you.god() == "Okawaru" and you.piety_rank() >= 4 and mp_skill_level < 10 then
     table.insert(skills, mp_skill)
   elseif you.god() == "Cheibriados" and you.piety_rank() >= 5 and mp_skill_level < 8 then
+    table.insert(skills, mp_skill)
+  elseif you.god() == "Yredelemnul" and you.piety_rank() >= 4 and mp_skill_level < 5 then
     table.insert(skills, mp_skill)
   elseif you.race() == "Deep Dwarf" and you.god() ~= "No God"
          and (bmp < 5 or mp_skill_level < 2 or mp_skill ~= "Spellcasting" and mp_skill_level < 4) then
@@ -6584,6 +6626,8 @@ function fullgodname(g)
     return "Ru"
   elseif g == "T" then
     return "Trog"
+  elseif g == "Y" then
+    return "Yredelemnul"
   else
     return "???"
   end
