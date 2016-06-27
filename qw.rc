@@ -1992,12 +1992,14 @@ function can_heroism()
                mp < 2))
 end
 
-function can_yred_recall()
+function can_recall()
+  if (you.god() ~= "Yredelemenul" or you.piety_rank() < 2)
+     and (you.god() ~= "Beogh" or you.piety_rank() < 4) then
+    return false
+  end
   local mp,mmp = you.mp()
   return (not (you.berserk() or you.confused() or you.silenced() or
                starving() or
-               you.god() ~= "Yredelemnul" or
-               you.piety_rank() < 2 or
                you.status("recalling") or
                mp < 2))
 end
@@ -2923,7 +2925,8 @@ function should_rest()
           or you.slowed() or you.exhausted() or you.teleporting()
           or you.status("manticore barbs")
           or you.silencing() or you.corrosion() > 0
-          or you.god() == "Makhleb" and you.turns() <= sgd_timer + 100)
+          or you.god() == "Makhleb" and you.turns() <= sgd_timer + 100
+          or should_ally_rest())
 end
 
 function should_ally_rest()
@@ -2938,6 +2941,9 @@ function should_ally_rest()
     for y = -3,3 do
       m = monster_array[x][y]
       if m and m:attitude() == ATT_FRIENDLY and m:damage_level() > 0 then
+        if SPAM then
+          say("Waiting for " .. m:name() .. " to heal.")
+        end
         return true
       end
     end
@@ -3017,8 +3023,12 @@ function heroism()
   use_ability("Heroism")
 end
 
-function yred_recall()
-  use_ability("Recall Undead Slaves", "", true)
+function recall()
+  if you.god() == "Yredelemnul" then
+    use_ability("Recall Undead Slaves", "", true)
+  else
+    use_ability("Recall Orcish Followers", "", true)
+  end
 end
 
 function finesse()
@@ -3505,10 +3515,11 @@ function assess_square(x,y)
   a.enemy_distance = distance_to_enemy(x,y)
   -- will we fumble if we try to attack from this square?
   a.fumble = (not you.flying() and view.feature_at(x,y) == "shallow_water"
-              and intrinsic_fumble())
+              and intrinsic_fumble() and not (you.god() == "Beogh" and you.piety_rank() >= 5))
   -- will we be slow if we move into this square?
   a.slow = (not you.flying() and view.feature_at(x,y) == "shallow_water"
-            and you.race() ~= "Merfolk" and you.race() ~= "Octopode")
+            and you.race() ~= "Merfolk" and you.race() ~= "Octopode"
+            and not (you.god() == "Beogh" and you.piety_rank() >= 5))
   -- is the square safe to step in? (checks traps+clouds)
   a.safe = view.is_safe_square(x,y)
   cloud = view.cloud_at(x,y)
@@ -3696,9 +3707,9 @@ function plan_heroism()
   return false
 end
 
-function plan_yred_recall()
-  if can_yred_recall() and want_to_yred_recall() then
-    yred_recall()
+function plan_recall()
+  if can_recall() and want_to_recall() then
+    recall()
     return true
   end
   return false
@@ -3888,7 +3899,7 @@ function want_to_heroism()
                       count_nearby(0,0,LOS) >= 4))
 end
 
-function want_to_yred_recall()
+function want_to_recall()
   if immediate_danger and hp_is_low(70) then
     return false
   end
@@ -4157,14 +4168,6 @@ function plan_rest()
   return false
 end
 
-function plan_ally_rest()
-  if should_ally_rest() then
-    rest()
-    return true
-  end
-  return false
-end
-
 function plan_orbrun_rest()
   if you.confused() or you.slowed() or
      you.berserk() or you.teleporting() or you.silencing() or
@@ -4262,6 +4265,18 @@ function plan_unwield_weapon()
   end
   magic("w-")
   return true
+end
+
+function plan_join_beogh()
+  if you.race() ~= "Hill Orc" or not want_altar() then
+    return false
+  end
+  for _,god in ipairs(god_desired()) do
+    if god == "Beogh" and use_ability("Convert to Beogh", "YY") then
+      return true
+    end
+  end
+  return false
 end
 
 function plan_join_god()
@@ -4859,9 +4874,8 @@ end
 
 function ready_for_lair()
   if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or
-     (you.god() == "Yredelemnul" and you.piety_rank() >= 4) or
-     (you.god() == "Makhleb" and you.piety_rank() >= 4) or
-     (you.god() == "Ru" and you.piety_rank() >= 3) then
+     (you.god() == "Beogh" or you.god() == "Makhleb" or you.god() == "Yredelemnul") and you.piety_rank() >= 4 or
+     you.god() == "Ru" and you.piety_rank() >= 3 then
     return true
   end
   return false
@@ -6103,7 +6117,6 @@ plan_pre_explore = cascade {
   {plan_upgrade_weapon, "upgrade_weapon"},
   {plan_maybe_upgrade_armour, "maybe_upgrade_armour"},
   {plan_use_good_consumables, "use_good_consumables"},
-  {plan_ally_rest, "ally_rest"},
 } -- hack
 
 plan_pre_explore2 = cascade {
@@ -6217,10 +6230,11 @@ plan_explore2 = cascade {
 } -- hack
 
 plan_move = cascade {
+  {plan_join_beogh, "join_beogh"},
   {plan_shop, "shop"},
   {plan_stairdance_up, "stairdance_up"},
   {plan_emergency, "emergency"},
-  {plan_yred_recall, "yred_recall"},
+  {plan_recall, "recall"},
   {plan_wait_for_melee, "wait_for_melee"},
   {plan_wait_spit, "try_wait_spit"},
   {plan_wait_throw, "try_wait_throw"},
@@ -6255,7 +6269,7 @@ plan_move = cascade {
 
 plan_orbrun_move = cascade {
   {plan_orbrun_emergency, "orbrun_emergency"},
-  {plan_yred_recall, "yred_recall"},
+  {plan_recall, "recall"},
   {plan_attack, "attack"},
   {plan_cure_poison, "cure_poison"},
   {plan_orbrun_eatrest, "orbrun_eatrest"},
@@ -6366,7 +6380,7 @@ function choose_skills()
 
   -- Choose one MP skill to train.
   mp_skill = "Evocations"
-  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" then
+  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or you.god() == "Beogh" then
     mp_skill = "Invocations"
   elseif you.god() == "Ru" then
     mp_skill = "Spellcasting"
@@ -6643,7 +6657,9 @@ function first_turn_persist()
 end
 
 function fullgodname(g)
-  if g == "C" then
+  if g == "B" then
+    return "Beogh"
+  elseif g == "C" then
     return "Cheibriados"
   elseif g == "M" then
     return "Makhleb"
