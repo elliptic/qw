@@ -86,6 +86,7 @@ combo = DDFi.waraxe, GrBe.handaxe, MiBe.handaxe
 #####################################
 # enum values :/
 : ENUM_MONS_PANDEMONIUM_LORD = 344
+: ATT_FRIENDLY = 4
 : ATT_NEUTRAL = 1
 : ATT_HOSTILE = 0
 : LOS = 7
@@ -2925,6 +2926,25 @@ function should_rest()
           or you.god() == "Makhleb" and you.turns() <= sgd_timer + 100)
 end
 
+function should_ally_rest()
+  if you.god() ~= "Yredelemnul" and you.god() ~= "Beogh" then
+    return false
+  end
+  if dangerous_to_rest() then
+    return false
+  end
+  local x,y
+  for x = -3,3 do
+    for y = -3,3 do
+      m = monster_array[x][y]
+      if m and m:attitude() == ATT_FRIENDLY and m:damage_level() > 0 then
+        return true
+      end
+    end
+  end
+  return false
+end
+
 function want_permafood()
   if you.race() == "Mummy" or you.transform() == "lich" then
     return false
@@ -4137,6 +4157,14 @@ function plan_rest()
   return false
 end
 
+function plan_ally_rest()
+  if should_ally_rest() then
+    rest()
+    return true
+  end
+  return false
+end
+
 function plan_orbrun_rest()
   if you.confused() or you.slowed() or
      you.berserk() or you.teleporting() or you.silencing() or
@@ -4830,7 +4858,8 @@ function plan_go_down()
 end
 
 function ready_for_lair()
-  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or
+  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or
+     (you.god() == "Yredelemnul" and you.piety_rank() >= 4) or
      (you.god() == "Makhleb" and you.piety_rank() >= 4) or
      (you.god() == "Ru" and you.piety_rank() >= 3) then
     return true
@@ -6074,6 +6103,7 @@ plan_pre_explore = cascade {
   {plan_upgrade_weapon, "upgrade_weapon"},
   {plan_maybe_upgrade_armour, "maybe_upgrade_armour"},
   {plan_use_good_consumables, "use_good_consumables"},
+  {plan_ally_rest, "ally_rest"},
 } -- hack
 
 plan_pre_explore2 = cascade {
