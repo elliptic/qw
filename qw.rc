@@ -5558,6 +5558,10 @@ function plan_cure_confusion()
       say("(to cure confusion)")
       return true
     end
+    if you.god() == "Beogh" then
+      magic("s") -- avoid Beogh penance
+      return true
+    end
   end
   return false
 end
