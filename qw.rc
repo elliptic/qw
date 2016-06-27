@@ -5548,6 +5548,10 @@ end
 function plan_cure_confusion()
   if you.confused() and (danger or not options.autopick_on) then
     if view.cloud_at(0,0) == "noxious fumes" and not meph_immune() then
+      if you.god() == "Beogh" then
+        magic("s") -- avoid Beogh penance
+        return true
+      end
       return false
     end
     if drink_by_name("curing") then
