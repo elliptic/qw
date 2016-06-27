@@ -2002,6 +2002,15 @@ function can_finesse()
                mp < 5))
 end
 
+function can_slouch()
+  local mp,mmp = you.mp()
+  return (not (you.berserk() or you.confused() or you.silenced() or
+               starving() or
+               you.god() ~= "Cheibriados" or
+               you.piety_rank() < 4 or
+               mp < 5))
+end
+
 function can_hand()
   return (not (you.berserk() or you.confused() or you.silenced() or
           you.regenerating() or
@@ -2103,6 +2112,11 @@ function mon_speed_num(m)
     num = num + 1
   end
   if m:status("slow") then
+    num = num - 1
+  end
+  if m:name():find("spriggan") or m:name() == "the Enchantress" then
+    num = num + 1
+  elseif m:name():find("naga") or m:name() == "Vashnia" then
     num = num - 1
   end
   return num
@@ -2484,6 +2498,34 @@ function count_unalert(cx, cy, r)
     end
   end
   return i
+end
+
+function estimate_slouch_damage()
+  local e
+  local count = 0
+  local s,v
+  for _,e in ipairs(enemy_list) do
+    if you.see_cell_no_trans(e.x,e.y) then
+      s = mon_speed_num(e.m)
+      v = 0
+      if s >= 6 then
+        v = 3
+      elseif s == 5 then
+        v = 2.5
+      elseif s == 4 then
+        v = 1.5
+      elseif s == 3 then
+        v = 1
+      end
+      if e.m:name() == "orb of fire" then
+        v = v + 1
+      elseif v > 0 and e.m:threat() <= 1 then
+        v = 0.5
+      end
+      count = count + v
+    end
+  end
+  return count
 end
 
 function count_nearby(cx, cy, r)
@@ -2946,6 +2988,10 @@ end
 
 function finesse()
   use_ability("Finesse")
+end
+
+function slouch()
+  use_ability("Slouch")
 end
 
 function hand()
@@ -3621,6 +3667,14 @@ function plan_finesse()
   return false
 end
 
+function plan_slouch()
+  if can_slouch() and want_to_slouch() then
+    slouch()
+    return true
+  end
+  return false
+end
+
 function plan_burn_spellbooks()
   if want_to_burn_spellbooks() then
     burn_spellbooks()
@@ -3645,6 +3699,13 @@ end
 
 function want_to_finesse()
   if danger and check_monsters(LOS, bia_monsters) and not you.teleporting() then
+    return true
+  end
+  return false
+end
+
+function want_to_slouch()
+  if danger and you.piety_rank() == 6 and not you.teleporting() and estimate_slouch_damage() >= 6 then
     return true
   end
   return false
@@ -6009,6 +6070,7 @@ plan_emergency = cascade {
   {plan_bia, "bia"},
   {plan_sgd, "sgd"},
   {plan_apocalypse, "try_apocalypse"},
+  {plan_slouch, "try_slouch"},
   {plan_hydra_destruction, "try_hydra_destruction"},
   {plan_dd_recharge_heal_wounds, "dd_recharge_heal_wounds"},
   {plan_wield_weapon, "wield_weapon"},
@@ -6249,6 +6311,8 @@ function choose_skills()
   elseif you.god() == "Okawaru" and you.piety_rank() >= 1 and mp_skill_level < 4 then
     table.insert(skills, mp_skill)
   elseif you.god() == "Okawaru" and you.piety_rank() >= 4 and mp_skill_level < 10 then
+    table.insert(skills, mp_skill)
+  elseif you.god() == "Cheibriados" and you.piety_rank() >= 5 and mp_skill_level < 8 then
     table.insert(skills, mp_skill)
   elseif you.race() == "Deep Dwarf" and you.god() ~= "No God"
          and (bmp < 5 or mp_skill_level < 2 or mp_skill ~= "Spellcasting" and mp_skill_level < 4) then
