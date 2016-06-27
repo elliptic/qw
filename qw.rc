@@ -1098,7 +1098,7 @@ function item_is_dominated(it)
           return true
         end
       end
-      if minv == minv2 and maxv == maxv2 then
+      if maxv == maxv2 and it.fully_identified and it2.fully_identified then
         if slotname == "Ring" then
           if not it.artefact and not it2.artefact then
             sub = it.subtype()
@@ -1113,7 +1113,8 @@ function item_is_dominated(it)
                 return true
               elseif sub == "ring of protection from fire" or
                      sub == "ring of protection from cold" or
-                     sub == "ring of protection from magic" then
+                     sub == "ring of protection from magic" or
+                     sub == "ring of positive energy" then
                 num_slots = num_slots - 1
                 if num_slots == 0 then
                   return true
@@ -1132,11 +1133,7 @@ function item_is_dominated(it)
             return true
           end
         elseif it.name() == it2.name() then
-          local name = it.name()
-          if not (name:find("runed") or name:find("glowing") or name:find("dyed") or
-                  name:find("embroidered") or name:find("shiny")) then
-            return true
-          end
+          return true
         end
       end
     end
