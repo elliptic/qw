@@ -4403,7 +4403,7 @@ function plan_read_id()
       items.swap_slots(it.slot, items.letter_to_index('Y'), false)
       weap = items.equipped_at("Weapon")
       scroll_letter = 'Y'
-      if weap and not weap.name():find("vamp") then
+      if weap and not weap.artefact and not brand_is_great(weap.ego()) then
         scroll_letter = items.index_to_letter(weap.slot)
         items.swap_slots(weap.slot, items.letter_to_index('Y'), false)
       end
