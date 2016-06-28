@@ -97,6 +97,7 @@ combo = DDFi.waraxe, GrBe.handaxe, MiBe.handaxe
 name = qw
 restart_after_game = false
 
+ability_menu = false
 view_delay = 0
 use_animations =
 darken_beyond_range = false
