@@ -911,8 +911,8 @@ function amulet_value(it, cur, it2)
     end
   end
   if subtype == "amulet of faith" then
-    if you.god() == "Cheibriados" then
-      return -1,-1 -- we don't use Chei piety much
+    if you.god() == "Cheibriados" or you.god() == "Beogh" or you.god() == "Qazlal" then
+      return -1,-1 -- we don't use piety much on these gods at the moment
     elseif you.god() ~= "Ru" then
       return 1000,1000 -- fixed value so we don't unequip for a randart one
     end
@@ -4955,7 +4955,7 @@ function plan_go_down()
 end
 
 function ready_for_lair()
-  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or
+  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Qazlal" or
      (you.god() == "Beogh" or you.god() == "Makhleb" or you.god() == "Yredelemnul") and you.piety_rank() >= 4 or
      you.god() == "Ru" and you.piety_rank() >= 3 then
     return true
@@ -5707,7 +5707,8 @@ function plan_swamp_clouds_hack()
           for y2 = -LOS,LOS do
             if (view.cloud_at(x2,y2) == "freezing vapour"
                 or view.cloud_at(x2,y2) == "foul pestilence")
-               and you.see_cell_no_trans(x2,y2) then
+               and you.see_cell_no_trans(x2,y2)
+               and (you.god() ~= "Qazlal" or not view.is_safe_square(x2,y2)) then
               if supdist(x-x2,y-y2) < dist then
                 dist = supdist(x-x2,y-y2)
               end
@@ -6472,7 +6473,7 @@ function choose_skills()
 
   -- Choose one MP skill to train.
   mp_skill = "Evocations"
-  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or you.god() == "Beogh" then
+  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or you.god() == "Beogh" or you.god() == "Qazlal" then
     mp_skill = "Invocations"
   elseif you.god() == "Ru" then
     mp_skill = "Spellcasting"
@@ -6757,6 +6758,8 @@ function fullgodname(g)
     return "Makhleb"
   elseif g == "O" then
     return "Okawaru"
+  elseif g == "Q" then
+    return "Qazlal"
   elseif g == "R" then
     return "Ru"
   elseif g == "T" then
