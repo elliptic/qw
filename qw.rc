@@ -1057,7 +1057,8 @@ function want_scroll(it)
   end
   if sub ~= "identify" and sub ~= "teleportation" and sub ~= "remove curse"
      and sub ~= "enchant weapon" and sub ~= "enchant armour"
-     and sub ~= "acquirement" and sub ~= "recharging" then
+     and sub ~= "acquirement" and sub ~= "recharging"
+     and sub ~= "brand weapon" then
     return false
   end
   return true
@@ -4489,6 +4490,21 @@ function body_armour_is_good(arm)
   end
 end
 
+-- do we want to keep this brand?
+function brand_is_great(brand)
+  if brand == "speed" then
+    return true
+  elseif brand == "vampirism" then
+    return (you.race() == "Deep Dwarf" or not you.have_orb())
+  elseif brand == "electrocution" then
+    return (where ~= "Zot:5")
+  elseif brand == "holy wrath" then
+    return (where == "Zot:5" or you.have_orb())
+  else
+    return false
+  end
+end
+
 function plan_use_good_consumables()
   for it in inventory() do
     if it.class(true) == "scroll" and can_read() then
@@ -4505,6 +4521,15 @@ function plan_use_good_consumables()
           oldname = weapon.name()
           if read2(it, letter(weapon)) then
             say("ENCHANTING " .. oldname .. ".")
+            return true
+          end
+        end
+      elseif it.name():find("brand weapon") then
+        weapon = items.equipped_at("weapon")
+        if weapon and not weapon.artefact and not brand_is_great(weapon.ego()) then
+          oldname = weapon.name()
+          if read2(it, letter(weapon)) then
+            say("BRANDING " .. oldname .. ".")
             return true
           end
         end
