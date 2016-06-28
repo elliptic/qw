@@ -6359,6 +6359,7 @@ plan_orbrun_move = cascade {
   {plan_orbrun_eatrest, "orbrun_eatrest"},
   {plan_go_up, "go_up"},
   {plan_fly, "fly"},
+  {plan_use_good_consumables, "use_good_consumables"},
   {plan_find_upstairs, "try_find_upstairs"},
   {plan_disturbance_random_step, "disturbance_random_step"},
   --{plan_stuck_clear_exclusions, "try_stuck_clear_exclusions"},
