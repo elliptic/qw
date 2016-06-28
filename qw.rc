@@ -2023,6 +2023,15 @@ function can_slouch()
                mp < 5))
 end
 
+function can_drain_life()
+  local mp,mmp = you.mp()
+  return (not (you.berserk() or you.confused() or you.silenced() or
+               starving() or
+               you.god() ~= "Yredelemnul" or
+               you.piety_rank() < 4 or
+               mp < 6))
+end
+
 function can_hand()
   return (not (you.berserk() or you.confused() or you.silenced() or
           you.regenerating() or
@@ -2540,6 +2549,17 @@ function estimate_slouch_damage()
   return count
 end
 
+function count_drainable()
+  local e
+  local count = 0
+  for _,e in ipairs(enemy_list) do
+    if you.see_cell_no_trans(e.x,e.y) and e.m:res_draining() == 0 then
+      count = count + 1
+    end
+  end
+  return count
+end
+
 function count_nearby(cx, cy, r)
   local x, y
   local i = 0
@@ -3037,6 +3057,10 @@ end
 
 function slouch()
   use_ability("Slouch")
+end
+
+function drain_life()
+  use_ability("Drain Life")
 end
 
 function hand()
@@ -3731,6 +3755,14 @@ function plan_slouch()
   return false
 end
 
+function plan_drain_life()
+  if can_drain_life() and want_to_drain_life() then
+    drain_life()
+    return true
+  end
+  return false
+end
+
 function plan_burn_spellbooks()
   if want_to_burn_spellbooks() then
     burn_spellbooks()
@@ -3765,6 +3797,14 @@ function want_to_slouch()
     return true
   end
   return false
+end
+
+function want_to_drain_life()
+  if not danger then
+    return false
+  end
+  local cd = count_drainable()
+  return (cd >= 8 or cd >= 3 and you.race() == "Deep Dwarf" and hp_is_low(80))
 end
 
 function want_to_sgd()
@@ -3843,8 +3883,9 @@ function dd_want_to_heal_wounds()
     if (dd_prefer_hand() or (dd_prefer_ru_healing() and you.exhausted())) and (not you.teleporting()) and not hp_is_low(66) then
       return false
     end
-    if you.god() == "Makhleb" and you.piety_rank() >= 1 and
-       not hp_is_low(66) then
+    if (you.god() == "Makhleb" and you.piety_rank() >= 1
+        or you.god() == "Yredelemnul" and you.piety_rank() >= 4)
+       and not hp_is_low(66) then
       return false
     end
     return (hp_is_low(25) or
@@ -3900,7 +3941,7 @@ function want_to_heroism()
 end
 
 function want_to_recall()
-  if immediate_danger and hp_is_low(70) then
+  if immediate_danger and hp_is_low(66) then
     return false
   end
   local mp,mmp = you.mp()
@@ -6148,6 +6189,7 @@ plan_emergency = cascade {
   {plan_teleport, "teleport"},
   {plan_dd_recharge_teleport, "dd_recharge_teleport"},
   {plan_cure_bad_poison, "cure_bad_poison"},
+  {plan_drain_life, "drain_life"},
   {plan_heal_wounds, "heal_wounds"},
   {plan_cloud_step, "cloud_step"},
   {plan_hand, "hand"},
@@ -6403,7 +6445,7 @@ function choose_skills()
     table.insert(skills, mp_skill)
   elseif you.god() == "Cheibriados" and you.piety_rank() >= 5 and mp_skill_level < 8 then
     table.insert(skills, mp_skill)
-  elseif you.god() == "Yredelemnul" and you.piety_rank() >= 4 and mp_skill_level < 5 then
+  elseif you.god() == "Yredelemnul" and you.piety_rank() >= 4 and (mp_skill_level < 8 or you.race() == "Deep Dwarf" and bmp < 10) then
     table.insert(skills, mp_skill)
   elseif you.race() == "Deep Dwarf" and you.god() ~= "No God"
          and (bmp < 5 or mp_skill_level < 2 or mp_skill ~= "Spellcasting" and mp_skill_level < 4) then
