@@ -868,7 +868,7 @@ function weapon_value(it, cur, it2, hydra_swap)
   if it.plus then
     value = value + 30*it.plus
   end
-  delay_estimate = math.floor(it.delay / 2)
+  delay_estimate = min(7,math.floor(it.delay / 2))
   if it.weap_skill == "Short Blades" and delay_estimate > 5 then
     delay_estimate = 5
   end
