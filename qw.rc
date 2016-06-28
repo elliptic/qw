@@ -5466,7 +5466,7 @@ function unshafting()
 end
 
 function plan_unshaft()
-  if unshafting() then
+  if unshafting() and where ~= "Temple" then
     --say("Trying to unshaft to " .. where_shafted_from .. ".")
     expect_new_location = true
     magic("G<")
