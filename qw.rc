@@ -2695,6 +2695,14 @@ function find_item(cls,name)
   end
 end
 
+function have_item(cls,name)
+  for it in inventory() do
+    if it.class(true) == cls and it.name():find(name) then
+      return true
+    end
+  end
+end
+
 function find_wand(name)
   for it in inventory() do
     if it.class(true) == "wand" and it.name():find(name) and
@@ -4509,10 +4517,10 @@ function plan_use_good_consumables()
   for it in inventory() do
     if it.class(true) == "scroll" and can_read() then
       if it.name():find("acquirement") then
-        if you.race() ~= "Felid" then
-          return read2(it, " b")
-        else
+        if you.race() == "Felid" or you.race() ~= "Formicid" and not have_item("wand", "teleportation") then
           return read2(it, " f")
+        else
+          return read2(it, " b")
         end
       elseif it.name():find("enchant weapon") then
         weapon = items.equipped_at("weapon")
