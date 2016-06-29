@@ -1282,6 +1282,9 @@ local v5_entry_turn
 
 local slime_forgot_map = false
 
+local last_swamp_fail_count = -1
+local swamp_rune_reachable = false
+
 local offlevel_travel = true
 
 local last_min_delay_skill = 18
@@ -5683,6 +5686,10 @@ function plan_swamp_go_to_rune()
   if where ~= "Swamp:4" or you.have_rune("decaying") then
     return false
   end
+  if last_swamp_fail_count == c_persist.plan_fail_count.try_swamp_go_to_rune then
+    swamp_rune_reachable = true
+  end
+  last_swamp_fail_count = c_persist.plan_fail_count.try_swamp_go_to_rune
   magicfind("@decaying rune")
   return true
 end
@@ -5692,6 +5699,11 @@ function plan_swamp_clouds_hack()
     return false
   end
   if you.have_rune("decaying") and can_teleport() and teleport() then
+    return true
+  end
+  if swamp_rune_reachable then
+    say("Waiting for clouds to move.")
+    magic("s")
     return true
   end
   local x,y
