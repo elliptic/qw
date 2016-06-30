@@ -5208,7 +5208,7 @@ function plan_enter_portal()
 end
 
 function plan_exit_portal()
-  if not in_portal() then
+  if not in_portal() or you.mesmerised() then
     return false
   end
   if string.find(view.feature_at(0,0), "exit_" .. get_feat_name(where)) then
