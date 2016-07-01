@@ -6366,7 +6366,7 @@ plan_move = cascade {
   {plan_slime_dig_to_rune, "slime_dig_to_rune"},
   {plan_slime_forget_map, "try_slime_forget_map"},
   {plan_slime_go_to_rune, "try_slime_go_to_rune"},
-  {plan_stuck_dig, "stuck_dig"},
+  {plan_stuck_dig, "try_stuck_dig"},
   {plan_stuck_teleport, "stuck_teleport"},
   {plan_stuck, "stuck"},
 } -- hack
