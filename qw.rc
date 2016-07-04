@@ -391,7 +391,11 @@ function intrinsic_resist(str)
       return 0
     end
   elseif str == "rN" then
-    return you.mutation("negative energy resistance")
+    local val = you.mutation("negative energy resistance")
+    if you.god() == "the Shining One" then
+      val = val + math.floor(you.piety_rank() / 3)
+    end
+    return val
   elseif str == "MR" then
     return you.mutation("magic resistance") + ((you.god() == "Trog") and 1 or 0)
   elseif str == "rCorr" then
@@ -789,6 +793,11 @@ function weapon_value(it, cur, it2, hydra_swap)
   if you.god() == "Cheibriados" and name:find("quick blade") then
     return -1,-1
   end
+  -- FIXME: should check for other demon weapons too (ideally in a better
+  --        way than this) and should also maybe carry one to holy brand.
+  if you.god() == "the Shining One" and name:find("demon whip") then
+    return -1,-1
+  end
   if it.hands == 2 and want_buckler() then
     return -1,-1
   end
@@ -812,6 +821,9 @@ function weapon_value(it, cur, it2, hydra_swap)
     end
     if name:find("obsidian axe") then
       value = value + 300
+      if you.god() == "the Shining One" then
+        return -1,-1
+      end
     end
   end
   local val1,val2 = total_resist_value(it, cur, it2)
@@ -842,6 +854,9 @@ function weapon_value(it, cur, it2, hydra_swap)
       end
     elseif ego == "vampirism" then
       value = value + 500 -- this is what we want
+      if you.god() == "the Shining One" then
+        return -1,-1
+      end
     elseif ego == "speed" then
       value = value + 300 -- this is good too
       if you.god() == "Cheibriados" then
@@ -849,18 +864,28 @@ function weapon_value(it, cur, it2, hydra_swap)
       end
     elseif ego == "electrocution" then
       value = value + 150 -- not bad
+    elseif ego == "draining" then
+      value = value + 75
+      if you.god() == "the Shining One" then
+        return -1,-1
+      end
     elseif ego == "flaming" or ego == "freezing" or ego == "draining"
            or ego == "crushing" or ego == "slicing"
            or ego == "piercing" or ego == "chopping" or ego == "slashing" then
       value = value + 75
     elseif ego == "venom" then
       value = value + 50
+      if you.god() == "the Shining One" then
+        return -1,-1
+      end
     elseif ego == "antimagic" then
       if you.race() == "Vine Stalker" then
         value = value - 300
       elseif you.race() ~= "Deep Dwarf" then
         value = value + 75
       end
+    elseif ego == "pain" and you.god() == "the Shining One" then
+      return -1,-1
     elseif ego == "chaos" and you.god() == "Cheibriados" then
       return -1,-1
     end
@@ -1181,6 +1206,9 @@ end
 
 function want_missile(it)
   st = it.subtype()
+  if it.ego() == "poison" and you.god() == "the Shining One" then
+    return false
+  end
   return (st == "large rock" and (you.race() == "Troll" or you.race() == "Ogre") or st == "javelin" and you.xl() < 21 or st == "tomahawk" and you.xl() < 15)
 end
 
@@ -1688,6 +1716,11 @@ function intrinsic_sinv()
   if sp == "Naga" or sp == "Felid" or sp == "Formicid" or sp == "Vampire" then
     return true
   end
+  -- we assume TSO piety won't drop below 2* and that we won't change gods
+  -- away from TSO
+  if you.god() == "the Shining One" and you.piety_rank() >= 2 then
+    return true
+  end
   return false
 end
 
@@ -2078,6 +2111,13 @@ function can_sgd()
           you.god() ~= "Makhleb"))
 end
 
+function can_divine_warrior()
+  local mp,mmp = you.mp()
+  return (not (you.berserk() or you.confused() or you.silenced() or
+          starving() or you.piety_rank() < 5 or
+          mp < 8 or you.god() ~= "the Shining One"))
+end
+
 function can_destruction()
   local hp,mhp = you.hp()
   return (not (you.berserk() or you.confused() or you.silenced() or
@@ -2292,6 +2332,24 @@ function count_sgd(r)
       m = monster_array[x][y]
       if m and m:is_safe()
        and contains_string_in(m:name(), {"Executioner","green death","blizzard demon","balrug","cacodemon"}) then
+        i = i+1
+      end
+    end
+  end
+  return i
+end
+
+function count_divine_warrior(r)
+  if you.god() ~= "the Shining One" then
+    return 0
+  end
+  local x, y
+  local i = 0
+  for x = -r,r do
+    for y = -r,r do
+      m = monster_array[x][y]
+      if m and m:is_safe()
+       and contains_string_in(m:name(), {"angel","daeva"}) then
         i = i+1
       end
     end
@@ -3099,6 +3157,10 @@ function sgd()
   use_ability("Greater Servant of Makhleb")
 end
 
+function divine_warrior()
+  use_ability("Summon Divine Warrior")
+end
+
 function apocalypse()
   use_ability("Apocalypse")
 end
@@ -3119,6 +3181,14 @@ end
 function plan_sgd()
   if can_sgd() and want_to_sgd() then
     sgd()
+    return true
+  end
+  return false
+end
+
+function plan_divine_warrior()
+  if can_divine_warrior() and want_to_divine_warrior() then
+    divine_warrior()
     return true
   end
   return false
@@ -3529,7 +3599,7 @@ function assess_square(x,y)
   a.supdist = supdist(x,y)
   -- is current square near a BiA/SGD?
   if a.supdist == 0 then
-    a.near_ally = (count_bia(3) + count_sgd(3) > 0)
+    a.near_ally = (count_bia(3) + count_sgd(3) + count_divine_warrior(3) > 0)
   end
   -- can we move there?
   a.can_move = (a.supdist == 0) or not view.withheld(x,y)
@@ -3837,6 +3907,16 @@ function want_to_sgd()
   return false
 end
 
+function want_to_divine_warrior()
+  if you.skill("Invocations") >= 8 and
+     check_monsters(LOS, bia_monsters) then
+    if count_divine_warrior(4) == 0 and not you.teleporting() then
+      return true
+    end
+  end
+  return false
+end
+
 function want_to_apocalypse()
   if you.race() ~= "Deep Dwarf"
      and not (you.status("drained") or you.status("heavily drained") or you.status("very heavily drained"))
@@ -3994,7 +4074,7 @@ function plan_wait_for_melee()
   is_waiting = false
   if sense_danger(1) or (have_reaching() and sense_danger(2))
      or (not options.autopick_on) or
-     you.berserk() or you.have_orb() or count_bia(LOS) > 0 or count_sgd(LOS) > 0 or
+     you.berserk() or you.have_orb() or count_bia(LOS) > 0 or count_sgd(LOS) > 0 or count_divine_warrior(LOS) > 0 or
      not view.is_safe_square(0,0) or
      view.feature_at(0,0) == "shallow_water" and not you.flying() or
      where:find("Abyss") then
@@ -4110,10 +4190,21 @@ function plan_wait_wait()
   return true
 end
 
+local last_attack_turn = -100
+
 function plan_attack()
   if danger then
-    if attack() then
+    if last_attack_turn == you.turns() then
+      say("SHOUTING (TSO)")
+      magic("tt")
       return true
+    elseif attack() then
+      if you.god() == "the Shining One" then
+        last_attack_turn = you.turns()
+        return nil
+      else
+        return true
+      end
     end
   end
   return false
@@ -4346,7 +4437,7 @@ function plan_join_god()
   end
   feat = view.feature_at(0,0)
   for _,god in ipairs(god_desired()) do
-    if feat == ("altar_" .. string.lower(god)) then
+    if feat == ("altar_" .. string.gsub(string.lower(god), " ", "_")) then
       if you.silenced() then
         rest()
       else
@@ -4958,7 +5049,7 @@ function plan_go_down()
 end
 
 function ready_for_lair()
-  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Qazlal" or
+  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Qazlal" or you.god() == "the Shining One" or
      (you.god() == "Beogh" or you.god() == "Makhleb" or you.god() == "Yredelemnul") and you.piety_rank() >= 4 or
      you.god() == "Ru" and you.piety_rank() >= 3 then
     return true
@@ -4984,7 +5075,7 @@ function want_to_stairdance_up()
   end
   if you.caught() or you.mesmerised() or you.constricted() or you.berserk()
      or you.rooted() or you.transform() == "tree" or you.transform() == "fungus"
-     or hp_is_low(33) or count_bia(3) > 0 or count_sgd(3) > 0 then
+     or hp_is_low(33) or count_bia(3) > 0 or count_sgd(3) > 0 or count_divine_warrior(3) > 0 then
     return false
   end
   local e
@@ -5968,7 +6059,7 @@ end
 function move_towards(dx, dy)
   if you.transform() == "tree" or you.transform() == "fungus"
      or you.confused() and
-        (count_bia(1) > 0 or count_sgd(1) > 0) then
+        (count_bia(1) > 0 or count_sgd(1) > 0 or count_divine_warrior(1) > 0) then
     magic("s")
     return true
   end
@@ -6075,7 +6166,7 @@ end
 
 function attack_melee(x, y)
   if you.confused() then
-    if count_bia(1) > 0 or count_sgd(1) > 0 then
+    if count_bia(1) > 0 or count_sgd(1) > 0 or count_divine_warrior(1) > 0 then
       magic("s")
       return
     elseif you.transform() == "tree" then
@@ -6251,6 +6342,7 @@ plan_emergency = cascade {
   {plan_heroism, "heroism"},
   {plan_bia, "bia"},
   {plan_sgd, "sgd"},
+  {plan_divine_warrior, "divine_warrior"},
   {plan_apocalypse, "try_apocalypse"},
   {plan_slouch, "try_slouch"},
   {plan_hydra_destruction, "try_hydra_destruction"},
@@ -6485,7 +6577,7 @@ function choose_skills()
 
   -- Choose one MP skill to train.
   mp_skill = "Evocations"
-  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or you.god() == "Beogh" or you.god() == "Qazlal" then
+  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or you.god() == "Beogh" or you.god() == "Qazlal" or you.god() == "the Shining One" then
     mp_skill = "Invocations"
   elseif you.god() == "Ru" then
     mp_skill = "Spellcasting"
@@ -6493,6 +6585,8 @@ function choose_skills()
   mp_skill_level = you.base_skill(mp_skill)
   bmp = you.base_mp()
   if you.god() == "Makhleb" and you.piety_rank() >= 2 and mp_skill_level < 15 then
+    table.insert(skills, mp_skill)
+  elseif you.god() == "the Shining One" and you.piety_rank() >= 5 and mp_skill_level < 12 then
     table.insert(skills, mp_skill)
   elseif you.god() == "Okawaru" and you.piety_rank() >= 1 and mp_skill_level < 4 then
     table.insert(skills, mp_skill)
@@ -6778,6 +6872,8 @@ function fullgodname(g)
     return "Trog"
   elseif g == "Y" then
     return "Yredelemnul"
+  elseif g == "1" then
+    return "the Shining One"
   else
     return "???"
   end
@@ -6930,6 +7026,9 @@ function c_answer_prompt(prompt)
   end
   if prompt:find("Keep eating") then
     return true
+  end
+  if prompt:find("This attack would place you under penance") then
+    return false
   end
 end
 }
