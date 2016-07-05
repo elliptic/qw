@@ -3194,6 +3194,14 @@ function plan_divine_warrior()
   return false
 end
 
+function plan_orbrun_divine_warrior()
+  if can_divine_warrior() and want_to_orbrun_divine_warrior() then
+    divine_warrior()
+    return true
+  end
+  return false
+end
+
 function plan_apocalypse()
   if can_apocalypse() and want_to_apocalypse() then
     apocalypse()
@@ -3915,6 +3923,10 @@ function want_to_divine_warrior()
     end
   end
   return false
+end
+
+function want_to_orbrun_divine_warrior()
+  return (danger and count_pan_lords(LOS) > 0 and count_divine_warrior(4) == 0 and not you.teleporting())
 end
 
 function want_to_apocalypse()
@@ -6377,6 +6389,7 @@ plan_orbrun_emergency = cascade {
   {plan_orbrun_finesse, "orbrun_finesse"},
   {plan_orbrun_haste, "orbrun_haste"},
   {plan_orbrun_heroism, "orbrun_heroism"},
+  {plan_orbrun_divine_warrior, "orbrun_divine_warrior"},
   {plan_dd_orbrun_recharge_hasting, "orbrun_dd_recharge_hasting"},
   {plan_hand, "hand"},
   {plan_resistance, "resistance"},
