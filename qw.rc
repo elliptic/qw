@@ -4195,9 +4195,15 @@ local last_attack_turn = -100
 function plan_attack()
   if danger then
     if last_attack_turn == you.turns() then
-      say("SHOUTING (TSO)")
-      magic("tt")
-      return true
+      if you.silenced() then
+        say("WAITING (SILENT TSO)")
+        magic("s")
+        return true
+      else
+        say("SHOUTING (TSO)")
+        magic("tt")
+        return true
+      end
     elseif attack() then
       if you.god() == "the Shining One" then
         last_attack_turn = you.turns()
