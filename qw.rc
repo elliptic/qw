@@ -3909,7 +3909,7 @@ end
 
 function want_to_divine_warrior()
   if you.skill("Invocations") >= 8 and
-     check_monsters(LOS, bia_monsters) then
+     (check_monsters(LOS, bia_monsters) or hp_is_low(50) and immediate_danger) then
     if count_divine_warrior(4) == 0 and not you.teleporting() then
       return true
     end
