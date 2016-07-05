@@ -1273,7 +1273,7 @@ local sgd_timer = -200
 local stuck_turns = 0
 
 local stepped_on_lair = false
-local kill_plant_mode = false
+local lair_step_mode = false
 
 -- are these still necessary?
 local did_move = false
@@ -2404,7 +2404,7 @@ end
 -- should only be called for adjacent squares
 function monster_in_way(dx,dy)
   m = monster_array[dx][dy]
-  return (m and (m:attitude() <= ATT_NEUTRAL and not kill_plant_mode or
+  return (m and (m:attitude() <= ATT_NEUTRAL and not lair_step_mode or
                  m:attitude() > ATT_NEUTRAL and
                  (m:is_constricted() or m:is_caught()
                   or m:status("petrified")
@@ -5366,9 +5366,9 @@ function plan_step_towards_lair()
           stepped_on_lair = true
           return false
         else
-          kill_plant_mode = true
+          lair_step_mode = true
           local result = move_towards(x,y)
-          kill_plant_mode = false
+          lair_step_mode = false
           return result
         end
       end
@@ -6092,7 +6092,7 @@ function move_towards(dx, dy)
     table.insert(failed_move, 20*dx+dy)
     return false
   else
-    if (abs(dx) > 1 or abs(dy) > 1) and not kill_plant_mode
+    if (abs(dx) > 1 or abs(dy) > 1) and not lair_step_mode
        and view.feature_at(dx,dy) ~= "closed_door" then
       did_move = true
       if monster_array[dx][dy] or did_move_towards_monster > 0 then
@@ -6100,6 +6100,12 @@ function move_towards(dx, dy)
         target_memory_x = dx - move_x
         target_memory_y = dy - move_y
         did_move_towards_monster = 2
+      end
+    end
+    if lair_step_mode then
+      local move_x, move_y = vi_to_delta(move)
+      if view.feature_at(move_x, move_y) == "shallow_water" then
+        return false
       end
     end
     magic(move .. "Y")
