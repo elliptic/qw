@@ -869,7 +869,7 @@ function weapon_value(it, cur, it2, hydra_swap)
       if you.god() == "the Shining One" then
         return -1,-1
       end
-    elseif ego == "flaming" or ego == "freezing" or ego == "draining"
+    elseif ego == "flaming" or ego == "freezing"
            or ego == "crushing" or ego == "slicing"
            or ego == "piercing" or ego == "chopping" or ego == "slashing" then
       value = value + 75
