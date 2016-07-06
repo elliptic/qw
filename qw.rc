@@ -5142,6 +5142,7 @@ function plan_stairdance_up()
   return false
 end
 
+-- TODO: identical items might be an issue for shopping list?
 function plan_shop()
   if view.feature_at(0,0) ~= "enter_shop" or free_inventory_slots() == 0 then
     return false
@@ -5149,15 +5150,87 @@ function plan_shop()
   if you.berserk() or you.caught() or you.mesmerised() then
     return false
   end
+
+  local it, price, on_list
   for n,e in ipairs(items.shop_inventory()) do
     it = e[1]
     price = e[2]
-    if price <= you.gold() and autopickup(it, it.name()) then
-      --say("BUYING " .. it.name() .. " (" .. price .. " gold).")
-      magic("<" .. letter(n-1) .. "\ry")
-      return
+    on_list = e[3]
+
+    if autopickup(it, it.name()) then
+      -- We want the item. Can we afford buying it now?
+      local wealth = you.gold()
+      if price <= wealth then
+        --say("BUYING " .. it.name() .. " (" .. price .. " gold).")
+        magic("<" .. letter(n-1) .. "\ry")
+        return
+      -- Should in theory also work in Bazaar, but doesn't make much sense
+      -- (since we won't really return or acquire money and travel back here)
+      elseif not on_list
+         and not you.where():find("Bazaar") and not zot_soon() then
+        say("SHOPLISTING " .. it.name() .. " (" .. price .. " gold"
+         .. ", have " .. wealth .. ").")
+        magic("<" .. string.upper(letter(n-1)))
+        return
+      end
+    elseif on_list then
+      -- We no longer want the item. Remove it from shopping list.
+      magic("<" .. string.upper(letter(n-1)))
     end
   end
+  return false
+end
+
+function plan_gather_zot_supplies()
+  if not zot_soon() then
+    return false
+  end
+  which_item = can_afford_any_shoplist_item()
+  if not which_item then
+    -- Remove everything on shoplist
+    clear_out_shopping_list()
+    return false
+  end
+  say("GATHERING ZOT SUPPLIES")
+  magic("$" .. letter(which_item - 1))
+  expect_new_location = true
+  return true
+end
+
+-- Usually, this function should return `1` or `false`.
+function can_afford_any_shoplist_item()
+
+  local shoplist = items.shopping_list()
+
+  if not shoplist then
+    return false
+  end
+
+  local price
+  for n, entry in ipairs(shoplist) do
+    price = entry[2]
+    -- Since the shopping list holds no reference to the item itself,
+    -- we cannot check for `autopickup()` until arriving at the shop.
+    if price <= you.gold() then
+      return n
+    end
+  end
+  return false
+end
+
+-- Clear out shopping list if no affordable items are left before entering Zot
+function clear_out_shopping_list()
+  local shoplist = items.shopping_list()
+  if not shoplist then
+    return false
+  end
+  say("CLEARING SHOPPING LIST")
+  -- Press ! twice to toggle action to 'delete'
+  local clear_shoplist_magic = "$!!"
+  for n, it in ipairs(shoplist) do
+    clear_shoplist_magic = clear_shoplist_magic .. "a"
+  end
+  magic(clear_shoplist_magic)
   return false
 end
 
@@ -6431,6 +6504,7 @@ plan_orbrun_eatrest = cascade {
 plan_explore = cascade {
   {plan_unshaft, "try_unshaft"},
   {plan_enter_zig, "enter_zig"},
+  {plan_gather_zot_supplies, "gather_zot_supplies"},
   {plan_continue_travel, "try_continue_travel"},
   {plan_enter_portal, "enter_portal"},
   {plan_go_to_portal_entrance, "try_go_to_portal_entrance"},
@@ -7055,6 +7129,9 @@ function c_answer_prompt(prompt)
   end
   if prompt:find("This attack would place you under penance") then
     return false
+  end
+  if prompt:find("You cannot afford") and prompt:find("travel there anyways") then
+    return true
   end
 end
 }
