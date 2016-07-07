@@ -177,9 +177,82 @@ autopickup =
 autopickup_exceptions =
 
 ################################################################
-# now the lua, beginning with options to set while qw is running
-
+# now the lua, beginning with global variables
 {
+-- some global variables:
+
+local dump_count = you.turns() + 100 - (you.turns() % 100)
+local skill_count = you.turns() - (you.turns() % 5)
+local danger
+local immediate_danger
+local where = you.where()
+local where_shafted_from = nil
+local expect_new_location
+local expect_portal
+
+local automatic = false
+
+local ignore_list = { }
+local failed_move = { }
+local invisi_count = 0
+local next_delay = 100
+
+local dd_hw_meter = 0
+
+local sigmund_dx = 0
+local sigmund_dy = 0
+local invisi_sigmund = false
+
+local sgd_timer = -200
+
+local stuck_turns = 0
+
+local stepped_on_lair = false
+local lair_step_mode = false
+
+-- are these still necessary?
+local did_move = false
+local move_count = 0
+
+local did_move_towards_monster = 0
+local target_memory_x
+local target_memory_y
+
+local last_wait = 0
+local wait_count = 0
+local old_turn_count = you.turns()
+local hiding_turn_count = -100
+
+local travel_destination = nil
+
+local have_message = false
+local read_message = true
+
+local monster_array
+local enemy_list
+
+local upgrade_phase = false
+
+local tactical_step
+local tactical_reason
+
+local is_waiting
+
+local did_first_turn = false
+
+local stairdance_count = {}
+local v5_entry_turn
+
+local slime_forgot_map = false
+
+local last_swamp_fail_count = -1
+local swamp_rune_reachable = false
+
+local offlevel_travel = true
+
+local last_min_delay_skill = 18
+
+-- options to set while qw is running
 -- maybe should add more mutes for watchability
 
 function set_options()
@@ -1243,80 +1316,6 @@ end
 
 clear_autopickup_funcs()
 add_autopickup_func(autopickup)
-
------------------------------
--- some global variables:
-
-local dump_count = you.turns() + 100 - (you.turns() % 100)
-local skill_count = you.turns() - (you.turns() % 5)
-local danger
-local immediate_danger
-local where = you.where()
-local where_shafted_from = nil
-local expect_new_location
-local expect_portal
-
-local automatic = false
-
-local ignore_list = { }
-local failed_move = { }
-local invisi_count = 0
-local next_delay = 100
-
-local dd_hw_meter = 0
-
-local sigmund_dx = 0
-local sigmund_dy = 0
-local invisi_sigmund = false
-
-local sgd_timer = -200
-
-local stuck_turns = 0
-
-local stepped_on_lair = false
-local lair_step_mode = false
-
--- are these still necessary?
-local did_move = false
-local move_count = 0
-
-local did_move_towards_monster = 0
-local target_memory_x
-local target_memory_y
-
-local last_wait = 0
-local wait_count = 0
-local old_turn_count = you.turns()
-local hiding_turn_count = -100
-
-local travel_destination = nil
-
-local have_message = false
-local read_message = true
-
-local monster_array
-local enemy_list
-
-local upgrade_phase = false
-
-local tactical_step
-local tactical_reason
-
-local is_waiting
-
-local did_first_turn = false
-
-local stairdance_count = {}
-local v5_entry_turn
-
-local slime_forgot_map = false
-
-local last_swamp_fail_count = -1
-local swamp_rune_reachable = false
-
-local offlevel_travel = true
-
-local last_min_delay_skill = 18
 
 ------------------------------
 -- some tables with hardcoded data about branches/portals/monsters:
