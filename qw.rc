@@ -224,6 +224,7 @@ local old_turn_count = you.turns()
 local hiding_turn_count = -100
 
 local travel_destination = nil
+local game_status = "normal"
 
 local have_message = false
 local read_message = true
@@ -705,16 +706,29 @@ function easy_runes()
          + (you.have_rune("gossamer") and 1 or 0)
 end
 
+function update_game_status()
+  if you.have_orb() then
+    game_status = "orbrun"
+  elseif game_status == "normal" then
+    if SLIMY_RUNE and you.have_rune("silver") and not you.have_rune("slimy")
+       and where:find("Lair") or where:find("Slime") then
+      game_status = "slime"
+    elseif you.num_runes() >= rune_goal() and where:find("Depths") or where:find("Zot") then
+      game_status = "zot"
+    end
+  elseif game_status == "slime" then
+    if you.have_rune("slimy") and not where:find("Slime") then
+      game_status = "normal"
+    end
+  end
+end
+
 function zot_soon()
-  return you.where():find("Zot") or
-         (you.where():find("Depths") and you.num_runes() >= rune_goal()
-          and not you.have_orb())
+  return (game_status == "zot")
 end
 
 function slime_soon()
-  return you.where():find("Slime") or
-         (SLIMY_RUNE and you.where():find("Lair") and you.have_rune("silver")
-          and not you.have_rune("slimy"))
+  return (game_status == "slime")
 end
 
 function abyss_soon()
@@ -6968,6 +6982,7 @@ function ready()
       v5_entry_turn = you.turns()
     end
   end
+  update_game_status()
   expect_new_location = false
   expect_portal = false
   check_messages()
