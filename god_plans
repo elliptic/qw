@@ -1,5 +1,24 @@
 already coded:
 --------------
+B:
+- smite: not sure whether it is worth using? training invo just for this seems bad
+- recall:
+  - currently used whenever at full MP
+  - maybe shouldn't be used as much though
+- wait around for allies to heal before exploring
+- water walking means we don't worry about fumbling in shallow water
+- special code for joining from a priest
+- allies might make coward_step strats worse? need to think about this more
+C:
+- first two abilities: not sure whether worth using
+- slouch:
+  - complicated logic estimating how much damage it does
+  - don't want to use this too much because then we lose stat boosts,
+    so only using it at 6* for now
+- step out of time: not sure whether it is worth training invo up for this since it is a bit tricky to use
+- slow movement might make tactical steps worse? need to think about this more
+- don't use haste, speed weapons, etc
+- train Invo up a little for slouch fail rate
 M:
 - minor destruction: might be worth implementing as a replacement for throwing
 - major destruction: used for hydras currently, a bit tricky to use in general
@@ -15,6 +34,29 @@ M:
   - don't teleport with a friendly servant around?
 - train Invo up fairly high for greater servant fail
 - special DD logic
+O:
+- heroism:
+  - we use this in basically every battle of significance
+  - don't use if already active
+- finesse:
+  - use before hard battles (currently looking at BiA list)
+  - don't use if already active
+- train Invo up a decent amount for heroism duration and finesse fail
+- stop training most skills at 22 because of heroism
+Q:
+- upheaval:
+  - similar to major destruction but easier to target and more reliable
+  - not sure exactly what the best way is of using this, but we probably should
+- elemental force:
+  - a bit tricky to use because need to count nearby clouds
+  - use before hard battles?
+  - don't use if can see friendly elementals?
+- disaster area:
+  - pretty tricky to use because of the open space requirements
+  - creating lava might get qw in trouble too?
+- probably should use some subset of the abilities and train invo for them, but I'm not sure exactly
+- extra SH and RMsl might make using a 2-hander more competitive?
+- coward abilities might be bad with Q noise, not sure
 R:
 - sacrifice logic: preferences given by total ordering on set of possible sacrifices (including reject sacrifices)
   - doesn't handle the multioption sacrifices very intelligently currently
@@ -40,60 +82,32 @@ T:
   - don't teleport with a berserk friendly BiA in sight?
 - special DD logic
 - weapon gifts should maybe mean that enchant weapon shouldn't be wasted on weak stuff as much?
+Y:
+- ally logic is similar to Beogh
+- pain mirror (not currently used):
+  - use against very hard enemies?
+  - might waste too much piety
+- drain life:
+  - we check monster susceptibility and only use this when a lot of monsters are in sight
+- special DD logic with drain life
+- we train invo up a bit for drain life, but maybe we should raise it higher?
+- coward_step stuff might be worse with allies, as with Beogh
+- we avoid using holy weapons
 
 should code:
 ------------
-B:
-- smite: not sure whether it is worth using? training invo just for this seems bad
-- recall:
-  - use before most battles?
-  - don't use if used recently
-- water walking should be taken into account in shallow water functions
-- need special code for joining from a priest
-- allies might make coward_step strats worse
-C:
-- first two abilities: not sure whether worth using
-- slouch:
-  - use against fast monsters (oofs, hasted monsters, etc), maybe other times too?
-- step out of time: not sure whether it is worth training invo up for this since it is a bit tricky to use
-- slow movement might make tactical steps worse
-- don't use hasting on orb run
-- train Invo up a little for slouch fail rate
-- should avoid using weapons of speed (Arga)
-O:
-- heroism:
-  - use before most battles?
-  - don't use if already active
-- finesse:
-  - use before hard battles
-  - don't use if already active
-- train Invo up a decent amount for heroism duration and finesse fail, not sure how high exactly
-- maybe stop training skills at 22 because of heroism
-- armour gifts make wand acq more tempting (it already might be better with other gods if lacking wand of tele)
-Q:
-- upheaval:
-  - similar to major destruction but easier to target and more reliable
-  - not sure exactly what the best way is of using this
-- elemental force:
-  - a bit tricky to use because need to count nearby clouds
-  - use before hard battles
-  - don't use if can see friendly elementals
-- apocalypse (except not called that):
-  - pretty tricky to use because of the open space requirements
-  - creating lava might get qw in trouble too
-- probably should use some subset of the abilities and train invo for them, but I'm not sure exactly
-- capstone ability: choose rF?
-- coward abilities might be bad with Q noise, not sure
-Y:
-- recall logic is similar to Beogh
-- pain mirror:
-  - use against very hard enemies?
-  - might waste too much piety
-- life draining:
-  - a bit tricky to check monster susceptibility, also only want to use with lots of monsters on screen
-- probably should train invo up a bit but not that much?
-- coward_step stuff might be worse with allies
-- should avoid using holy weapons
+1:
+- could use SH ability (3 MP), but not sure... is using heroism logic for this reasonable? it isn't as good of course, and I don't know how much piety it uses
+- cleansing flame (5 MP) - strong with high invo against some things, but probably don't use it for now
+- divine warrior (8 MP) - can use this with similar logic to SGD/BiA I guess
+- holy branding - can use on demon weapons to make them usable I guess, though I'll just be using axes for now
+- things that qw should know about TSO:
+  - dislikes some items (venom/pain/vamp brands, demon weapons, obsidian axe, ?)
+  - halo effectively gives SInv at 2* piety
+  - dislikes stabs ("This attack would place you under penance" etc) 
+    - can automatically answer no to this prompt, but that might cause some issues?
+  - altar name might require special case
+
 
 might code:
 -----------
