@@ -5195,13 +5195,17 @@ function plan_shop()
 end
 
 function plan_gather_zot_supplies()
-  if not zot_soon() then
+  if not zot_soon() or where:find("Zot") then
     return false
   end
   which_item = can_afford_any_shoplist_item()
   if not which_item then
     -- Remove everything on shoplist
     clear_out_shopping_list()
+    -- Set travel_destination if necessary so that we will return to Depths.
+    if not where:find("Depths") then
+      travel_destination = "U"
+    end
     return false
   end
   say("GATHERING ZOT SUPPLIES")
@@ -6517,7 +6521,6 @@ plan_orbrun_eatrest = cascade {
 plan_explore = cascade {
   {plan_unshaft, "try_unshaft"},
   {plan_enter_zig, "enter_zig"},
-  {plan_gather_zot_supplies, "gather_zot_supplies"},
   {plan_continue_travel, "try_continue_travel"},
   {plan_enter_portal, "enter_portal"},
   {plan_go_to_portal_entrance, "try_go_to_portal_entrance"},
@@ -6534,6 +6537,7 @@ plan_explore2 = cascade {
   {plan_go_to_portal_exit, "try_go_to_portal_exit"},
   {plan_enter_branch, "try_enter_branch"},
   {plan_go_to_zig, "try_go_to_zig"},
+  {plan_gather_zot_supplies, "gather_zot_supplies"},
   {plan_simple_go_down, "try_simple_go_down"},
   {plan_new_travel, "try_new_travel"},
 } -- hack
