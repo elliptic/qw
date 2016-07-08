@@ -6538,7 +6538,7 @@ plan_explore2 = cascade {
   {plan_go_to_portal_exit, "try_go_to_portal_exit"},
   {plan_enter_branch, "try_enter_branch"},
   {plan_go_to_zig, "try_go_to_zig"},
-  {plan_gather_zot_supplies, "gather_zot_supplies"},
+  {plan_gather_zot_supplies, "try_gather_zot_supplies"},
   {plan_simple_go_down, "try_simple_go_down"},
   {plan_new_travel, "try_new_travel"},
 } -- hack
@@ -7151,6 +7151,9 @@ function c_answer_prompt(prompt)
   end
   if prompt:find("You cannot afford") and prompt:find("travel there anyways") then
     return true
+  end
+  if prompt:find("Shopping%-list") then
+    return false
   end
 end
 }
