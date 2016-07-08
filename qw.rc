@@ -253,6 +253,8 @@ local offlevel_travel = true
 
 local last_min_delay_skill = 18
 
+local only_linear_resists = false
+
 -- options to set while qw is running
 -- maybe should add more mutes for watchability
 
@@ -687,12 +689,51 @@ function total_resist_value(it, cur, it2)
     val = val + item_resist(str, it)*linear_resist_value(str)
   end
   local val1, val2 = val,val
-  for _,str in ipairs(resistlist) do
-    local a,b = resist_value(str, it, cur, it2)
-    val1 = val1 + a
-    val2 = val2 + b
+  if not only_linear_resists then
+    for _,str in ipairs(resistlist) do
+      local a,b = resist_value(str, it, cur, it2)
+      val1 = val1 + a
+      val2 = val2 + b
+    end
   end
   return val1,val2
+end
+
+function resist_vec(it)
+  local resistlist = { "rF", "rC", "rElec", "rPois", "rN", "MR", "rCorr", "SInv", "Spirit" }
+  local vec = { }
+  for _,str in ipairs(resistlist) do
+    local a,b = resist_value(str, it)
+    table.insert(vec, b > 0 and b or a)
+  end
+  return vec
+end
+
+function base_equip_value(it)
+  only_linear_resists = true
+  local val1, val2 = equip_value(it)
+  only_linear_resists = false
+  return val1,val2
+end
+
+-- complicated check:
+-- is it going to be worse than it2 no matter what other resists we have?
+function resist_dominated(it,it2)
+  local bmin, bmax = base_equip_value(it)
+  local bmin2, bmax2 = base_equip_value(it2)
+  local diff = bmin2 - bmax
+  if diff < 0 then
+    return false
+  end
+  local vec = resist_vec(it)
+  local vec2 = resist_vec(it2)
+  local l = #vec
+  for i = 1,l do
+    if vec[i] > vec2[i] then
+      diff = diff - (vec[i] - vec2[i])
+    end
+  end
+  return (diff >= 0)
 end
 
 function rune_goal()
@@ -1215,47 +1256,10 @@ function item_is_dominated(it)
   for it2 in inventory() do
     if equip_slot(it2) == slotname and slot(it2) ~= slot(it) then
       local minv2,maxv2 = equip_value(it2)
-      if minv2 >= maxv then
+      if minv2 >= maxv or
+         minv2 >= minv and maxv2 >= maxv and resist_dominated(it,it2) then
         num_slots = num_slots - 1
         if num_slots == 0 then
-          return true
-        end
-      end
-      if maxv == maxv2 and it.fully_identified and it2.fully_identified then
-        if slotname == "Ring" then
-          if not it.artefact and not it2.artefact then
-            sub = it.subtype()
-            sub2 = it2.subtype()
-            if sub == sub2 then
-              if sub == "ring of fire" or
-                 sub == "ring of ice" or
-                 sub == "ring of poison resistance" or
-                 sub == "ring of see invisible" or
-                 sub == "ring of sustain abilities" or
-                 sub == "ring of resist corrosion" then
-                return true
-              elseif sub == "ring of protection from fire" or
-                     sub == "ring of protection from cold" or
-                     sub == "ring of protection from magic" or
-                     sub == "ring of positive energy" then
-                num_slots = num_slots - 1
-                if num_slots == 0 then
-                  return true
-                end
-              end
-            elseif sub == "ring of fire" and sub2 == "ring of protection from fire"
-                   or sub == "ring of ice" and sub2 == "ring of protection from cold" then
-              num_slots = num_slots - 1
-              if num_slots == 0 then
-                return true
-              end
-            end
-          end
-        elseif slotname == "Amulet" then
-          if not it.artefact and not it2.artefact and it.subtype() == it2.subtype() then
-            return true
-          end
-        elseif it.name() == it2.name() then
           return true
         end
       end
