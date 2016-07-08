@@ -5189,6 +5189,7 @@ function plan_shop()
     elseif on_list then
       -- We no longer want the item. Remove it from shopping list.
       magic("<" .. string.upper(letter(n-1)))
+      return
     end
   end
   return false
