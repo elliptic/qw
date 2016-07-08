@@ -5159,7 +5159,19 @@ function plan_stairdance_up()
   return false
 end
 
--- TODO: identical items might be an issue for shopping list?
+function want_to_buy(it)
+  local class = it.class(true)
+  if class == "food" or class == "missile" then
+    return false
+  elseif class == "scroll" then
+    local sub = it.subtype()
+    if (sub == "identify" or sub == "remove curse") and count_item("scroll",sub) > 9 then
+      return false
+    end
+  end
+  return autopickup(it, it.name())
+end
+
 function plan_shop()
   if view.feature_at(0,0) ~= "enter_shop" or free_inventory_slots() == 0 then
     return false
@@ -5174,7 +5186,7 @@ function plan_shop()
     price = e[2]
     on_list = e[3]
 
-    if autopickup(it, it.name()) then
+    if want_to_buy(it) then
       -- We want the item. Can we afford buying it now?
       local wealth = you.gold()
       if price <= wealth then
@@ -5232,7 +5244,7 @@ function can_afford_any_shoplist_item()
   for n, entry in ipairs(shoplist) do
     price = entry[2]
     -- Since the shopping list holds no reference to the item itself,
-    -- we cannot check for `autopickup()` until arriving at the shop.
+    -- we cannot check want_to_buy() until arriving at the shop.
     if price <= you.gold() then
       return n
     end
