@@ -1205,7 +1205,8 @@ function want_potion(it)
   end
   if sub ~= "curing" and sub ~= "heal wounds" and sub ~= "haste"
      and sub ~= "resistance" and sub ~= "experience" and sub ~= "might"
-     and sub ~= "beneficial mutation" and sub ~= "cure mutation" then
+     and sub ~= "beneficial mutation" and sub ~= "cure mutation" 
+     and sub ~= "cancellation" then
     return false
   end
   return true
@@ -5856,6 +5857,9 @@ function plan_cure_confusion()
       end
       return false
     end
+    if drink_by_name("cancellation") then
+      say("(to cure confusion)")
+      return true
     if drink_by_name("curing") then
       say("(to cure confusion)")
       return true
@@ -5867,6 +5871,18 @@ function plan_cure_confusion()
   end
   return false
 end
+
+function plan_cure_sentinel_mark()
+  if not (danger) then
+    return false
+  end
+  if you.sentinel_mark() then
+    if drink_by_name("cancellation") then
+      say("(to cure sentinel_mark")
+      return true
+    end
+  end
+return false
 
 function plan_cure_starving()
   if you.hunger_name() == "fainting"
