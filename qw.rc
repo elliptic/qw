@@ -5878,7 +5878,7 @@ function plan_cure_sentinel_mark()
   end
   if you.sentinel_mark() then
     if drink_by_name("cancellation") then
-      say("(to cure sentinel_mark")
+      say("(to cure sentinel_mark)")
       return true
     end
   end
@@ -6476,6 +6476,7 @@ plan_pre_explore2 = cascade {
 plan_emergency = cascade {
   {plan_cure_starving, "cure_starving"},
   {plan_cure_confusion, "cure_confusion"},
+  {plan_cure_sentinel_mark, "cure_sentinel_mark"},
   {plan_choose_tactical_step, "choose_tactical_step"},
   {plan_coward_step, "coward_step"},
   {plan_remove_terrible_jewellery, "remove_terrible_jewellery"},
