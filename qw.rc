@@ -7168,7 +7168,7 @@ function c_answer_prompt(prompt)
   if prompt:find("You cannot afford") and prompt:find("travel there anyways") then
     return true
   end
-  if prompt:find("Shopping%-list") then
+  if prompt:find("Shopping list") then
     return false
   end
 end
