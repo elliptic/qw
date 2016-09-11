@@ -1303,6 +1303,9 @@ function want_missile(it)
   if it.ego() == "poison" and you.god() == "the Shining One" then
     return false
   end
+  if not no_spells and st == "stone" and starting_spell() == "Sandblast" then
+    return true
+  end
   return (st == "large rock" and (you.race() == "Troll" or you.race() == "Ogre") or st == "javelin" and you.xl() < 21 or st == "tomahawk" and you.xl() < 15)
 end
 
@@ -2692,6 +2695,19 @@ function distance_to_enemy(cx, cy)
   return dist
 end
 
+function distance_to_tabbable_enemy(cx, cy)
+  local dist = 10
+  local e
+  for _,e in ipairs(enemy_list) do
+    if supdist(cx-e.x,cy-e.y) < dist then
+      if will_tab(e.x,e.y,0,0,mons_tabbable_square) then
+        dist = supdist(cx-e.x,cy-e.y)
+      end
+    end
+  end
+  return dist
+end
+
 -----------------------------------------
 -- item functions
 
@@ -3037,7 +3053,7 @@ function should_rest()
     end
     return true
   end
-  if not no_spells and select_conjuration() then
+  if not no_spells and starting_spell() then
     local mp,mmp = you.mp()
     if mp < mmp then
       return true
@@ -4205,14 +4221,14 @@ function plan_wait_spit()
   return false
 end
 
-function select_conjuration()
+function starting_spell()
   if you.god() == "Trog" or you.xl() > 9 then
     no_spells = true
     return
   end
-  -- Just starting spells for now, and no Sandblast.
-  local conjuration_list = {"Shock", "Magic Dart", "Flame Tongue", "Freeze", "Pain", "Sting"}
-  for _,sp in ipairs(conjuration_list) do
+  -- Missing Infusion for now.
+  local spell_list = {"Shock", "Magic Dart", "Sandblast", "Flame Tongue", "Freeze", "Pain", "Summon Small Mammal", "Beastly Appendage", "Sting"}
+  for _,sp in ipairs(spell_list) do
     if spells.memorised(sp) and spells.fail(sp) <= 25 then
       return sp
     end
@@ -4220,11 +4236,75 @@ function select_conjuration()
   no_spells = true
 end
 
-function plan_conjuration()
+function spell_range(sp)
+  if sp == "Summon Small Mammal" then
+    return LOS
+  elseif sp == "Beastly Appendage" then
+    return 4
+  elseif sp == "Sandblast" then
+    return 3
+  else
+    return spells.range(sp)
+  end
+end
+
+function correctly_wielding_stones()
+  local weap = items.equipped_at("Weapon")
+  if weap and weap.subtype() == "stone" and not no_spells and starting_spell() == "Sandblast" and you.xl() < 5 then
+    local mp,mmp = you.mp()
+    if mp > 0 then
+      return true
+    end
+  end
+  return false
+end
+
+function wield_stones()
+  for it in inventory() do
+    if it.subtype() == "stone" then
+      magic("w" .. letter(it))
+      return true
+    end
+  end
+  return false
+end
+
+function spell_castable(sp)
+  if sp == "Beastly Appendage" then
+    if transformed() then
+      return false
+    end
+  elseif sp == "Summon Small Mammal" then
+    local x,y
+    local count = 0
+    for x = -LOS,LOS do
+      for y = -LOS,LOS do
+        m = monster_array[x][y]
+        if m and m:attitude() == ATT_FRIENDLY then
+          count = count + 1
+        end
+      end
+    end
+    if count >= 4 then
+      return false
+    end
+  elseif sp == "Sandblast" then
+    local weap = items.equipped_at("Weapon")
+    if not (weap and weap.subtype() == "stone") then
+      return false
+    end
+  end
+  return true
+end
+
+function plan_starting_spell()
   if no_spells then
     return false
   end
-  local sp = select_conjuration()
+  if you.silenced() or you.confused() or you.berserk() or starving() then
+    return false
+  end
+  local sp = starting_spell()
   if not sp then
     return false
   end
@@ -4235,18 +4315,31 @@ function plan_conjuration()
   if you.xl() > 4 and not is_waiting then
     return false
   end
-  local dist = distance_to_enemy(0,0)
+  local dist = distance_to_tabbable_enemy(0,0)
   if dist < 2 and wskill() ~= "Unarmed Combat" then
     local weap = items.equipped_at("Weapon")
     if weap and weap.weap_skill == wskill() then
       return false
     end
   end
-  if dist > spells.range(sp) then
+  if dist > spell_range(sp) then
+    return false
+  end
+  if sp == "Sandblast" and you.xl() < 5 then
+    local weap = items.equipped_at("Weapon")
+    if not (weap and weap.subtype() == "stone") then
+      return wield_stones()
+    end
+  end
+  if not spell_castable(sp) then
     return false
   end
   say("CASTING " .. sp)
-  magic("z" .. spells.letter(sp) .. "f")
+  if spells.range(sp) > 0 then
+    magic("z" .. spells.letter(sp) .. "f")
+  else
+    magic("z" .. spells.letter(sp))
+  end
   return true
 end
 
@@ -4829,10 +4922,11 @@ function base_mutation(str)
 end
 
 function plan_wield_weapon()
-  if items.equipped_at("Weapon") or you.berserk() or transformed() then
+  local weap = items.equipped_at("Weapon")
+  if weap and weap.class(true) == "weapon" or you.berserk() or transformed() then
     return false
   end
-  if wskill() == "Unarmed Combat" then
+  if wskill() == "Unarmed Combat" or correctly_wielding_stones() then
     return false
   end
   for it in inventory() do
@@ -4850,7 +4944,7 @@ function plan_wield_weapon()
 end
 
 function plan_swap_weapon()
-  if you.race() == "Troll" or you.berserk() or transformed() or not items.equipped_at("Weapon") then
+  if you.race() == "Troll" or you.berserk() or transformed() or not items.equipped_at("Weapon") or correctly_wielding_stones() then
     return false
   end
   local hydra_near = false
@@ -4897,7 +4991,7 @@ function plan_swap_weapon()
 end
 
 function plan_upgrade_weapon()
-  if you.race() == "Troll" then
+  if you.race() == "Troll" or correctly_wielding_stones() then
     return false
   end
   twohands = true
@@ -6619,7 +6713,7 @@ plan_move = cascade {
   {plan_emergency, "emergency"},
   {plan_recall, "recall"},
   {plan_wait_for_melee, "wait_for_melee"},
-  {plan_conjuration, "try_conjuration"},
+  {plan_starting_spell, "try_starting_spell"},
   {plan_wait_spit, "try_wait_spit"},
   {plan_wait_throw, "try_wait_throw"},
   {plan_wait_wait, "wait_wait"},
