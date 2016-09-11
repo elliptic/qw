@@ -1879,7 +1879,7 @@ function wskill()
   weap = items.equipped_at("Weapon")
   if weap and weap.class(true) == "weapon"
      and weap.weap_skill ~= "Short Blades"
-     and (weap.weap_skill ~= "Staves" or not SHIELD_CRAZY) then
+     and you.class() ~= "Wanderer" then
     c_persist.cached_wskill = weap.weap_skill
   else
     c_persist.cached_wskill = weapon_choice()
