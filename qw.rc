@@ -4943,6 +4943,9 @@ function plan_wield_weapon()
       end
     end
   end
+  if weap and weap.class(true) ~= "weapon" then
+    magic("w-")
+  end
   return false
 end
 
