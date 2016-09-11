@@ -255,6 +255,8 @@ local last_min_delay_skill = 18
 
 local only_linear_resists = false
 
+local no_spells = false
+
 -- options to set while qw is running
 -- maybe should add more mutes for watchability
 
@@ -3035,6 +3037,12 @@ function should_rest()
     end
     return true
   end
+  if not no_spells and select_conjuration() then
+    local mp,mmp = you.mp()
+    if mp < mmp then
+      return true
+    end
+  end
   return (hp_is_low(90) and
           (you.race() ~= "Deep Dwarf" and you.hunger_name() ~= "bloodless"
            or you.regenerating())
@@ -4195,6 +4203,51 @@ function plan_wait_spit()
     end
   end
   return false
+end
+
+function select_conjuration()
+  if you.god() == "Trog" or you.xl() > 9 then
+    no_spells = true
+    return
+  end
+  -- Just starting spells for now, and no Sandblast.
+  local conjuration_list = {"Shock", "Magic Dart", "Flame Tongue", "Freeze", "Pain", "Sting"}
+  for _,sp in ipairs(conjuration_list) do
+    if spells.memorised(sp) and spells.fail(sp) <= 25 then
+      return sp
+    end
+  end
+  no_spells = true
+end
+
+function plan_conjuration()
+  if no_spells then
+    return false
+  end
+  local sp = select_conjuration()
+  if not sp then
+    return false
+  end
+  local mp,mmp = you.mp()
+  if mp < spells.mana_cost(sp) then
+    return false
+  end
+  if you.xl() > 4 and not is_waiting then
+    return false
+  end
+  local dist = distance_to_enemy(0,0)
+  if dist < 2 and wskill() ~= "Unarmed Combat" then
+    local weap = items.equipped_at("Weapon")
+    if weap and weap.weap_skill == wskill() then
+      return false
+    end
+  end
+  if dist > spells.range(sp) then
+    return false
+  end
+  say("CASTING " .. sp)
+  magic("z" .. spells.letter(sp) .. "f")
+  return true
 end
 
 function plan_wait_throw()
@@ -6566,6 +6619,7 @@ plan_move = cascade {
   {plan_emergency, "emergency"},
   {plan_recall, "recall"},
   {plan_wait_for_melee, "wait_for_melee"},
+  {plan_conjuration, "try_conjuration"},
   {plan_wait_spit, "try_wait_spit"},
   {plan_wait_throw, "try_wait_throw"},
   {plan_wait_wait, "wait_wait"},
