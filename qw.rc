@@ -4810,7 +4810,7 @@ function plan_use_good_consumables()
         end
       elseif it.name():find("enchant weapon") then
         weapon = items.equipped_at("weapon")
-        if weapon and not weapon.artefact and
+        if weapon and weapon.class(true) == "weapon" and not weapon.artefact and
            weapon.plus < 9 then
           oldname = weapon.name()
           if read2(it, letter(weapon)) then
@@ -4820,7 +4820,7 @@ function plan_use_good_consumables()
         end
       elseif it.name():find("brand weapon") then
         weapon = items.equipped_at("weapon")
-        if weapon and not weapon.artefact and not brand_is_great(weapon.ego()) then
+        if weapon and weapon.class(true) == "weapon" and not weapon.artefact and not brand_is_great(weapon.ego()) then
           oldname = weapon.name()
           if read2(it, letter(weapon)) then
             say("BRANDING " .. oldname .. ".")
