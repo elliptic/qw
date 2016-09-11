@@ -2437,6 +2437,7 @@ function monster_in_way(dx,dy)
                  (m:is_constricted() or m:is_caught()
                   or m:status("petrified")
                   or m:status("paralysed")
+                  or m:status("sleeping")
                   or view.feature_at(0,0) == "deep_water"
                   or view.feature_at(0,0) == "lava"
                   or view.feature_at(0,0) == "trap_zot")))
