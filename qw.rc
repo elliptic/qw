@@ -909,6 +909,9 @@ function armour_value(it, cur, it2)
 end
 
 function weapon_value(it, cur, it2, hydra_swap)
+  if it.class(true) ~= "weapon" then
+    return -1,-1
+  end
   local name = it.name()
   local value = 1000
   if it.weap_skill ~= wskill() then
