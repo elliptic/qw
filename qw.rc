@@ -5458,16 +5458,6 @@ function plan_go_to_temple()
   return false
 end
 
-function plan_go_to_lair()
-  if found_branch("L") and not
-     util.contains(c_persist.branches_entered, "T") and in_branch("D") then
-    expect_new_location = true
-    magic("GL\rY")
-    return true
-  end
-  return false
-end
-
 function plan_enter_branch()
   local br
   if found_branch("L") and ready_for_lair() and not
@@ -6753,7 +6743,6 @@ plan_move = cascade {
   {plan_join_god, "join_god"},
   {plan_find_altar, "try_find_altar"},
   {plan_go_to_temple, "try_go_to_temple"},
-  --{plan_go_to_lair, "try_go_to_lair"},
   {plan_explore, "explore"},
   {plan_pre_explore2, "pre_explore2"},
   {plan_explore2, "explore2"},
