@@ -1070,7 +1070,7 @@ function amulet_value(it, cur, it2)
     end
   end
   if subtype == "amulet of faith" then
-    if you.god() == "Cheibriados" or you.god() == "Beogh" or you.god() == "Qazlal" or you.god() == "Lugonu" then
+    if you.god() == "Cheibriados" or you.god() == "Beogh" or you.god() == "Qazlal" then
       return -1,-1 -- we don't use piety much on these gods at the moment
     elseif you.god() ~= "Ru" then
       return 1000,1000 -- fixed value so we don't unequip for a randart one
@@ -4588,6 +4588,28 @@ function plan_find_altar()
   return true
 end
 
+function plan_find_conversion_altar()
+  if you.xl() ~= 12 then
+    return false
+  end
+  if you.god() ~= "Lugonu" then
+    return false
+  end
+  if unshafting() then
+    return false
+  end
+  expect_new_location = true
+  conv_gods = { }
+  for _,god in ipairs(god_desired()) do
+    if god ~= "Lugonu" then
+      table.insert(conv_gods, god)
+    end
+  end
+  str = "altar&&<<of " .. table.concat(conv_gods, "||of ") .. ">>"
+  magic(control('f') .. str .. "\ra\r")
+  return true
+end
+
 function plan_abandon_god()
   if you.god() ~= "No God" and not util.contains(god_options(), you.god()) then
     magic("aXYY")
@@ -4613,6 +4635,32 @@ function plan_join_beogh()
   end
   for _,god in ipairs(god_desired()) do
     if god == "Beogh" and use_ability("Convert to Beogh", "YY") then
+      return true
+    end
+  end
+  return false
+end
+
+function plan_convert()
+  if you.xl() ~= 12 then
+    return false
+  end
+  if you.god() ~= "Lugonu" then
+    return false
+  end
+  feat = view.feature_at(0,0)
+  for _,god in ipairs(god_desired()) do
+    if god ~= "Lugonu" and feat == ("altar_" .. string.gsub(string.lower(god), " ", "_")) then
+      if you.silenced() then
+        rest()
+      else
+        for i,br in ipairs(c_persist.branches_entered) do
+          if br == "L" then
+            table.remove(c_persist.branches_entered,i)
+          end
+        end
+        magic("pYYY")
+      end
       return true
     end
   end
@@ -5449,7 +5497,7 @@ function plan_go_to_temple()
   if c and c >= 100 then
     return false
   end
-  if found_branch("T") and want_altar() and not
+  if found_branch("T") and (want_altar() or you.god() == "Lugonu") and not
      util.contains(c_persist.branches_entered, "T") and in_branch("D") then
     expect_new_location = true
     magic("GTY")
@@ -6740,7 +6788,9 @@ plan_move = cascade {
   {plan_continue_tab, "continue_tab"},
   {plan_abandon_god, "abandon_god"},
   {plan_unwield_weapon, "unwield_weapon"},
+  {plan_convert, "convert"},
   {plan_join_god, "join_god"},
+  {plan_find_conversion_altar, "try_find_conversion_altar"},
   {plan_find_altar, "try_find_altar"},
   {plan_go_to_temple, "try_go_to_temple"},
   {plan_explore, "explore"},
