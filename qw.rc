@@ -4975,9 +4975,14 @@ function base_mutation(str)
   return you.mutation(str) - you.temp_mutation(str)
 end
 
+function is_melee_weapon(it)
+  return (it and it.class(true) == "weapon" and it.weap_skill ~= "Bows"
+          and it.weap_skill ~= "Crossbows" and it.weap_skill ~= "Slings")
+end
+
 function plan_wield_weapon()
   local weap = items.equipped_at("Weapon")
-  if weap and weap.class(true) == "weapon" or you.berserk() or transformed() then
+  if is_melee_weapon(weap) or you.berserk() or transformed() then
     return false
   end
   if wskill() == "Unarmed Combat" or correctly_wielding_stones() then
@@ -4994,7 +4999,7 @@ function plan_wield_weapon()
       end
     end
   end
-  if weap and weap.class(true) ~= "weapon" then
+  if weap and not is_melee_weapon(weap) then
     magic("w-")
   end
   return false
