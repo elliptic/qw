@@ -1070,7 +1070,7 @@ function amulet_value(it, cur, it2)
     end
   end
   if subtype == "amulet of faith" then
-    if you.god() == "Cheibriados" or you.god() == "Beogh" or you.god() == "Qazlal" then
+    if you.god() == "Cheibriados" or you.god() == "Beogh" or you.god() == "Qazlal" or you.god() == "Lugonu" then
       return -1,-1 -- we don't use piety much on these gods at the moment
     elseif you.god() ~= "Ru" then
       return 1000,1000 -- fixed value so we don't unequip for a randart one
@@ -5241,7 +5241,7 @@ function plan_go_down()
 end
 
 function ready_for_lair()
-  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Qazlal" or you.god() == "the Shining One" or
+  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Qazlal" or you.god() == "the Shining One" or you.god() == "Lugonu" or
      (you.god() == "Beogh" or you.god() == "Makhleb" or you.god() == "Yredelemnul") and you.piety_rank() >= 4 or
      you.god() == "Ru" and you.piety_rank() >= 3 then
     return true
@@ -5624,6 +5624,20 @@ function plan_zig_leave_level()
     return true
   end
   return false
+end
+
+function plan_lugonu_exit_abyss()
+  if you.god() ~= "Lugonu" then
+    return false
+  end
+  local mp,mmp = you.mp()
+  if (you.berserk() or you.confused() or you.silenced() or starving()
+          or you.piety_rank() < 1 or mp < 1) then
+    return false
+  end
+  expect_new_location = true
+  use_ability("Depart the Abyss")
+  return true
 end
 
 function plan_exit_abyss()
@@ -6773,6 +6787,7 @@ plan_orbrun_move = cascade {
 } -- hack
 
 plan_abyss_move = cascade {
+  {plan_lugonu_exit_abyss, "lugonu_exit_abyss"},
   {plan_exit_abyss, "exit_abyss"},
   {plan_emergency, "emergency"},
   {plan_attack, "attack"},
@@ -6868,7 +6883,7 @@ function choose_skills()
 
   -- Choose one MP skill to train.
   mp_skill = "Evocations"
-  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or you.god() == "Beogh" or you.god() == "Qazlal" or you.god() == "the Shining One" then
+  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or you.god() == "Beogh" or you.god() == "Qazlal" or you.god() == "the Shining One" or you.god() == "Lugonu" then
     mp_skill = "Invocations"
   elseif you.god() == "Ru" then
     mp_skill = "Spellcasting"
@@ -7151,6 +7166,8 @@ function fullgodname(g)
     return "Beogh"
   elseif g == "C" then
     return "Cheibriados"
+  elseif g == "L" then
+    return "Lugonu"
   elseif g == "M" then
     return "Makhleb"
   elseif g == "O" then
