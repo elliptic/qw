@@ -5001,6 +5001,7 @@ function plan_wield_weapon()
   end
   if weap and not is_melee_weapon(weap) then
     magic("w-")
+    return true
   end
   return false
 end
