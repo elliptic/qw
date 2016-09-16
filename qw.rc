@@ -242,6 +242,7 @@ local is_waiting
 local did_first_turn = false
 
 local stairdance_count = {}
+local clear_exclusion_count = {}
 local v5_entry_turn
 
 local slime_forgot_map = false
@@ -6105,6 +6106,16 @@ function plan_orbrun_teleport()
   return false
 end
 
+function plan_stuck_clear_exclusions()
+  local n = clear_exclusion_count[where] or 0
+  if n > 20 then
+    return false
+  end
+  clear_exclusion_count[where] = n+1
+  magic("X" .. control('e'))
+  return true
+end
+
 function plan_swamp_clear_exclusions()
   if where ~= "Swamp:4" then
     return false
@@ -6808,6 +6819,7 @@ plan_move = cascade {
   {plan_slime_dig_to_rune, "slime_dig_to_rune"},
   {plan_slime_forget_map, "try_slime_forget_map"},
   {plan_slime_go_to_rune, "try_slime_go_to_rune"},
+  {plan_stuck_clear_exclusions, "try_stuck_clear_exclusions"},
   {plan_stuck_dig, "try_stuck_dig"},
   {plan_stuck_teleport, "stuck_teleport"},
   {plan_stuck, "stuck"},
@@ -6824,7 +6836,7 @@ plan_orbrun_move = cascade {
   {plan_use_good_consumables, "use_good_consumables"},
   {plan_find_upstairs, "try_find_upstairs"},
   {plan_disturbance_random_step, "disturbance_random_step"},
-  --{plan_stuck_clear_exclusions, "try_stuck_clear_exclusions"},
+  {plan_stuck_clear_exclusions, "try_stuck_clear_exclusions"},
   {plan_stuck_teleport, "stuck_teleport"},
   {plan_autoexplore, "try_autoexplore"},
   {plan_gd1, "try_gd1"},
