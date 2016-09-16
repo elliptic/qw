@@ -1630,6 +1630,7 @@ local bia_monsters = {
   {20, "Polyphemus"},
   {20, "Ilsuiw"},
   {20, "Bai Suzhen"},
+  {20, "merfolk avatar"},
 
   {100, "deep troll shaman"},
   {100, check_resist("spriggan air mage","rElec",1)},
@@ -1692,6 +1693,8 @@ local hand_monsters = {
   {100, "the Enchantress"},
   {100, "satyr"},
   {100, "vampire knight"},
+  {100, "siren"},
+  {100, "merfolk avatar"},
 } -- hack
 
 -- potion of resistance these
