@@ -6318,7 +6318,7 @@ function plan_slime_forget_map()
 end
 
 function plan_stuck_cloudy()
-  if cloudy and not hp_is_low(50) then
+  if cloudy and not hp_is_low(50) and not you.mesmerised() then
     return random_step("cloudy")
   end
   return false
