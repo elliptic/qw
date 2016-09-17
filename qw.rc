@@ -1907,6 +1907,16 @@ function hp_is_low(percentage)
   return (100*hp <= percentage*mhp)
 end
 
+function chp()
+  local hp, mhp = you.hp()
+  return hp
+end
+
+function cmp()
+  local mp, mmp = you.mp()
+  return mp
+end
+
 function meph_immune()
   -- should also check clarity and unbreathing
   return (you.res_poison() >= 1)
@@ -2038,8 +2048,7 @@ function can_zap()
   end
   local x = you.mutation("MP-powered wands")
   if x > 0 then
-    local a,b = you.mp()
-    if a < 3*x then
+    if cmp() < 3*x then
       return false
     end
   end
@@ -2061,13 +2070,12 @@ function can_berserk()
 end
 
 function can_heroism()
-  local mp,mmp = you.mp()
   return (not (you.berserk() or you.confused() or you.silenced() or
                starving() or
                you.god() ~= "Okawaru" or
                you.piety_rank() < 1 or
                you.status("heroism") or
-               mp < 2))
+               cmp() < 2))
 end
 
 function can_recall()
@@ -2075,39 +2083,35 @@ function can_recall()
      and (you.god() ~= "Beogh" or you.piety_rank() < 4) then
     return false
   end
-  local mp,mmp = you.mp()
   return (not (you.berserk() or you.confused() or you.silenced() or
                starving() or
                you.status("recalling") or
-               mp < 2))
+               cmp() < 2))
 end
 
 function can_finesse()
-  local mp,mmp = you.mp()
   return (not (you.berserk() or you.confused() or you.silenced() or
                starving() or
                you.god() ~= "Okawaru" or
                you.piety_rank() < 5 or
                you.status("finesse") or
-               mp < 5))
+               cmp() < 5))
 end
 
 function can_slouch()
-  local mp,mmp = you.mp()
   return (not (you.berserk() or you.confused() or you.silenced() or
                starving() or
                you.god() ~= "Cheibriados" or
                you.piety_rank() < 4 or
-               mp < 5))
+               cmp() < 5))
 end
 
 function can_drain_life()
-  local mp,mmp = you.mp()
   return (not (you.berserk() or you.confused() or you.silenced() or
                starving() or
                you.god() ~= "Yredelemnul" or
                you.piety_rank() < 4 or
-               mp < 6))
+               cmp() < 6))
 end
 
 function can_hand()
@@ -2124,10 +2128,9 @@ function can_ru_healing()
 end
 
 function can_apocalypse()
-  local mp,mmp = you.mp()
   return (not (you.berserk() or you.confused() or you.silenced() or
           starving() or you.exhausted() or you.piety_rank() < 5 or
-          mp < 8 or you.god() ~= "Ru"))
+          cmp() < 8 or you.god() ~= "Ru"))
 end
 
 function can_bia()
@@ -2137,25 +2140,22 @@ function can_bia()
 end
 
 function can_sgd()
-  local hp,mhp = you.hp()
   return (not (you.berserk() or you.confused() or you.silenced() or
           starving() or you.piety_rank() < 5 or
-          hp <= 10 or
+          chp() <= 10 or
           you.god() ~= "Makhleb"))
 end
 
 function can_divine_warrior()
-  local mp,mmp = you.mp()
   return (not (you.berserk() or you.confused() or you.silenced() or
           starving() or you.piety_rank() < 5 or
-          mp < 8 or you.god() ~= "the Shining One"))
+          cmp() < 8 or you.god() ~= "the Shining One"))
 end
 
 function can_destruction()
-  local hp,mhp = you.hp()
   return (not (you.berserk() or you.confused() or you.silenced() or
           starving() or you.piety_rank() < 4 or
-          hp <= 6 or
+          chp() <= 6 or
           you.god() ~= "Makhleb"))
 end
 
@@ -3409,8 +3409,7 @@ function plan_dd_recharge_teleport()
       end
     end
   end
-  local mp,mmp = you.mp()
-  if mp > 0 and you.base_mp() > 0 then
+  if cmp() > 0 and you.base_mp() > 0 then
     for letter, abil in pairs(you.ability_table()) do
       if abil == "Device Recharging" then
         say("MP-RECHARGING " .. item(wand_letter).name() .. ".")
@@ -3461,8 +3460,7 @@ function plan_dd_orbrun_recharge_hasting()
       end
     end
   end
-  local mp,mmp = you.mp()
-  if mp > 0 and you.base_mp() > 0 then
+  if cmp() > 0 and you.base_mp() > 0 then
     for letter, abil in pairs(you.ability_table()) do
       if abil == "Device Recharging" then
         say("MP-RECHARGING " .. item(wand_letter).name() .. ".")
@@ -3509,8 +3507,7 @@ function plan_dd_recharge_heal_wounds()
       end
     end
   end
-  local mp,mmp = you.mp()
-  if mp > 0 and you.base_mp() > 0 then
+  if cmp() > 0 and you.base_mp() > 0 then
     for letter, abil in pairs(you.ability_table()) do
       if abil == "Device Recharging" then
         say("MP-RECHARGING " .. item(wand_letter).name() .. ".")
@@ -3528,8 +3525,7 @@ function plan_cure_bad_poison()
   if not (danger or you.race() == "Deep Dwarf") then
     return false
   end
-  local hp, mhp = you.hp()
-  if you.poison_survival() <= hp - 60 then
+  if you.poison_survival() <= chp() - 60 then
     if drink_by_name("curing") then
       say("(to cure bad poison)")
       return true
@@ -4262,8 +4258,7 @@ end
 function correctly_wielding_stones()
   local weap = items.equipped_at("Weapon")
   if weap and weap.subtype() == "stone" and not no_spells and starting_spell() == "Sandblast" and you.xl() < 5 then
-    local mp,mmp = you.mp()
-    if mp > 0 then
+    if cmp() > 0 then
       return true
     end
   end
@@ -4319,8 +4314,7 @@ function plan_starting_spell()
   if not sp then
     return false
   end
-  local mp,mmp = you.mp()
-  if mp < spells.mana_cost(sp) then
+  if cmp() < spells.mana_cost(sp) then
     return false
   end
   if you.xl() > 4 and not is_waiting then
@@ -5682,9 +5676,8 @@ function plan_lugonu_exit_abyss()
   if you.god() ~= "Lugonu" then
     return false
   end
-  local mp,mmp = you.mp()
   if (you.berserk() or you.confused() or you.silenced() or starving()
-          or you.piety_rank() < 1 or mp < 1) then
+          or you.piety_rank() < 1 or cmp() < 1) then
     return false
   end
   expect_new_location = true
@@ -5840,8 +5833,7 @@ end
 
 function plan_fly()
   if you.xl() >= 14 and intrinsic_flight() and not you.flying() then
-    local a,b = you.mp()
-    if a >= 3 and not you.rooted() and not starving() then
+    if cmp() >= 3 and not you.rooted() and not starving() then
       if use_ability("Fly") then
         say("FLYING.")
         return true
@@ -6409,9 +6401,8 @@ function teleport()
 end
 
 function plan_cure_poison()
-  local hp, mhp = you.hp()
   if you.poison_survival() <= 1 and you.poisoned()
-     or you.race() == "Deep Dwarf" and you.poison_survival() <= hp - 10 then
+     or you.race() == "Deep Dwarf" and you.poison_survival() <= chp() - 10 then
     if drink_by_name("curing") then
       say("(to cure poison)")
       return true
