@@ -5207,7 +5207,7 @@ function plan_maybe_upgrade_armour()
 end
 
 function plan_upgrade_armour()
-  if cloudy then
+  if cloudy or you.mesmerised() then
     return false
   end
   for it in inventory() do
