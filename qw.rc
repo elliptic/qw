@@ -185,6 +185,7 @@ local dump_count = you.turns() + 100 - (you.turns() % 100)
 local skill_count = you.turns() - (you.turns() % 5)
 local danger
 local immediate_danger
+local cloudy
 local where = you.where()
 local where_shafted_from = nil
 local expect_new_location
@@ -5206,6 +5207,9 @@ function plan_maybe_upgrade_armour()
 end
 
 function plan_upgrade_armour()
+  if cloudy then
+    return false
+  end
   for it in inventory() do
     if it and it.class(true) == "armour" and not it.equipped then
       local st, _ = it.subtype()
@@ -5767,6 +5771,9 @@ function choose_lair_rune_branch()
 end
 
 function plan_new_travel()
+  if cloudy then
+    return false
+  end
   local back_to_D_places = { "Temple", "Orc:2", "Vaults:4"}
   if util.contains(back_to_D_places, where) then
     travel_destination = "D"
@@ -6310,6 +6317,13 @@ function plan_slime_forget_map()
   return true
 end
 
+function plan_stuck_cloudy()
+  if cloudy and not hp_is_low(50) then
+    return random_step("cloudy")
+  end
+  return false
+end
+
 function plan_stuck_teleport()
   if can_teleport() then
     return teleport()
@@ -6824,6 +6838,7 @@ plan_move = cascade {
   {plan_slime_go_to_rune, "try_slime_go_to_rune"},
   {plan_stuck_clear_exclusions, "try_stuck_clear_exclusions"},
   {plan_stuck_dig, "try_stuck_dig"},
+  {plan_stuck_cloudy, "stuck_cloudy"},
   {plan_stuck_teleport, "stuck_teleport"},
   {plan_stuck, "stuck"},
 } -- hack
@@ -6840,6 +6855,7 @@ plan_orbrun_move = cascade {
   {plan_find_upstairs, "try_find_upstairs"},
   {plan_disturbance_random_step, "disturbance_random_step"},
   {plan_stuck_clear_exclusions, "try_stuck_clear_exclusions"},
+  {plan_stuck_cloudy, "stuck_cloudy"},
   {plan_stuck_teleport, "stuck_teleport"},
   {plan_autoexplore, "try_autoexplore"},
   {plan_gd1, "try_gd1"},
@@ -6857,6 +6873,7 @@ plan_abyss_move = cascade {
   {plan_pre_explore, "pre_explore"},
   {plan_autoexplore, "try_autoexplore"},
   {plan_pre_explore2, "pre_explore2"},
+  {plan_stuck_cloudy, "stuck_cloudy"},
   {plan_wait, "wait"},
 } -- hack
 
@@ -7324,6 +7341,7 @@ function ready()
     update_monster_array()
     danger = sense_danger(LOS)
     immediate_danger = sense_immediate_danger()
+    cloudy = (not view.is_safe_square(0,0) and view.cloud_at(0,0) ~= nil)
     sense_sigmund()
     if have_message then
       plan_message()
