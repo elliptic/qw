@@ -1492,7 +1492,6 @@ local scary_monsters = {
   {15, "Erica"},
   {15, "catoblepas"},
   {15, "orc knight"},
-  {15, "boulder beetle"},
   {15, "swamp worm"},
   {15, in_desc("hydra")},
 
@@ -2240,7 +2239,7 @@ function is_ranged(m)
   if m:has_known_ranged_attack() then
     return true
   end
-  if name == "Maurice" or name == "crimson imp" or name == "boulder beetle" then
+  if name == "Maurice" or name == "crimson imp" then
     return true
   end
   return false
