@@ -1927,13 +1927,21 @@ function miasma_immune()
           or you.race() == "Ghoul" or you.race() == "Mummy")
 end
 
-function in_portal()
+function is_waypointable(loc)
+  return (not is_portal_location(loc) and not loc:find("Abyss"))
+end
+
+function is_portal_location(loc)
   for _, value in ipairs(portal_data) do
-    if value[1] == where then
+    if value[1] == loc then
       return true
     end
   end
   return false
+end
+
+function in_portal()
+  return is_portal_location(where)
 end
 
 function get_feat_name(where_name)
@@ -5304,16 +5312,20 @@ function ready_for_lair()
   return false
 end
 
-function want_to_stairdance_up()
-  local feat = view.feature_at(0,0)
-  if not (feat:find("stone_stairs_up") or
+function feat_is_upstairs(feat)
+  return (feat:find("stone_stairs_up") or
           feat:find("exit_") and (feat == "exit_hell" or feat == "exit_vaults"
           or feat == "exit_zot" or feat == "exit_slime_pits"
           or feat == "exit_orcish_mines" or feat == "exit_lair"
           or feat == "exit_crypt" or feat == "exit_snake_pit"
           or feat == "exit_elven_halls" or feat == "exit_tomb"
           or feat == "exit_swamp" or feat == "exit_shoals"
-          or feat == "exit_spider_nest" or feat == "exit_depths")) then
+          or feat == "exit_spider_nest" or feat == "exit_depths"))
+end
+
+function want_to_stairdance_up()
+  local feat = view.feature_at(0,0)
+  if not feat_is_upstairs(feat) then
     return false
   end
   local n = stairdance_count[where] or 0
