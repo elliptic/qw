@@ -139,6 +139,8 @@ auto_eat_chunks = false
 
 read_persist_options = true
 
+message_colour ^= mute:Unknown command
+
 ####################################
 # not sure exactly how important or correct these settings are
 
@@ -183,6 +185,8 @@ autopickup_exceptions =
 
 local initialized = false
 local time_passed
+local update_coroutine
+local do_dummy_action
 
 local dump_count = you.turns() + 100 - (you.turns() % 100)
 local skill_count = you.turns() - (you.turns() % 5)
@@ -280,7 +284,6 @@ function set_options()
   crawl.setopt("message_colour += mute:move target cursor")
   crawl.setopt("message_colour += mute:Aim:")
   crawl.setopt("message_colour += mute:You reach to attack")
-  crawl.setopt("message_colour ^= mute:Unknown command")
   crawl.enable_more(false)
 end
 
@@ -299,7 +302,6 @@ function unset_options()
   crawl.setopt("message_colour -= mute:move target cursor")
   crawl.setopt("message_colour -= mute:Aim:")
   crawl.setopt("message_colour -= mute:You reach to attack")
-  crawl.setopt("message_colour -= mute:Unknown command")
   crawl.enable_more(true)
 end
 
@@ -7278,6 +7280,19 @@ function first_turn()
   end
 end
 
+function run_update()
+  if update_coroutine == nil then
+    update_coroutine = coroutine.create(update_stuff)
+  end
+  coroutine.resume(update_coroutine)
+  if coroutine.status(update_coroutine) == "dead" then
+    update_coroutine = nil
+    do_dummy_action = false
+  else
+    do_dummy_action = true
+  end
+end
+
 -- We want to call this exactly once each turn.
 function update_stuff()
   if not initialized then
@@ -7350,7 +7365,11 @@ end
 
 function ready()
   offlevel_travel = true
-  update_stuff()
+  run_update()
+  if do_dummy_action then
+    crawl.process_keys(":" .. string.char(27) .. string.char(27))
+    return
+  end
   if time_passed and SINGLE_STEP then
     stop()
   end
