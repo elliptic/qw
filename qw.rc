@@ -193,7 +193,7 @@ local skill_count = you.turns() - (you.turns() % 5)
 local danger
 local immediate_danger
 local cloudy
-local where = you.where()
+local where
 local where_shafted_from = nil
 local expect_new_location
 local expect_portal
@@ -265,6 +265,12 @@ local last_min_delay_skill = 18
 local only_linear_resists = false
 
 local no_spells = false
+
+local level_map
+local stair_dists
+local waypoint_parity
+local prev_where
+local did_waypoint = false
 
 -- options to set while qw is running
 -- maybe should add more mutes for watchability
@@ -5933,6 +5939,125 @@ function plan_find_downstairs()
   return true
 end
 
+function set_waypoint()
+  magic(control('w') .. waypoint_parity)
+  did_waypoint = true
+  return true
+end
+
+function clear_level_map(num)
+  level_map[num] = {}
+  for i = -100,100 do
+    level_map[num][i] = {}
+  end
+  stair_dists[num] = {}
+end
+
+function update_level_map(num)
+  local dx,dy = travel.waypoint_delta(num)
+  local val,oldval
+  local staircount = #stair_dists[num]
+  local newcount = staircount
+  local mapqueue = {}
+  local distqueue = {}
+  for j = 1,staircount do
+    distqueue[j] = {}
+  end
+  for x = -LOS,LOS do
+    for y = -LOS,LOS do
+      table.insert(mapqueue, {x+dx,y+dy})
+    end
+  end
+  local first = 1
+  local last = #mapqueue
+  local x,y
+  local feat
+  while first < last do
+    if first % 1000 == 0 then
+      coroutine.yield()
+    end
+    x = mapqueue[first][1]
+    y = mapqueue[first][2]
+    first = first + 1
+    feat = view.feature_at(x-dx,y-dy)
+    if feat ~= "unseen" then
+      if level_map[num][x][y] == nil then
+        for ddx = -1,1 do
+          for ddy = -1,1 do
+            if ddx ~= 0 or ddy ~= 0 then
+              last = last + 1
+              mapqueue[last] = {x+ddx,y+ddy}
+            end
+          end
+        end
+      end
+      if travel.feature_traversable(feat) then
+        if level_map[num][x][y] ~= "." then
+          if feat_is_upstairs(feat) then
+            newcount = #stair_dists[num]+1
+            stair_dists[num][newcount] = {}
+            for i = -100,100 do
+              stair_dists[num][newcount][i] = {}
+            end
+            stair_dists[num][newcount][x][y] = 0
+            distqueue[newcount] = {{x,y},}
+          end
+          for j = 1,staircount do
+            oldval = stair_dists[num][j][x][y]
+            for ddx = -1,1 do
+              for ddy = -1,1 do
+                if (ddx ~= 0 or ddy ~= 0) then
+                  val = stair_dists[num][j][x+ddx][y+ddy]
+                  if val ~= nil and (oldval == nil or oldval > val+1) then
+                    oldval = val+1
+                  end
+                end
+              end
+            end
+            if stair_dists[num][j][x][y] ~= oldval then
+              stair_dists[num][j][x][y] = oldval
+              table.insert(distqueue[j],{x,y})
+            end
+          end
+        end
+        level_map[num][x][y] = "."
+      else
+        level_map[num][x][y] = "#"
+      end
+    end
+  end
+  for j = 1,newcount do
+    update_dist_map(stair_dists[num][j],distqueue[j])
+  end
+end
+
+function update_dist_map(dist_map,queue)
+  local first = 1
+  local last = #queue
+  local x,y,val
+  while first <= last do
+    if first % 300 == 0 then
+      coroutine.yield()
+    end
+    x = queue[first][1]
+    y = queue[first][2]
+    first = first + 1
+    val = dist_map[x][y] + 1
+    for dx = -1,1 do
+      for dy = -1,1 do
+        if (dx ~= 0 or dy ~= 0) and level_map[waypoint_parity][x+dx][y+dy] == "." then
+          oldval = dist_map[x+dx][y+dy]
+          if oldval == nil or oldval > val then
+            dist_map[x+dx][y+dy] = val
+            last = last+1
+            queue[last] = {x+dx,y+dy}
+          end
+        end
+      end
+    end
+  end
+end
+
 function plan_stuck()
   if starving() then
     return random_step("starving")
@@ -7151,8 +7276,8 @@ function initialize()
     did_first_turn = true
     first_turn()
   end
-  where = you.where()
-  expect_new_location = false
+  where = "nowhere"
+  expect_new_location = true
   if c_persist.branches_entered == nil then
     c_persist.branches_entered = { "D" }
   end
@@ -7164,6 +7289,14 @@ function initialize()
   end
   set_options()
   initialize_monster_array()
+  if not level_map then
+    level_map = {}
+    stair_dists = {}
+    clear_level_map(1)
+    clear_level_map(2)
+    waypoint_parity = 1
+    prev_where = "nowhere"
+  end
   initialized = true
 end
 
@@ -7327,6 +7460,15 @@ function update_stuff()
     did_move_towards_monster = did_move_towards_monster - 1
   end
   if you.where() ~= where then
+    if (where == "nowhere" or is_waypointable(where)) and is_waypointable(you.where()) then
+      waypoint_parity = 3 - waypoint_parity
+      if you.where() ~= prev_where then
+        clear_level_map(waypoint_parity)
+        set_waypoint()
+        coroutine.yield()
+      end
+      prev_where = where
+    end
     clear_ignores()
     if expect_new_location then
       if where_shafted_from == you.where() then
@@ -7352,6 +7494,9 @@ function update_stuff()
       v5_entry_turn = you.turns()
     end
   end
+  if is_waypointable(where) then
+    update_level_map(waypoint_parity)
+  end
   update_game_status()
   expect_new_location = false
   expect_portal = false
@@ -7367,7 +7512,11 @@ function ready()
   offlevel_travel = true
   run_update()
   if do_dummy_action then
-    crawl.process_keys(":" .. string.char(27) .. string.char(27))
+    if not did_waypoint then
+      crawl.process_keys(":" .. string.char(27) .. string.char(27))
+    else
+      did_waypoint = false
+    end
     return
   end
   if time_passed and SINGLE_STEP then
