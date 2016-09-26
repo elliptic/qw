@@ -181,6 +181,9 @@ autopickup_exceptions =
 {
 -- some global variables:
 
+local initialized = false
+local time_passed
+
 local dump_count = you.turns() + 100 - (you.turns() % 100)
 local skill_count = you.turns() - (you.turns() % 5)
 local danger
@@ -221,7 +224,7 @@ local target_memory_y
 
 local last_wait = 0
 local wait_count = 0
-local old_turn_count = you.turns()
+local old_turn_count = you.turns()-1
 local hiding_turn_count = -100
 
 local travel_destination = nil
@@ -7146,7 +7149,6 @@ function initialize()
     did_first_turn = true
     first_turn()
   end
-  automatic = true
   where = you.where()
   expect_new_location = false
   if c_persist.branches_entered == nil then
@@ -7160,6 +7162,7 @@ function initialize()
   end
   set_options()
   initialize_monster_array()
+  initialized = true
 end
 
 function stop()
@@ -7168,7 +7171,8 @@ function stop()
 end
 
 function start()
-  initialize()
+  automatic = true
+  set_options()
   ready()
 end
 
@@ -7269,12 +7273,22 @@ end
 function first_turn()
   first_turn_persist()
   if AUTO_START then
-    initialize()
+    automatic = true
+    set_options()
   end
 end
 
-function ready()
-  offlevel_travel = true
+-- We want to call this exactly once each turn.
+function update_stuff()
+  if not initialized then
+    initialize()
+  end
+  if you.turns() == old_turn_count then
+    time_passed = false
+    return
+  end
+  time_passed = true
+  old_turn_count = you.turns()
   if not did_first_turn and you.turns() == 0 then
     did_first_turn = true
     first_turn()
@@ -7287,22 +7301,15 @@ function ready()
     skill_count = skill_count+5
     handle_skills()
   end
-  local time_passed
-  if you.turns() > old_turn_count then
-    if did_move then
-      move_count = move_count + 1
-    else
-      move_count = 0
-    end
-    dd_hw_meter = math.floor(6*dd_hw_meter/7)
-    old_turn_count = you.turns()
-    did_move = false
-    if did_move_towards_monster > 0 then
-      did_move_towards_monster = did_move_towards_monster - 1
-    end
-    time_passed = true
+  if did_move then
+    move_count = move_count + 1
   else
-    time_passed = false
+    move_count = 0
+  end
+  did_move = false
+  dd_hw_meter = math.floor(6*dd_hw_meter/7)
+  if did_move_towards_monster > 0 then
+    did_move_towards_monster = did_move_towards_monster - 1
   end
   if you.where() ~= where then
     clear_ignores()
@@ -7334,17 +7341,22 @@ function ready()
   expect_new_location = false
   expect_portal = false
   check_messages()
+  update_monster_array()
+  danger = sense_danger(LOS)
+  immediate_danger = sense_immediate_danger()
+  cloudy = (not view.is_safe_square(0,0) and view.cloud_at(0,0) ~= nil)
+  sense_sigmund()
+end
+
+function ready()
+  offlevel_travel = true
+  update_stuff()
   if time_passed and SINGLE_STEP then
     stop()
   end
   if automatic then
     crawl.flush_input()
     crawl.more_autoclear(true)
-    update_monster_array()
-    danger = sense_danger(LOS)
-    immediate_danger = sense_immediate_danger()
-    cloudy = (not view.is_safe_square(0,0) and view.cloud_at(0,0) ~= nil)
-    sense_sigmund()
     if have_message then
       plan_message()
     elseif you.where():find("Abyss") then
