@@ -3790,9 +3790,7 @@ function step_improvement(reason,a1,a2)
   end
 end
 
--- this function always returns false because it doesn't actually take the
--- tactical step, just chooses it
-function plan_choose_tactical_step()
+function choose_tactical_step()
   tactical_step = nil
   tactical_reason = "none"
   if you.confused() or you.berserk() or you.constricted()
@@ -3830,13 +3828,7 @@ function plan_choose_tactical_step()
   if besta then
     tactical_step = delta_to_vi(bestx,besty)
     tactical_reason = bestreason
-    --say("Stepping ~*~*~tactically~*~*~.")
-    --magic(delta_to_vi(bestx,besty) .. "Y")
-    --say("tactics: " .. delta_to_vi(bestx,besty))
-    --stop()
-    --return true
   end
-  return false
 end
 
 function plan_cloud_step()
@@ -6834,7 +6826,6 @@ plan_pre_explore2 = cascade {
 plan_emergency = cascade {
   {plan_cure_starving, "cure_starving"},
   {plan_cure_confusion, "cure_confusion"},
-  {plan_choose_tactical_step, "choose_tactical_step"},
   {plan_coward_step, "coward_step"},
   {plan_remove_terrible_jewellery, "remove_terrible_jewellery"},
   {plan_teleport, "teleport"},
@@ -7506,6 +7497,7 @@ function update_stuff()
   immediate_danger = sense_immediate_danger()
   cloudy = (not view.is_safe_square(0,0) and view.cloud_at(0,0) ~= nil)
   sense_sigmund()
+  choose_tactical_step()
 end
 
 function ready()
