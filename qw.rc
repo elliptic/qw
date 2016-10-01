@@ -7498,6 +7498,9 @@ function update_stuff()
   cloudy = (not view.is_safe_square(0,0) and view.cloud_at(0,0) ~= nil)
   sense_sigmund()
   choose_tactical_step()
+  if collectgarbage("count") > 8000 then
+    collectgarbage()
+  end
 end
 
 function ready()
