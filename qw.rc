@@ -904,19 +904,6 @@ function armour_value(it, cur, it2)
         value = value - 100
       end
     end
-    -- pretend that dragon hides are armour
-    if name:find("dragon hide") then
-      local extra_ac = it.ac
-      -- odd base AC
-      if name:find("steam dragon") or name:find("quicksilver dragon")
-         or name:find("swamp dragon") or name:find("ice dragon") then
-        extra_ac = extra_ac + 1
-      end
-      value = value + 50*expected_armour_multiplier()*extra_ac
-      if unfitting_armour() then
-        value = value - 25*extra_ac
-      end
-    end
   end
   return value+val1,value+val2
 end
@@ -1807,7 +1794,7 @@ end
 -- heavy: species that can use arbitrary armour and aren't particularly great
 --        at dodging
 -- dodgy: species that can use arbitrary armour but are very good at dodging
--- large: species with armour restrictions that want heavy dragon armours
+-- large: species with armour restrictions that want heavy dragon scales
 -- light: species with no body armour or who don't want anything heavier than
 --        7 encumbrance
 function armour_plan()
@@ -4811,15 +4798,13 @@ function body_armour_is_great(arm)
   if ap == "heavy" then
     return (name:find("gold dragon") or name:find("crystal plate")
             or name:find("plate armour of fire")
-            or name:find("pearl dragon")
-            or name:find("dragon hide"))
+            or name:find("pearl dragon"))
   elseif ap == "large" then
-    return (name:find("dragon armour") or name:find("dragon hide"))
+    return name:find("dragon scales")
   elseif ap == "dodgy" then
-    return (arm.encumbrance <= 11 and (name:find("dragon armour") or name:find("dragon hide")))
+    return (arm.encumbrance <= 11 and name:find("dragon scales"))
   else
-    return (name:find("dragon armour") or name:find("dragon hide")
-            or name:find("robe of resistance"))
+    return (name:find("dragon scales") or name:find("robe of resistance"))
   end
 end
 
@@ -4830,7 +4815,7 @@ function body_armour_is_good(arm)
   local name = arm.name()
   local ap = armour_plan()
   if ap == "heavy" then
-    return (name:find("plate") or name:find("dragon armour"))
+    return (name:find("plate") or name:find("dragon scales"))
   elseif ap == "large" then
     return false
   elseif ap == "dodgy" then
@@ -4888,7 +4873,7 @@ function plan_use_good_consumables()
         ac = armour_ac()
         if body and not body.artefact and body.plus < ac
            and body_armour_is_great(body)
-           and not body.name():find("quicksilver dragon armour") then
+           and not body.name():find("quicksilver dragon scales") then
           oldname = body.name()
           if read2(it, letter(body)) then
             say("ENCHANTING " .. oldname .. ".")
@@ -4918,7 +4903,7 @@ function plan_use_good_consumables()
         end
         if body and not body.artefact and body.plus < ac
            and body_armour_is_good(body)
-           and not body.name():find("quicksilver dragon armour") then
+           and not body.name():find("quicksilver dragon scales") then
           oldname = body.name()
           if read2(it, letter(body)) then
             say("ENCHANTING " .. oldname .. ".")
@@ -5219,9 +5204,7 @@ function plan_upgrade_armour()
       it_old = items.equipped_at(good_slots[st])
       swappable = can_swap(good_slots[st])
       if should_upgrade(it,it_old) then
-        if not (it.name():find("dragon hide") and count_item("scroll", "enchant armour") == 0) then
-          equip = true
-        end
+        equip = true
       elseif should_drop(it) then
         drop = true
       end
