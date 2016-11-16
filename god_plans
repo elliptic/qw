@@ -19,6 +19,13 @@ C:
 - slow movement might make tactical steps worse? need to think about this more
 - don't use haste, speed weapons, etc
 - train Invo up a little for slouch fail rate
+H:
+- renames ally to "elliptic"
+- uses recall when it can't see a friendly elliptic
+- uses remember life at 2*, currently chooses randomly
+- not currently using idealise or transference, so faith/invocations not very useful
+L:
+- very minimally coded in order to win DDAK, abandons in midgame
 M:
 - minor destruction: might be worth implementing as a replacement for throwing
 - major destruction: used for hydras currently, a bit tricky to use in general
@@ -82,6 +89,11 @@ T:
   - don't teleport with a berserk friendly BiA in sight?
 - special DD logic
 - weapon gifts should maybe mean that enchant weapon shouldn't be wasted on weak stuff as much?
+U:
+- train invocations skill similar to fighting
+- use grand finale sometimes, but this is awkward because I can't see the fail rate currently
+X:
+- nothing special at the moment, I imagine it doesn't handle chaos cloud trail very well
 Y:
 - ally logic is similar to Beogh
 - pain mirror (not currently used):
@@ -93,10 +105,7 @@ Y:
 - we train invo up a bit for drain life, but maybe we should raise it higher?
 - coward_step stuff might be worse with allies, as with Beogh
 - we avoid using holy weapons
-
-should code:
-------------
-1:
+1: (this is the old plan, not sure what ended up happening)
 - could use SH ability (3 MP), but not sure... is using heroism logic for this reasonable? it isn't as good of course, and I don't know how much piety it uses
 - cleansing flame (5 MP) - strong with high invo against some things, but probably don't use it for now
 - divine warrior (8 MP) - can use this with similar logic to SGD/BiA I guess
@@ -108,15 +117,13 @@ should code:
     - can automatically answer no to this prompt, but that might cause some issues?
   - altar name might require special case
 
+should code:
+------------
 
 might code:
 -----------
 E: pacified monster handling might be annoying, though could just not use the ability
-H: probably want to wait until the god is more stable, but shouldn't be too hard after that
 J: altar availability makes this not that attractive to code
-L: banish MR check and beaminess might be tricky, as would be corrupt
-U: wait until the god is more stable, but shouldn't be too hard after that
-X: might still be issues with weapon swapping or unwielding causing skill screen stuff, should check this
 Z: recite and sanctuary usage might be tricky
 
 not coding for now:
@@ -127,7 +134,6 @@ F: these abilities are a bit tricky and I don't know the god very well
 G: these abilities are a bit tricky and food might be an issue
 K: casty is hard
 N: decks are complicated and use up lots of inventory
-P: evocables are complicated and use up lots of inventory (could maybe do DD of P though)
 S: casty is hard
 V: casty is hard
  

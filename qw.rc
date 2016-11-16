@@ -1070,9 +1070,9 @@ function amulet_value(it, cur, it2)
     end
   end
   if subtype == "amulet of faith" then
-    if you.god() == "Cheibriados" or you.god() == "Beogh" or you.god() == "Qazlal" then
+    if you.god() == "Cheibriados" or you.god() == "Beogh" or you.god() == "Qazlal" or you.god() == "Hepliaklqana" then
       return -1,-1 -- we don't use piety much on these gods at the moment
-    elseif you.god() ~= "Ru" then
+    elseif you.god() ~= "Ru" and you.god() ~= "Xom" then
       return 1000,1000 -- fixed value so we don't unequip for a randart one
     end
   end
@@ -2089,6 +2089,15 @@ function can_recall()
                cmp() < 2))
 end
 
+function can_recall_ancestor()
+  if you.god() ~= "Hepliaklqana" then
+    return false
+  end
+  return (not (you.berserk() or you.confused() or you.silenced() or
+               starving() or
+               cmp() < 2))
+end
+
 function can_finesse()
   return (not (you.berserk() or you.confused() or you.silenced() or
                starving() or
@@ -2131,6 +2140,13 @@ function can_apocalypse()
   return (not (you.berserk() or you.confused() or you.silenced() or
           starving() or you.exhausted() or you.piety_rank() < 5 or
           cmp() < 8 or you.god() ~= "Ru"))
+end
+
+function can_grand_finale()
+  -- using berserk hunger check as a hack for now
+  return (not (you.berserk() or you.confused() or you.silenced() or
+          too_hungry_to_berserk() or you.piety_rank() < 5 or
+          cmp() < 8 or you.god() ~= "Uskayaw"))
 end
 
 function can_bia()
@@ -2347,6 +2363,24 @@ function count_bia(r)
       m = monster_array[x][y]
       if m and m:is_safe() and m:is("berserk")
        and contains_string_in(m:name(), {"ogre","giant","bear","troll"}) then
+        i = i+1
+      end
+    end
+  end
+  return i
+end
+
+function count_elliptic(r)
+  if you.god() ~= "Hepliaklqana" then
+    return 0
+  end
+  local x, y
+  local i = 0
+  for x = -r,r do
+    for y = -r,r do
+      m = monster_array[x][y]
+      if m and m:is_safe()
+       and contains_string_in(m:name(), {"elliptic"}) then
         i = i+1
       end
     end
@@ -3178,6 +3212,10 @@ function recall()
   end
 end
 
+function recall_ancestor()
+  use_ability("Recall Ancestor", "", true)
+end
+
 function finesse()
   use_ability("Finesse")
 end
@@ -3254,6 +3292,39 @@ end
 function plan_apocalypse()
   if can_apocalypse() and want_to_apocalypse() then
     apocalypse()
+    return true
+  end
+  return false
+end
+
+function plan_grand_finale()
+  if not danger or not can_grand_finale() then
+    return false
+  end
+  local invo = you.skill("Invocations")
+  if invo < 10 or you.piety_rank() < 6 and invo < 15 then
+    -- fail rate potentially too high, need to add ability failure rate lua
+    return false
+  end
+  local e, bestx, besty, best_info, new_info
+  best_info = nil
+  for _,e in ipairs(enemy_list) do
+    if you.see_cell_no_trans(e.x,e.y) then
+      new_info = get_monster_info(e.x, e.y)
+      if new_info.safe == 0 and
+         ((not best_info) or new_info.threat > best_info.threat
+          or new_info.threat == best_info.threat and
+          (new_info.injury < best_info.injury
+           or new_info.injury == best_info.injury and
+              new_info.distance < best_info.distance)) then
+        best_info = new_info
+        bestx = e.x
+        besty = e.y
+      end
+    end
+  end
+  if best_info then
+    use_ability("Grand Finale", "r" .. vector_move(bestx,besty) .. "\r")
     return true
   end
   return false
@@ -3874,6 +3945,14 @@ function plan_recall()
   return false
 end
 
+function plan_recall_ancestor()
+  if can_recall_ancestor() and want_to_recall_ancestor() then
+    recall_ancestor()
+    return true
+  end
+  return false
+end
+
 function plan_finesse()
   if can_finesse() and want_to_finesse() then
     finesse()
@@ -4095,6 +4174,10 @@ function want_to_recall()
   end
   local mp,mmp = you.mp()
   return (mp == mmp)
+end
+
+function want_to_recall_ancestor()
+  return (count_elliptic(LOS) == 0)
 end
 
 function want_to_stay_in_abyss()
@@ -5281,9 +5364,10 @@ function plan_go_down()
 end
 
 function ready_for_lair()
-  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Qazlal" or you.god() == "the Shining One" or you.god() == "Lugonu" or
+  if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Qazlal" or you.god() == "the Shining One" or you.god() == "Lugonu" or you.god() == "Uskayaw" or you.god() == "Xom" or
      (you.god() == "Beogh" or you.god() == "Makhleb" or you.god() == "Yredelemnul") and you.piety_rank() >= 4 or
-     you.god() == "Ru" and you.piety_rank() >= 3 then
+     you.god() == "Ru" and you.piety_rank() >= 3 or
+     you.god() == "Hepliaklqana" and you.piety_rank() >= 2 then
     return true
   end
   return false
@@ -5827,6 +5911,30 @@ function plan_fly()
         return true
       end
     end
+  end
+  return false
+end
+
+local did_ancestor_identity = false
+function plan_ancestor_identity()
+  if you.god() ~= "Hepliaklqana" then
+    return false
+  end
+  if not did_ancestor_identity then
+    use_ability("Ancestor Identity","\b\b\b\b\b\b\b\b\b\b\b\b\belliptic\ra")
+    did_ancestor_identity = true
+    return true
+  end
+  return false
+end
+
+function plan_ancestor_life()
+  if you.god() ~= "Hepliaklqana" then
+    return false
+  end
+  local ancestor_options = {"Knight", "Battlemage", "Hexer"}
+  if use_ability("Ancestor Life: " .. ancestor_options[crawl.roll_dice(1,3)], "Y") then
+    return true
   end
   return false
 end
@@ -6779,6 +6887,7 @@ end
 
 plan_pre_explore = cascade {
   {plan_fly, "fly"},
+  {plan_ancestor_life, "ancestor_life"},
   {plan_sacrifice, "sacrifice"},
   {plan_upgrade_weapon, "upgrade_weapon"},
   {plan_maybe_upgrade_armour, "maybe_upgrade_armour"},
@@ -6817,6 +6926,7 @@ plan_emergency = cascade {
   {plan_apocalypse, "try_apocalypse"},
   {plan_slouch, "try_slouch"},
   {plan_hydra_destruction, "try_hydra_destruction"},
+  {plan_grand_finale, "grand_finale"},
   {plan_dd_recharge_heal_wounds, "dd_recharge_heal_wounds"},
   {plan_wield_weapon, "wield_weapon"},
   {plan_swap_weapon, "swap_weapon"},
@@ -6899,11 +7009,13 @@ plan_explore2 = cascade {
 } -- hack
 
 plan_move = cascade {
+  {plan_ancestor_identity, "try_ancestor_identity"},
   {plan_join_beogh, "join_beogh"},
   {plan_shop, "shop"},
   {plan_stairdance_up, "stairdance_up"},
   {plan_emergency, "emergency"},
   {plan_recall, "recall"},
+  {plan_recall_ancestor, "try_recall_ancestor"},
   {plan_wait_for_melee, "wait_for_melee"},
   {plan_starting_spell, "try_starting_spell"},
   {plan_wait_spit, "try_wait_spit"},
@@ -6943,6 +7055,7 @@ plan_move = cascade {
 plan_orbrun_move = cascade {
   {plan_orbrun_emergency, "orbrun_emergency"},
   {plan_recall, "recall"},
+  {plan_recall_ancestor, "try_recall_ancestor"},
   {plan_attack, "attack"},
   {plan_cure_poison, "cure_poison"},
   {plan_orbrun_eatrest, "orbrun_eatrest"},
@@ -6963,6 +7076,7 @@ plan_abyss_move = cascade {
   {plan_lugonu_exit_abyss, "lugonu_exit_abyss"},
   {plan_exit_abyss, "exit_abyss"},
   {plan_emergency, "emergency"},
+  {plan_recall_ancestor, "try_recall_ancestor"},
   {plan_attack, "attack"},
   {plan_cure_poison, "cure_poison"},
   {plan_flail_at_invis, "try_flail_at_invis"},
@@ -7030,6 +7144,8 @@ function skill_value(sk)
       return 0
     end
     return (at_target_shield_skill() and 0.2 or 0.75)
+  elseif sk == "Invocations" then
+    return ((you.god() == "Uskayaw") and 0.75 or 0)
   elseif sk == wskill() then
     return (at_min_delay() and 0.5 or 1.5)
   end
@@ -7038,7 +7154,7 @@ end
 function choose_skills()
   skills = {}
   -- Choose one martial skill to train.
-  martial_skills = { wskill(), "Fighting", "Shields", "Armour", "Dodging", }
+  martial_skills = { wskill(), "Fighting", "Shields", "Armour", "Dodging", "Invocations"}
   local best_sk
   local best_utility = 0
   local utility
@@ -7057,9 +7173,9 @@ function choose_skills()
 
   -- Choose one MP skill to train.
   mp_skill = "Evocations"
-  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or you.god() == "Beogh" or you.god() == "Qazlal" or you.god() == "the Shining One" or you.god() == "Lugonu" then
+  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or you.god() == "Beogh" or you.god() == "Qazlal" or you.god() == "the Shining One" or you.god() == "Lugonu" or you.god() == "Hepliaklqana" or you.god() == "Uskayaw" then
     mp_skill = "Invocations"
-  elseif you.god() == "Ru" then
+  elseif you.god() == "Ru" or you.god() == "Xom" then
     mp_skill = "Spellcasting"
   end
   mp_skill_level = you.base_skill(mp_skill)
@@ -7095,11 +7211,11 @@ function choose_skills()
       end
     end
   end
-  if you.god() == "Xom" and safe_count == 1 and util.contains(skills2, weapon_skill) and you.base_skill(weapon_skill) < 26.5 and you.base_skill("Fighting") < 26.5 then
+  --if you.god() == "Xom" and safe_count == 1 and util.contains(skills2, weapon_skill) and you.base_skill(weapon_skill) < 26.5 and you.base_skill("Fighting") < 26.5 then
     -- Just in case Xom unwields our weapon in early game before we abandon,
     -- though currently we abandon Xom on T0.
-    table.insert(skills2, "Fighting")
-  end
+    --table.insert(skills2, "Fighting")
+  --end
   -- Try to avoid getting stuck in the skill screen.
   if safe_count == 0 then
     if you.base_skill("Fighting") < 26.5 then
@@ -7349,6 +7465,8 @@ function fullgodname(g)
     return "Beogh"
   elseif g == "C" then
     return "Cheibriados"
+  elseif g == "H" then
+    return "Hepliaklqana"
   elseif g == "L" then
     return "Lugonu"
   elseif g == "M" then
@@ -7361,6 +7479,10 @@ function fullgodname(g)
     return "Ru"
   elseif g == "T" then
     return "Trog"
+  elseif g == "U" then
+    return "Uskayaw"
+  elseif g == "X" then
+    return "Xom"
   elseif g == "Y" then
     return "Yredelemnul"
   elseif g == "1" then
