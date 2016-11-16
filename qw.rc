@@ -3176,10 +3176,6 @@ function attack()
   return true
 end
 
-function pray()
-  magic("p")
-end
-
 function chop()
   magic("cYq")
 end
@@ -4668,7 +4664,7 @@ function plan_convert()
             table.remove(c_persist.branches_entered,i)
           end
         end
-        magic("pYYY")
+        magic("<YYY")
       end
       return true
     end
@@ -4686,7 +4682,7 @@ function plan_join_god()
       if you.silenced() then
         rest()
       else
-        magic("pYY")
+        magic("<YY")
       end
       return true
     end
