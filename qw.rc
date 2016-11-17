@@ -3325,7 +3325,7 @@ function plan_grand_finale()
     end
   end
   if best_info then
-    use_ability("Grand Finale", "r" .. vector_move(bestx,besty) .. "Y\r")
+    use_ability("Grand Finale", "r" .. vector_move(bestx,besty) .. "\rY")
     return true
   end
   return false
