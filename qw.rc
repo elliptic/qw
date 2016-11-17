@@ -5923,7 +5923,7 @@ function plan_ancestor_identity()
     return false
   end
   if not did_ancestor_identity then
-    use_ability("Ancestor Identity","\b\b\b\b\b\b\b\b\b\b\b\b\belliptic\ra")
+    use_ability("Ancestor Identity","\b\b\b\b\b\b\b\b\b\b\b\b\b\b\belliptic\ra")
     did_ancestor_identity = true
     return true
   end
