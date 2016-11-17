@@ -3309,7 +3309,7 @@ function plan_grand_finale()
   local e, bestx, besty, best_info, new_info
   best_info = nil
   for _,e in ipairs(enemy_list) do
-    if you.see_cell_no_trans(e.x,e.y) then
+    if is_traversable(e.x,e.y) and you.see_cell_no_trans(e.x,e.y) then
       new_info = get_monster_info(e.x, e.y)
       if new_info.safe == 0 and
          ((not best_info) or new_info.threat > best_info.threat
