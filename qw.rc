@@ -4705,7 +4705,7 @@ function plan_unwield_weapon()
 end
 
 function plan_join_beogh()
-  if you.race() ~= "Hill Orc" or not want_altar() then
+  if you.race() ~= "Hill Orc" or not want_altar() or you.confused() then
     return false
   end
   for _,god in ipairs(god_desired()) do
