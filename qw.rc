@@ -4241,7 +4241,10 @@ function plan_wait_for_melee()
        (e.m:name() == "wandering mushroom" or
         e.m:name():find("ballistomycete") or
         e.m:name():find("vortex") or
-        e.m:desc():find("fleeing")) then
+        e.m:desc():find("fleeing") or
+        e.m:status("paralysed") or
+        e.m:status("confused") or
+        e.m:status("petrified")) then
       count = count + 1
       if e.m:desc():find("sleeping") or e.m:desc():find("dormant") then
         sleeping_count = sleeping_count + 1
