@@ -53,6 +53,8 @@
 # preferred gods (will join)
 : GOD_DESIRED = { "Trog", }
 : DD_GOD_DESIRED = { "Trog", "Makhleb", }
+# use faded altar
+: FADED_ALTAR = false
 
 # cycle through combos using c_persist.options
 : COMBO_CYCLE = false
@@ -4647,6 +4649,9 @@ function magicfind(target)
 end
 
 function god_options()
+  if FADED_ALTAR then
+    return (you.race() == "Deep Dwarf" and DD_GOD_LIST or GOD_LIST)
+  end
   return c_persist.cur_god_list or (you.race() == "Deep Dwarf" and DD_GOD_LIST or GOD_LIST)
 end
 
@@ -4658,7 +4663,11 @@ function plan_find_altar()
   if not want_altar() then
     return false
   end
-  str = "@altar&&<<of " .. table.concat(god_desired(), "||of ") .. ">>"
+  str = "@altar&&<<of " .. table.concat(god_desired(), "||of ")
+  if FADED_ALTAR then
+    str = str .. "||of an unknown god"
+  end
+  str = str .. ">>"
   magicfind(str)
   return true
 end
@@ -4667,7 +4676,7 @@ function plan_find_conversion_altar()
   if you.xl() ~= 12 then
     return false
   end
-  if you.god() ~= "Lugonu" then
+  if you.god() ~= "Lugonu" or FADED_ALTAR then
     return false
   end
   if unshafting() then
@@ -4720,7 +4729,7 @@ function plan_convert()
   if you.xl() ~= 12 then
     return false
   end
-  if you.god() ~= "Lugonu" then
+  if you.god() ~= "Lugonu" or FADED_ALTAR then
     return false
   end
   feat = view.feature_at(0,0)
@@ -4756,6 +4765,14 @@ function plan_join_god()
       end
       return true
     end
+  end
+  if FADED_ALTAR and feat == "altar_ecumenical" then
+    if you.silenced() then
+      rest()
+    else
+      magic("<YY")
+    end
+    return true
   end
   return false
 end
@@ -7037,7 +7054,7 @@ plan_move = cascade {
   {plan_abandon_god, "abandon_god"},
   {plan_unwield_weapon, "unwield_weapon"},
   {plan_convert, "convert"},
-  {plan_join_god, "join_god"},
+  {plan_join_god, "try_join_god"}, -- bug with faded altar not taking time
   {plan_find_conversion_altar, "try_find_conversion_altar"},
   {plan_find_altar, "try_find_altar"},
   {plan_go_to_temple, "try_go_to_temple"},
