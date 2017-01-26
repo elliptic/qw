@@ -6896,14 +6896,14 @@ plan_pre_explore = cascade {
   {plan_sacrifice, "sacrifice"},
   {plan_upgrade_weapon, "upgrade_weapon"},
   {plan_maybe_upgrade_armour, "maybe_upgrade_armour"},
+  {plan_upgrade_armour, "upgrade_armour"},
+  {plan_upgrade_amulet, "upgrade_amulet"},
+  {plan_upgrade_rings, "upgrade_rings"},
   {plan_use_good_consumables, "use_good_consumables"},
 } -- hack
 
 plan_pre_explore2 = cascade {
   {plan_disturbance_random_step, "disturbance_random_step"},
-  {plan_upgrade_armour, "upgrade_armour"},
-  {plan_upgrade_amulet, "upgrade_amulet"},
-  {plan_upgrade_rings, "upgrade_rings"},
   {plan_read_id, "read_id"},
   {plan_quaff_id, "quaff_id"},
   {plan_use_id_scrolls, "use_id_scrolls"},
