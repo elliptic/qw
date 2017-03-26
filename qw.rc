@@ -7467,7 +7467,8 @@ function c_answer_prompt(prompt)
   end
   if prompt:find("Really unwield") or prompt:find("Really take off")
      or prompt:find("Really remove") or prompt:find("Really wield")
-     or prompt:find("Really wear") or prompt:find("Really put on") then
+     or prompt:find("Really wear") or prompt:find("Really put on")
+     or prompt:find("Really drink") then
     return true
   end
   if prompt:find("Keep reading") then
