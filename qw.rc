@@ -4762,10 +4762,13 @@ function plan_use_good_consumables()
   for it in inventory() do
     if it.class(true) == "scroll" and can_read() then
       if it.name():find("acquirement") then
-        if you.race() == "Felid" then
-          return read2(it, " c")
-        else
-          return read2(it, " b")
+        if view.feature_at(0,0) ~= "deep_water"
+           and view.feature_at(0,0) ~= "lava" then
+          if you.race() == "Felid" then
+            return read2(it, " c")
+          else
+            return read2(it, " b")
+          end
         end
       elseif it.name():find("enchant weapon") then
         weapon = items.equipped_at("weapon")
@@ -6695,7 +6698,7 @@ plan_pre_explore2 = cascade {
   {plan_upgrade_armour, "upgrade_armour"},
   {plan_upgrade_amulet, "upgrade_amulet"},
   {plan_upgrade_rings, "upgrade_rings"},
-  {plan_read_id, "read_id"},
+  {plan_read_id, "try_read_id"},
   {plan_quaff_id, "quaff_id"},
   {plan_use_id_scrolls, "use_id_scrolls"},
   {plan_drop_other_items, "drop_other_items"},
