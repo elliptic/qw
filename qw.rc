@@ -6143,7 +6143,7 @@ end
 
 function plan_cure_starving()
   if you.hunger_name() == "fainting"
-     or (you.hunger_name() == "starving" and not hp_is_low(50)) then
+     or you.hunger_name() == "starving" then
     return eat_permafood(true)
   end
   return false
