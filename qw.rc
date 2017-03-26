@@ -2154,7 +2154,7 @@ end
 
 function dd_heal_ability()
   if you.race() == "Deep Dwarf" and you.base_mp() > 0
-     and not (you.berserk() or you.confused()) then
+     and not (you.berserk() or you.confused() or starving()) then
     use_ability("Heal Wounds")
     return true
   end
