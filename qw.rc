@@ -1772,7 +1772,7 @@ end
 function intrinsic_flight() -- or swimming
   local sp = you.race()
   if sp == "Gargoyle" or sp == "Tengu" or sp == "Black Draconian" or
-     sp == "Merfolk" or sp == "Octopode" then
+     sp == "Merfolk" or sp == "Octopode" or sp == "Barachi" then
     return true
   end
   return false
@@ -1781,7 +1781,8 @@ end
 function intrinsic_fumble()
   local sp = you.race()
   if sp == "Merfolk" or sp == "Octopode" or sp == "Grey Draconian" or
-     sp == "Centaur" or sp == "Naga" or sp == "Troll" or sp == "Ogre" then
+     sp == "Centaur" or sp == "Naga" or sp == "Troll" or sp == "Ogre"
+     or sp == "Barachi" then
     return false
   end
   return true
@@ -3633,6 +3634,7 @@ function assess_square(x,y)
   -- will we be slow if we move into this square?
   a.slow = (not you.flying() and view.feature_at(x,y) == "shallow_water"
             and you.race() ~= "Merfolk" and you.race() ~= "Octopode"
+            and you.race() ~= "Barachi"
             and not (you.god() == "Beogh" and you.piety_rank() >= 5))
   -- is the square safe to step in? (checks traps+clouds)
   a.safe = view.is_safe_square(x,y)
