@@ -7457,7 +7457,10 @@ function run_update()
   if update_coroutine == nil then
     update_coroutine = coroutine.create(update_stuff)
   end
-  coroutine.resume(update_coroutine)
+  local okay, err = coroutine.resume(update_coroutine)
+  if not okay then
+    error("Error in coroutine: " .. err)
+  end
   if coroutine.status(update_coroutine) == "dead" then
     update_coroutine = nil
     do_dummy_action = false
