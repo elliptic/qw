@@ -6393,10 +6393,13 @@ end
 
 function plan_dig_grate()
   local grate_mon_list
+  local grate_count_needed
   if where == "Depths:5" or where:find("Zot") then
     grate_mon_list = {"draconian stormcaller", "draconian scorcher"}
+    grate_count_needed = 3
   elseif where == "Pan" or where == "Geh:7" then
     grate_mon_list = {"smoke demon"}
+    grate_count_needed = 1
   else
     return false
   end
@@ -6423,7 +6426,7 @@ function plan_dig_grate()
           end
         end
       end
-      if grate_count >= 3 and closest_grate < 20 then
+      if grate_count >= grate_count_needed and closest_grate < 20 then
         local c = find_item("wand", "digging")
         if c and can_zap() then
           say("ZAPPING " .. item(c).name() .. ".")
