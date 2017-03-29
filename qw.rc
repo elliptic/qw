@@ -338,7 +338,9 @@ end
 
 -- if cur, return the current value instead of minmax
 -- if it2, pretend we aren't equipping it2
-function equip_value(it, cur, it2)
+-- if sit = "hydra", assume we are fighting a hydra at lowish XL
+--        = "extended", assume we are in (or about to enter) Pan
+function equip_value(it, cur, it2, sit)
   if not it then
     return 0,0
   end
@@ -346,7 +348,7 @@ function equip_value(it, cur, it2)
   if class == "armour" then
     return armour_value(it, cur, it2)
   elseif class == "weapon" then
-    return weapon_value(it, cur, it2, false)
+    return weapon_value(it, cur, it2, sit)
   elseif class == "jewellery" then
     if equip_slot(it) == "Amulet" then
       return amulet_value(it, cur, it2)
@@ -806,6 +808,10 @@ function abyss_soon()
           and you.have_rune("silver") and not you.have_rune("abyssal"))
 end
 
+function pan_soon()
+  return (PAN_RUNE and (you.where() == "Pan" or want_to_be_in_pan()))
+end
+
 -- list of armour slots, this is used to normalize names for them and also
 -- to iterate over the slots
 good_slots = {cloak="Cloak", helmet="Helmet",
@@ -924,7 +930,9 @@ function armour_value(it, cur, it2)
   return value+val1,value+val2
 end
 
-function weapon_value(it, cur, it2, hydra_swap)
+function weapon_value(it, cur, it2, sit)
+  local hydra_swap = (sit == "hydra")
+  local extended = (sit == "extended")
   if it.class(true) ~= "weapon" then
     return -1,-1
   end
@@ -1005,10 +1013,16 @@ function weapon_value(it, cur, it2, hydra_swap)
       if intrinsic_evil() or you.god() == "Yredelemnul" then
         return -1,-1
       end
+      if extended then
+        value = value + 500
+      end
     elseif ego == "vampirism" then
       value = value + 500 -- this is what we want
       if you.god() == "the Shining One" then
         return -1,-1
+      end
+      if extended then
+        value = value - 400
       end
     elseif ego == "speed" then
       value = value + 300 -- this is good too
@@ -1018,7 +1032,9 @@ function weapon_value(it, cur, it2, hydra_swap)
     elseif ego == "electrocution" then
       value = value + 150 -- not bad
     elseif ego == "draining" then
-      value = value + 75
+      if not extended then
+        value = value + 75
+      end
       if you.god() == "the Shining One" then
         return -1,-1
       end
@@ -1027,7 +1043,9 @@ function weapon_value(it, cur, it2, hydra_swap)
            or ego == "piercing" or ego == "chopping" or ego == "slashing" then
       value = value + 75
     elseif ego == "venom" then
-      value = value + 50
+      if not extended then
+        value = value + 50
+      end
     elseif ego == "antimagic" then
       if you.race() == "Vine Stalker" then
         value = value - 300
@@ -1256,25 +1274,36 @@ function want_scroll(it)
   return true
 end
 
-function item_is_dominated(it)
+-- This doesn't handle rings correctly at the moment, but right now we are
+-- only using this for weapons anyway.
+-- Also maybe this should check resist_dominated too?
+function item_is_sit_dominated(it,sit)
   local slotname = equip_slot(it)
-  if slotname == "Weapon" and you.xl() < 18 then
-    local hminv,hmaxv = weapon_value(it, nil, nil, true)
-    if hmaxv > 0 then
-      local hydra_dominated = false
-      for it2 in inventory() do
-        if equip_slot(it2) == slotname and slot(it2) ~= slot(it) then
-          local hminv2,hmaxv2 = weapon_value(it2, nil, nil, true)
-          if hminv2 >= hmaxv
-             and not (you.base_skill("Shields") > 0 and it.hands == 1 and it2.hands == 2) then
-            hydra_dominated = true
-          end
-        end
-      end
-      if not hydra_dominated then
-        return false
+  local minv,maxv = equip_value(it, nil, nil, sit)
+  if maxv <= 0 then
+    return true
+  end
+  for it2 in inventory() do
+    if equip_slot(it2) == slotname and slot(it2) ~= slot(it) then
+      local minv2,maxv2 = weapon_value(it2, nil, nil, sit)
+      if minv2 >= maxv and not
+         (slotname == "Weapon" and you.base_skill("Shields") > 0
+          and it.hands == 1 and it2.hands == 2) then
+        return true
       end
     end
+  end
+  return false
+end
+
+function item_is_dominated(it)
+  local slotname = equip_slot(it)
+  if slotname == "Weapon" and you.xl() < 18
+     and not item_is_sit_dominated(it, "hydra") then
+    return false
+  elseif PAN_RUNE and slotname == "Weapon"
+         and not item_is_sit_dominated(it, "extended") then
+    return false
   end
   local minv,maxv = equip_value(it)
   if maxv <= 0 then
@@ -1304,9 +1333,9 @@ function should_drop(it)
 end
 
 -- assumes old_it is equipped
-function should_upgrade(it,old_it)
+function should_upgrade(it,old_it,sit)
   if not old_it then
-    return should_equip(it)
+    return should_equip(it,sit)
   end
   if not it.fully_identified and not should_drop(it) then
     if equip_slot(it) == "Weapon" and it.weap_skill ~= wskill() then
@@ -1314,12 +1343,12 @@ function should_upgrade(it,old_it)
     end
     return (old_it.subtype() ~= "amulet of faith")
   end
-  return (equip_value(it,true,old_it) > equip_value(old_it,true,old_it))
+  return (equip_value(it,true,old_it,sit) > equip_value(old_it,true,old_it,sit))
 end
 
 -- assumes it is not equipped and an empty slot is available
-function should_equip(it)
-  return (equip_value(it,true) > 0)
+function should_equip(it,sit)
+  return (equip_value(it,true,nil,sit) > 0)
 end
 
 -- assumes it is equipped
@@ -4944,15 +4973,20 @@ function plan_swap_weapon()
   if you.race() == "Troll" or you.berserk() or transformed() or not items.equipped_at("Weapon") then
     return false
   end
-  local hydra_near = false
+  local sit
   local x,y
-  for x = -3,3 do
-    for y = -3,3 do
-      m = monster_array[x][y]
-      if m and string.find(m:desc(), "hydra") and will_tab(0,0,x,y,tabbable_square) then
-        hydra_near = true
+  if you.xl() < 18 then
+    for x = -3,3 do
+      for y = -3,3 do
+        m = monster_array[x][y]
+        if m and string.find(m:desc(), "hydra") and will_tab(0,0,x,y,tabbable_square) then
+          sit = "hydra"
+        end
       end
     end
+  end
+  if pan_soon() then
+    sit = "extended"
   end
   twohands = true
   if items.equipped_at("Shield") and you.race() ~= "Formicid" then
@@ -4963,13 +4997,13 @@ function plan_swap_weapon()
   if not swappable or (it_old.ego() == "vampirism" and not intrinsic_undead()) then
     return false
   end
-  cur_val = weapon_value(it_old,true,it_old,hydra_near)
+  cur_val = weapon_value(it_old,true,it_old,sit)
   max_val = cur_val
   max_it = nil
   for it in inventory() do
     if it and it.class(true) == "weapon" and not it.equipped then
       if (twohands or it.hands < 2) and not (it.name():find("vamp") and not intrinsic_undead()) then
-        val2 = weapon_value(it,true,it_old,hydra_near)
+        val2 = weapon_value(it,true,it_old,sit)
         if val2 > max_val then
           max_val = val2
           max_it = it
@@ -4991,6 +5025,10 @@ function plan_upgrade_weapon()
   if you.race() == "Troll" then
     return false
   end
+  local sit
+  if pan_soon() then
+    sit = "extended"
+  end
   twohands = true
   if items.equipped_at("Shield") and you.race() ~= "Formicid" then
     twohands = false
@@ -5001,7 +5039,7 @@ function plan_upgrade_weapon()
     if it and it.class(true) == "weapon" and not it.equipped then
       local equip = false
       local drop = false
-      if should_upgrade(it,it_old) then
+      if should_upgrade(it,it_old,sit) then
         equip = true
       elseif should_drop(it) then
         drop = true
