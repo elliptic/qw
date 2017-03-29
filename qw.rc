@@ -31,6 +31,8 @@
 : ABYSS_RUNE_DEPTH = "Abyss:3"
 # experimental: get slimy rune
 : SLIMY_RUNE = false
+# very experimental: get pan runes
+: PAN_RUNE = false
 # depth to attempt to dive in ziggurats (0 to turn off)
 # if turned on, this causes annoying throttling delays when played online
 # for some reason
@@ -761,7 +763,7 @@ function resist_dominated(it,it2)
 end
 
 function rune_goal()
-  return 3 + (ABYSSAL_RUNE and 1 or 0) + (SLIMY_RUNE and 1 or 0)
+  return 3 + (ABYSSAL_RUNE and 1 or 0) + (SLIMY_RUNE and 1 or 0) + (PAN_RUNE and 5 or 0)
 end
 
 function easy_runes()
@@ -1406,6 +1408,10 @@ function in_desc(str)
   end
 end
 
+function pan_lord(m)
+  return (m:type() == ENUM_MONS_PANDEMONIUM_LORD)
+end
+
 local res_func_table = {
   rF=you.res_fire,
   rC=you.res_cold,
@@ -1607,6 +1613,11 @@ local scary_monsters = {
   {100, "juggernaut"},
   {100, "Royal Jelly"},
   {100, "iron giant"},
+  {100, "Cerebov"},
+  {100, "Gloorx Vloq"},
+  {100, "Lom Lobon"},
+  {100, "Mnoleg"},
+  {100, pan_lord},
 } -- hack
 
 -- BiA these even at low piety
@@ -1681,6 +1692,11 @@ local bia_monsters = {
   {100, "juggernaut"},
   {100, "iron giant"},
   {100, check_resist("entropy weaver", "rCorr", 1)},
+  {100, "Cerebov"},
+  {100, "Gloorx Vloq"},
+  {100, "Lom Lobon"},
+  {100, "Mnoleg"},
+  {100, pan_lord},
 } -- hack
 
 -- Trog's Hand these
@@ -1718,6 +1734,7 @@ local fire_resistance_monsters = {
   {100, "orb of fire"},
   {100, check_resist("hellephant","rF",2)},
   {100, check_resist("Xtahua","rF",2)},
+  {100, "Cerebov"},
 } -- hack
 
 local cold_resistance_monsters = {
@@ -1944,7 +1961,7 @@ function miasma_immune()
 end
 
 function is_waypointable(loc)
-  return (not is_portal_location(loc) and not loc:find("Abyss"))
+  return (not is_portal_location(loc) and not loc:find("Abyss") and loc ~= "Pan")
 end
 
 function is_portal_location(loc)
@@ -4069,6 +4086,15 @@ function want_to_stay_in_abyss()
           and count_permafood() > 10 and not hp_is_low(50))
 end
 
+function want_to_be_in_pan()
+  return (PAN_RUNE and
+          (where == "Pan" or where:find("Depths") and you.have_rune("silver")
+           and (you.have_rune("abyssal") or not ABYSSAL_RUNE))
+          and not (you.have_rune("demonic") and you.have_rune("fiery")
+                   and you.have_rune("dark") and you.have_rune("magical")
+                   and you.have_rune("glowing")))
+end
+
 function rejecting_slime()
   return false
 end
@@ -5487,10 +5513,43 @@ function plan_go_to_abyss_portal()
   end
 end
 
+function plan_go_to_pan_portal()
+  if not where:find("Depths") or not want_to_be_in_pan() then
+    return false
+  else
+    expect_new_location = true
+    magicfind("halls of Pandemonium")
+    return true
+  end
+end
+
 function plan_go_to_abyss_downstairs()
   if where:find("Abyss") and where ~= ABYSS_RUNE_DEPTH and want_to_stay_in_abyss() then
     magic("X>\r")
     return true
+  end
+  return false
+end
+
+function plan_go_to_pan_downstairs()
+  if where == "Pan" then
+    magic("X>\r")
+    return true
+  end
+  return false
+end
+
+function plan_pan_open_runed_doors()
+  if where ~= "Pan" then
+    return false
+  end
+  for x = -1,1 do
+    for y = -1,1 do
+      if view.feature_at(x,y) == "runed_door" then
+        magic(delta_to_vi(x,y) .. "Y")
+        return true
+      end
+    end
   end
   return false
 end
@@ -5501,6 +5560,14 @@ function plan_go_to_abyss_exit()
   end
   magic("X<\r")
   return true
+end
+
+function plan_go_to_pan_exit()
+  if where == "Pan" and not want_to_be_in_pan() then
+    magic("X<\r")
+    return true
+  end
+  return false
 end
 
 function plan_dive()
@@ -5561,10 +5628,28 @@ function plan_enter_abyss()
   return false
 end
 
+function plan_enter_pan()
+  if view.feature_at(0,0) == "enter_pandemonium" and want_to_be_in_pan() then
+    expect_new_location = true
+    magic(">Y")
+    return true
+  end
+  return false
+end
+
 function plan_go_down_abyss()
   if view.feature_at(0,0) == "abyssal_stair" and where ~= ABYSS_RUNE_DEPTH and want_to_stay_in_abyss() then
     expect_new_location = true
     magic(">")
+    return true
+  end
+  return false
+end
+
+function plan_go_down_pan()
+  if view.feature_at(0,0) == "transit_pandemonium" then
+    expect_new_location = true
+    magic(">Y")
     return true
   end
   return false
@@ -5601,6 +5686,15 @@ end
 
 function plan_exit_abyss()
   if view.feature_at(0,0) == "exit_abyss" and not want_to_stay_in_abyss() and not you.mesmerised() and you.transform() ~= "tree" then
+    expect_new_location = true
+    magic("<")
+    return true
+  end
+  return false
+end
+
+function plan_exit_pan()
+  if view.feature_at(0,0) == "exit_pandemonium" and not want_to_be_in_pan() and not you.mesmerised() and you.transform() ~= "tree" then
     expect_new_location = true
     magic("<")
     return true
@@ -6787,6 +6881,8 @@ plan_explore = cascade {
   {plan_go_to_portal_entrance, "try_go_to_portal_entrance"},
   {plan_enter_abyss, "enter_abyss"},
   {plan_go_to_abyss_portal, "try_go_to_abyss_portal"},
+  {plan_enter_pan, "enter_pan"},
+  {plan_go_to_pan_portal, "try_go_to_pan_portal"},
   {plan_dive, "try_dive"},
   {plan_autoexplore, "try_autoexplore"},
 } -- hack
@@ -6796,6 +6892,11 @@ plan_explore2 = cascade {
   {plan_zig_go_to_stairs, "try_zig_go_to_stairs"},
   {plan_exit_portal, "exit_portal"},
   {plan_go_to_portal_exit, "try_go_to_portal_exit"},
+  {plan_pan_open_runed_doors, "pan_open_runed_doors"},
+  {plan_exit_pan, "exit_pan"},
+  {plan_go_to_pan_exit, "try_go_to_pan_exit"},
+  {plan_go_down_pan, "go_down_pan"},
+  {plan_go_to_pan_downstairs, "try_go_to_pan_downstairs"},
   {plan_enter_branch, "try_enter_branch"},
   {plan_go_to_zig, "try_go_to_zig"},
   {plan_gather_zot_supplies, "try_gather_zot_supplies"},
