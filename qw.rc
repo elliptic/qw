@@ -5648,7 +5648,8 @@ end
 
 local pan_stair_turn = -100
 function plan_go_down_pan()
-  if view.feature_at(0,0) == "transit_pandemonium" then
+  if view.feature_at(0,0) == "transit_pandemonium"
+     or view.feature_at(0,0) == "exit_pandemonium" then
     if pan_stair_turn == you.turns() then
       magic("X" .. control('f'))
       return true
