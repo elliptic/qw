@@ -5646,11 +5646,17 @@ function plan_go_down_abyss()
   return false
 end
 
+local pan_stair_turn = -100
 function plan_go_down_pan()
   if view.feature_at(0,0) == "transit_pandemonium" then
+    if pan_stair_turn == you.turns() then
+      magic("X" .. control('f'))
+      return true
+    end
     expect_new_location = true
+    pan_stair_turn = you.turns()
     magic(">Y")
-    return true
+    return nil -- in case we are trying to leave a rune level
   end
   return false
 end
