@@ -26,13 +26,9 @@
 # * smart - currently prefers Spider > Snake/Swamp > Shoals
 # * dsmart - Swamp/Spider > Snake > Shoals (DsBe data)
 : RUNE_PREFERENCE = "random"
-# experimental: get abyssal rune
-: ABYSSAL_RUNE = false
-: ABYSS_RUNE_DEPTH = "Abyss:3"
-# experimental: get slimy rune
-: SLIMY_RUNE = false
-# very experimental: get pan runes
-: PAN_RUNE = false
+# plan for post-V:5, should end with zot
+# maximal example: "slime, pan, abyss, zot"
+: ENDGAME_PLAN = "zot"
 # depth to attempt to dive in ziggurats (0 to turn off)
 # if turned on, this causes annoying throttling delays when played online
 # for some reason
@@ -280,6 +276,12 @@ local stair_dists
 local waypoint_parity
 local prev_where
 local did_waypoint = false
+
+local ABYSSAL_RUNE = false
+local SLIMY_RUNE = false
+local PAN_RUNE = false
+local endgame_plan_list = {}
+local which_endgame_plan = 1
 
 -- options to set while qw is running
 -- maybe should add more mutes for watchability
@@ -778,17 +780,21 @@ end
 function update_game_status()
   if you.have_orb() then
     game_status = "orbrun"
-  elseif game_status == "normal" then
-    if SLIMY_RUNE and you.have_rune("silver") and not you.have_rune("slimy")
-       and where:find("Lair") or where:find("Slime") then
-      game_status = "slime"
-    elseif you.num_runes() >= rune_goal() and where:find("Depths") or where:find("Zot") then
-      game_status = "zot"
-    end
-  elseif game_status == "slime" then
-    if you.have_rune("slimy") and not where:find("Slime") then
-      game_status = "normal"
-    end
+    return
+  end
+  if game_status == "normal" and you.have_rune("silver")
+     and not where:find("Vaults") and not where:find("Abyss") then
+    game_status = "shopping"
+  end
+  if game_status == "shopping" and c_persist.done_shopping then
+    game_status = endgame_plan_list[1]
+  end
+  while (game_status == "slime" and you.have_rune("slimy") and not where:find("Slime")
+      or game_status == "pan" and have_pan_runes() and where ~= "Pan"
+         and not where:find("Abyss")
+      or game_status == "abyss" and you.have_rune("abyssal") and not where:find("Abyss")) do
+    which_endgame_plan = which_endgame_plan + 1
+    game_status = endgame_plan_list[which_endgame_plan]
   end
 end
 
@@ -800,16 +806,8 @@ function slime_soon()
   return (game_status == "slime")
 end
 
-function abyss_soon()
-  return you.where():find("Abyss") or
-         (ABYSSAL_RUNE
-          and (you.where():find("Depths") or you.where():find("D:") and
-               (you.have_rune("slimy") or not SLIMY_RUNE))
-          and you.have_rune("silver") and not you.have_rune("abyssal"))
-end
-
 function pan_soon()
-  return (PAN_RUNE and (you.where() == "Pan" or want_to_be_in_pan()))
+  return (game_status == "pan")
 end
 
 -- list of armour slots, this is used to normalize names for them and also
@@ -4105,27 +4103,18 @@ function want_to_recall_ancestor()
 end
 
 function want_to_stay_in_abyss()
-  if ABYSSAL_RUNE and abyss_soon() and not you.have_rune("abyssal")
-     and count_permafood() <= 10 then
-    say("Giving up on abyssal rune: low on food")
-    ABYSSAL_RUNE = false
-  end
-  return (ABYSSAL_RUNE
-          and you.have_rune("silver") and not you.have_rune("abyssal")
-          and count_permafood() > 10 and not hp_is_low(50))
+  return (game_status == "abyss" and not you.have_rune("abyssal")
+          and not hp_is_low(50))
+end
+
+function have_pan_runes()
+  return (you.have_rune("demonic") and you.have_rune("fiery")
+                   and you.have_rune("dark") and you.have_rune("magical")
+                   and you.have_rune("glowing"))
 end
 
 function want_to_be_in_pan()
-  return (PAN_RUNE and
-          (where == "Pan" or where:find("Depths") and you.have_rune("silver")
-           and (you.have_rune("abyssal") or not ABYSSAL_RUNE))
-          and not (you.have_rune("demonic") and you.have_rune("fiery")
-                   and you.have_rune("dark") and you.have_rune("magical")
-                   and you.have_rune("glowing")))
-end
-
-function rejecting_slime()
-  return false
+  return (game_status == "pan" and not have_pan_runes())
 end
 
 function plan_wait_for_melee()
@@ -5401,21 +5390,24 @@ function plan_shop()
   return false
 end
 
-function plan_gather_zot_supplies()
-  if not zot_soon() or where:find("Zot") then
+function plan_shopping_spree()
+  if game_status ~= "shopping" then
     return false
   end
   which_item = can_afford_any_shoplist_item()
   if not which_item then
     -- Remove everything on shoplist
     clear_out_shopping_list()
-    -- Set travel_destination if necessary so that we will return to Depths.
-    if not where:find("Depths") then
-      travel_destination = "U"
+    -- Set travel_destination if necessary so that we will return to D.
+    if not in_branch("D") then
+      travel_destination = "D"
     end
+    -- record that we are done shopping this game
+    c_persist.done_shopping = true
+    update_game_status()
     return false
   end
-  say("GATHERING ZOT SUPPLIES")
+  say("SHOPPING SPREE")
   magic("$" .. letter(which_item - 1))
   expect_new_location = true
   return true
@@ -5562,7 +5554,8 @@ function plan_go_to_pan_portal()
 end
 
 function plan_go_to_abyss_downstairs()
-  if where:find("Abyss") and where ~= ABYSS_RUNE_DEPTH and want_to_stay_in_abyss() then
+  if where:find("Abyss") and want_to_stay_in_abyss()
+     and where ~= "Abyss:3" and where ~= "Abyss:4" and where ~= "Abyss:5" then
     magic("X>\r")
     return true
   end
@@ -5676,7 +5669,8 @@ function plan_enter_pan()
 end
 
 function plan_go_down_abyss()
-  if view.feature_at(0,0) == "abyssal_stair" and where ~= ABYSS_RUNE_DEPTH and want_to_stay_in_abyss() then
+  if view.feature_at(0,0) == "abyssal_stair" and want_to_stay_in_abyss()
+     and where ~= "Abyss:3" and where ~= "Abyss:4" and where ~= "Abyss:5" then
     expect_new_location = true
     magic(">")
     return true
@@ -5830,8 +5824,7 @@ function plan_new_travel()
   if where == "Lair:6" then
     if travel.find_deepest_explored("D") == 15 and easy_runes() < 2 then
       travel_destination = choose_lair_rune_branch()
-    elseif SLIMY_RUNE and you.have_rune("silver") and
-           not you.have_rune("slimy") and not rejecting_slime() then
+    elseif game_status == "slime" then
       travel_destination = "M"
     else
       travel_destination = "D"
@@ -5862,7 +5855,7 @@ function plan_new_travel()
     elseif easy_runes() >= 1 and not util.contains(c_persist.branches_entered, "U") and not (EARLY_SECOND_RUNE and easy_runes() == 1) then
       travel_destination = "U"
     elseif you.have_rune("silver") then
-      if SLIMY_RUNE and not you.have_rune("slimy") then
+      if game_status == "slime" then
         travel_destination = "L"
       else
         travel_destination = "U"
@@ -5875,9 +5868,12 @@ function plan_new_travel()
     end
   end
   if where == "Depths:5" then
-    if you.num_runes() >= rune_goal() then
+    if game_status == "zot" then
       travel_destination = "Z"
     else
+      if game_status == "shopping" then
+        c_persist.done_shopping = true
+      end
       travel_destination = "D"
     end
   end
@@ -6951,7 +6947,7 @@ plan_explore2 = cascade {
   {plan_go_to_pan_downstairs, "try_go_to_pan_downstairs"},
   {plan_enter_branch, "try_enter_branch"},
   {plan_go_to_zig, "try_go_to_zig"},
-  {plan_gather_zot_supplies, "try_gather_zot_supplies"},
+  {plan_shopping_spree, "try_shopping_spree"},
   {plan_simple_go_down, "try_simple_go_down"},
   {plan_new_travel, "try_new_travel"},
 } -- hack
@@ -7305,7 +7301,24 @@ end
 ---------------------------------------------
 -- initialization/control/saving
 
+function make_endgame_plans()
+  endgame_plan_list = split(ENDGAME_PLAN, ", ")
+  for _,pl in ipairs(endgame_plan_list) do
+    if pl == "slime" then
+      SLIMY_RUNE = true
+    elseif pl == "pan" then
+      PAN_RUNE = true
+    elseif pl == "abyss" then
+      ABYSSAL_RUNE = true
+    end
+  end
+  if endgame_plan_list[#endgame_plan_list] ~= "zot" then
+    table.insert(endgame_plan_list, "zot")
+  end
+end
+
 function initialize()
+  make_endgame_plans()
   if not did_first_turn and you.turns() == 0 then
     did_first_turn = true
     first_turn()
