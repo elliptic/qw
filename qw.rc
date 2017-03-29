@@ -6984,16 +6984,16 @@ plan_abyss_move = cascade {
 
 ----------------------------------------
 -- skill selection
+local skill_list = {"Fighting","Short Blades","Long Blades","Axes","Maces & Flails",
+                "Polearms","Staves","Unarmed Combat","Bows","Crossbows",
+                "Throwing","Slings","Armour","Dodging","Shields",
+                "Invocations","Evocations","Stealth","Spellcasting",
+                "Conjurations","Hexes","Charms","Summonings","Necromancy",
+                "Translocations","Transmutations","Fire Magic","Ice Magic",
+                "Air Magic","Earth Magic","Poison Magic"}
 
 function choose_single_skill(sk)
   you.train_skill(sk, 1)
-  skill_list = {"Fighting","Short Blades","Long Blades","Axes","Maces & Flails",
-                "Polearms","Staves","Unarmed Combat","Bows","Crossbows",
-                "Throwing","Slings","Armour","Dodging","Shields","Spellcasting",
-                "Conjurations","Hexes","Charms","Summonings","Necromancy",
-                "Translocations","Transmutations","Fire Magic","Ice Magic",
-                "Air Magic","Earth Magic","Poison Magic","Invocations",
-                "Evocations","Stealth"}
   for _,sk2 in ipairs(skill_list) do
     if sk ~= sk2 then
       you.train_skill(sk2, 0)
@@ -7116,6 +7116,13 @@ function choose_skills()
       table.insert(skills2, "Fighting")
     elseif you.base_skill(mp_skill) < 26.5 then
       table.insert(skills2, mp_skill)
+    else
+      for _,sk in ipairs(skill_list) do
+        if you.can_train_skill(sk) and you.base_skill(sk) < 26.5 then
+          table.insert(skills2, sk)
+          return skills2
+        end
+      end
     end
   end
   return skills2
