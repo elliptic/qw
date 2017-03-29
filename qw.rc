@@ -6901,7 +6901,7 @@ plan_explore2 = cascade {
   {plan_pan_open_runed_doors, "pan_open_runed_doors"},
   {plan_exit_pan, "exit_pan"},
   {plan_go_to_pan_exit, "try_go_to_pan_exit"},
-  {plan_go_down_pan, "go_down_pan"},
+  {plan_go_down_pan, "try_go_down_pan"},
   {plan_go_to_pan_downstairs, "try_go_to_pan_downstairs"},
   {plan_enter_branch, "try_enter_branch"},
   {plan_go_to_zig, "try_go_to_zig"},
