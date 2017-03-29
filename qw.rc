@@ -6353,15 +6353,19 @@ function plan_swamp_clouds_hack()
   return plan_stuck_teleport()
 end
 
-function plan_drac_dig()
-  if where ~= "Depths:5" and not where:find("Zot") then
+function plan_dig_grate()
+  local grate_mon_list
+  if where == "Depths:5" or where:find("Zot") then
+    grate_mon_list = {"draconian stormcaller", "draconian scorcher"}
+  elseif where == "Pan" or where == "Geh:7" then
+    grate_mon_list = {"smoke demon"}
+  else
     return false
   end
   local e
   for _,e in ipairs(enemy_list) do
     local name = e.m:name()
-    if name:find("draconian")
-       and (name:find("caller") or name:find("scorcher"))
+    if contains_string_in(name,grate_mon_list)
        and not will_tab(0,0,e.x,e.y,tabbable_square) then
       local grate_count = 0
       local dx,dy
@@ -6394,7 +6398,7 @@ function plan_drac_dig()
   return false
 end
 
-function plan_stuck_dig()
+function plan_stuck_dig_grate()
   local dx,dy
   local closest_grate = 20
   local cx,cy
@@ -6831,7 +6835,7 @@ plan_emergency = cascade {
   {plan_swap_weapon, "swap_weapon"},
   {plan_water_step, "water_step"},
   {plan_finesse, "finesse"},
-  {plan_drac_dig, "try_drac_dig"},
+  {plan_dig_grate, "try_dig_grate"},
   {plan_berserk, "berserk"},
   {plan_other_step, "other_step"},
 } -- hack
@@ -6947,7 +6951,7 @@ plan_move = cascade {
   {plan_swamp_clouds_hack, "swamp_clouds_hack"},
   {plan_slime_forget_map, "try_slime_forget_map"},
   {plan_stuck_clear_exclusions, "try_stuck_clear_exclusions"},
-  {plan_stuck_dig, "try_stuck_dig"},
+  {plan_stuck_dig_grate, "try_stuck_dig_grate"},
   {plan_stuck_cloudy, "stuck_cloudy"},
   {plan_stuck_teleport, "stuck_teleport"},
   {plan_stuck, "stuck"},
