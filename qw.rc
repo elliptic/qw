@@ -4798,7 +4798,7 @@ function brand_is_great(brand)
   elseif brand == "electrocution" then
     return (where ~= "Zot:5")
   elseif brand == "holy wrath" then
-    return (where == "Zot:5" or you.have_orb())
+    return (where == "Zot:5" or you.have_orb() or PAN_RUNE)
   else
     return false
   end
