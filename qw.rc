@@ -5570,6 +5570,20 @@ function plan_go_to_pan_downstairs()
   return false
 end
 
+local pan_failed_rune_count = -1
+function want_to_dive_pan()
+  return (where == "Pan" and you.num_runes() > pan_failed_rune_count
+          and you.have_rune("demonic") and not have_pan_runes())
+end
+
+function plan_dive_go_to_pan_downstairs()
+  if want_to_dive_pan() then
+    magic("X>\r")
+    return true
+  end
+  return false
+end
+
 function plan_pan_open_runed_doors()
   if where ~= "Pan" then
     return false
@@ -5685,6 +5699,24 @@ function plan_go_down_pan()
     if pan_stair_turn == you.turns() then
       magic("X" .. control('f'))
       return true
+    end
+    expect_new_location = true
+    pan_stair_turn = you.turns()
+    magic(">Y")
+    return nil -- in case we are trying to leave a rune level
+  end
+  return false
+end
+
+function plan_dive_pan()
+  if not want_to_dive_pan() then
+    return false
+  end
+  if view.feature_at(0,0) == "transit_pandemonium"
+     or view.feature_at(0,0) == "exit_pandemonium" then
+    if pan_stair_turn == you.turns() then
+      pan_failed_rune_count = you.num_runes()
+      return false
     end
     expect_new_location = true
     pan_stair_turn = you.turns()
@@ -6932,6 +6964,8 @@ plan_explore = cascade {
   {plan_enter_pan, "enter_pan"},
   {plan_go_to_pan_portal, "try_go_to_pan_portal"},
   {plan_dive, "try_dive"},
+  {plan_dive_pan, "dive_pan"},
+  {plan_dive_go_to_pan_downstairs, "try_dive_go_to_pan_downstairs"},
   {plan_autoexplore, "try_autoexplore"},
 } -- hack
 
