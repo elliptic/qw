@@ -7557,7 +7557,13 @@ function update_stuff()
         set_waypoint()
         coroutine.yield()
       end
+      cur_where = you.where()
       prev_where = where
+    elseif is_waypointable(you.where()) and you.where() ~= cur_where then
+      clear_level_map(waypoint_parity)
+      set_waypoint()
+      coroutine.yield()
+      cur_where = you.where()
     end
     clear_ignores()
     if expect_new_location then
