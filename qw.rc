@@ -3765,15 +3765,16 @@ function choose_tactical_step()
   tactical_step = nil
   tactical_reason = "none"
   if you.confused() or you.berserk() or you.constricted()
-     or you.transform() == "tree" or you.transform() == "fungus" then
-    return false
+     or you.transform() == "tree" or you.transform() == "fungus"
+     or where:find("Slime") then
+    return
   end
   local a0 = assess_square(0,0)
   if a0.cloud_safe and not (a0.fumble and sense_danger(3))
      and (not have_reaching() or a0.slow_adjacent == 0)
      and (a0.adjacent <= 1 or cleaving())
      and (a0.near_ally or a0.unalert == 0 and a0.longranged == 0) then
-    return false
+    return
   end
   local bestx,besty,bestreason
   local besta = nil
