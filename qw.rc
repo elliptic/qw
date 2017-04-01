@@ -27,7 +27,7 @@
 # * dsmart - Swamp/Spider > Snake > Shoals (DsBe data)
 : RUNE_PREFERENCE = "random"
 # plan for post-V:5, should end with zot
-# maximal example: "slime, pan, abyss, zot"
+# maximal example: "hells,pan,slime,abyss,zot"
 : ENDGAME_PLAN = "zot"
 # depth to attempt to dive in ziggurats (0 to turn off)
 # if turned on, this causes annoying throttling delays when played online
@@ -274,12 +274,14 @@ local no_spells = false
 local level_map
 local stair_dists
 local waypoint_parity
+local cur_where
 local prev_where
 local did_waypoint = false
 
 local ABYSSAL_RUNE = false
 local SLIMY_RUNE = false
 local PAN_RUNE = false
+local HELL_RUNE = false
 local endgame_plan_list = {}
 local which_endgame_plan = 1
 
@@ -767,7 +769,7 @@ function resist_dominated(it,it2)
 end
 
 function rune_goal()
-  return 3 + (ABYSSAL_RUNE and 1 or 0) + (SLIMY_RUNE and 1 or 0) + (PAN_RUNE and 5 or 0)
+  return 3 + (ABYSSAL_RUNE and 1 or 0) + (SLIMY_RUNE and 1 or 0) + (PAN_RUNE and 5 or 0) + (HELL_RUNE and 4 or 0)
 end
 
 function easy_runes()
@@ -792,7 +794,11 @@ function update_game_status()
   while (game_status == "slime" and you.have_rune("slimy") and not where:find("Slime")
       or game_status == "pan" and have_pan_runes() and where ~= "Pan"
          and not where:find("Abyss")
-      or game_status == "abyss" and you.have_rune("abyssal") and not where:find("Abyss")) do
+      or game_status == "abyss" and you.have_rune("abyssal") and not where:find("Abyss"))
+      or game_status == "hells" and have_hell_runes() and where ~= "Hell"
+         and not where:find("Dis") and not where:find("Geh")
+         and not where:find("Coc") and not where:find("Tar")
+         and not where:find("Abyss") do
     which_endgame_plan = which_endgame_plan + 1
     game_status = endgame_plan_list[which_endgame_plan]
   end
@@ -806,8 +812,8 @@ function slime_soon()
   return (game_status == "slime")
 end
 
-function pan_soon()
-  return (game_status == "pan")
+function in_extended()
+  return (game_status == "pan" or game_status == "hells")
 end
 
 -- list of armour slots, this is used to normalize names for them and also
@@ -1299,7 +1305,7 @@ function item_is_dominated(it)
   if slotname == "Weapon" and you.xl() < 18
      and not item_is_sit_dominated(it, "hydra") then
     return false
-  elseif PAN_RUNE and slotname == "Weapon"
+  elseif (PAN_RUNE or HELL_RUNE) and slotname == "Weapon"
          and not item_is_sit_dominated(it, "extended") then
     return false
   end
@@ -1396,23 +1402,28 @@ add_autopickup_func(autopickup)
 ------------------------------
 -- some tables with hardcoded data about branches/portals/monsters:
 
--- branch data: code, full name, where name
+-- branch data: interlevel travel code, where name
 local branch_data = {
-  {"T", "the Ecumenical Temple", "Temple"},
-  {"O", "the Orcish Mines", "Orc"},
-  --{"E", "the Elven Halls", "Elf"},
-  {"L", "the Lair", "Lair"},
-  {"S", "the Swamp", "Swamp"},
-  {"A", "the Shoals", "Shoals"},
-  {"P", "the Snake Pit", "Snake"},
-  {"N", "the Spider Nest", "Spider"},
-  {"M", "the Slime Pits", "Slime"},
-  {"V", "the Vaults", "Vaults"},
-  --{"C", "the Crypt", "Crypt"},
-  --{"W", "the Tomb", "Tomb"},
-  {"D", "the Dungeon", "D:"},
-  {"U", "the Depths", "Depths"},
-  {"Z", "Zot", "Zot"},
+  {"T", "Temple"},
+  {"O", "Orc"},
+  --{"E", "Elf"},
+  {"L", "Lair"},
+  {"S", "Swamp"},
+  {"A", "Shoals"},
+  {"P", "Snake"},
+  {"N", "Spider"},
+  {"M", "Slime"},
+  {"V", "Vaults"},
+  --{"C", "Crypt"},
+  --{"W", "Tomb"},
+  {"D", "D:"},
+  {"U", "Depths"},
+  {"H", "Hell"},
+  {"I", "Dis"},
+  {"G", "Geh"},
+  {"X", "Coc"},
+  {"Y", "Tar"},
+  {"Z", "Zot"},
 } -- hack
 
 -- portal data: where name, full name, feature name
@@ -1645,6 +1656,10 @@ local scary_monsters = {
   {100, "Lom Lobon"},
   {100, "Mnoleg"},
   {100, pan_lord},
+  {100, "Dispater"},
+  {100, "Asmodeus"},
+  {100, "Antaeus"},
+  {100, "Ereshkigal"},
 } -- hack
 
 -- BiA these even at low piety
@@ -1724,6 +1739,10 @@ local bia_monsters = {
   {100, "Lom Lobon"},
   {100, "Mnoleg"},
   {100, pan_lord},
+  {100, "Dispater"},
+  {100, "Asmodeus"},
+  {100, "Antaeus"},
+  {100, "Ereshkigal"},
 } -- hack
 
 -- Trog's Hand these
@@ -1762,10 +1781,12 @@ local fire_resistance_monsters = {
   {100, check_resist("hellephant","rF",2)},
   {100, check_resist("Xtahua","rF",2)},
   {100, "Cerebov"},
+  {100, check_resist("Asmodeus","rF",2)},
 } -- hack
 
 local cold_resistance_monsters = {
   {100, "Ice Fiend"},
+  {100, "Antaeus"},
 } -- hack
 
 local elec_resistance_monsters = {
@@ -1773,6 +1794,7 @@ local elec_resistance_monsters = {
   {20, in_desc("black draconian")},
   {100, "electric golem"},
   {100, "spark wasp"},
+  {100, "Antaeus"},
 } -- hack
 
 local pois_resistance_monsters = {
@@ -2014,7 +2036,7 @@ end
 
 function cur_branch()
   for _, value in ipairs(branch_data) do
-    if where:find(value[3]) then
+    if where:find(value[2]) then
       return value[1]
     end
   end
@@ -2026,7 +2048,7 @@ function found_branch(br)
   end
   for _, value in ipairs(branch_data) do
     if value[1] == br then
-      if travel.find_deepest_explored(value[3]) > 0 then
+      if travel.find_deepest_explored(value[2]) > 0 then
         return true
       else
         return false
@@ -2039,7 +2061,7 @@ end
 function in_branch(br)
   for _, value in ipairs(branch_data) do
     if value[1] == br then
-      if where:find(value[3]) then
+      if where:find(value[2]) then
         return true
       else
         return false
@@ -4114,6 +4136,11 @@ function have_pan_runes()
                    and you.have_rune("glowing"))
 end
 
+function have_hell_runes()
+  return (you.have_rune("iron") and you.have_rune("obsidian")
+                   and you.have_rune("icy") and you.have_rune("bone"))
+end
+
 function want_to_be_in_pan()
   return (game_status == "pan" and not have_pan_runes())
 end
@@ -4799,7 +4826,7 @@ function brand_is_great(brand)
   elseif brand == "electrocution" then
     return (where ~= "Zot:5")
   elseif brand == "holy wrath" then
-    return (where == "Zot:5" or you.have_orb() or PAN_RUNE)
+    return (where == "Zot:5" or you.have_orb() or PAN_RUNE or HELL_RUNE)
   else
     return false
   end
@@ -4975,7 +5002,7 @@ function plan_swap_weapon()
       end
     end
   end
-  if pan_soon() then
+  if in_extended() then
     sit = "extended"
   end
   twohands = true
@@ -5016,7 +5043,7 @@ function plan_upgrade_weapon()
     return false
   end
   local sit
-  if pan_soon() then
+  if in_extended() then
     sit = "extended"
   end
   twohands = true
@@ -5617,10 +5644,28 @@ function plan_go_to_pan_exit()
 end
 
 function plan_dive()
-  if in_branch("M") and where ~= "Slime:5" and not travel_destination then
+  if (in_branch("M") and where ~= "Slime:5" or game_status == "hells" and
+      (in_branch("I") and where ~= "Dis:7"
+       or in_branch("G") and where ~= "Geh:7"
+       or in_branch("X") and where ~= "Coc:7"
+       or in_branch("Y") and where ~= "Tar:7"))
+     and not travel_destination then
     expect_new_location = true
     magic("G>")
     return true
+  end
+  return false
+end
+
+function plan_early_new_travel()
+  if game_status == "hells" and
+     (where == "Dis:7" and you.have_rune("iron")
+      or where == "Geh:7" and you.have_rune("obsidian")
+      or where == "Coc:7" and you.have_rune("icy")
+      or where == "Tar:7" and you.have_rune("bone"))
+     and not travel_destination then
+    travel_destination = "H"
+    return plan_continue_travel()
   end
   return false
 end
@@ -5843,6 +5888,22 @@ function choose_lair_rune_branch()
   return nil
 end
 
+function choose_hell_rune_branch()
+  local hell_branches = { "I", "G", "X", "Y" }
+  local untried_branches = {}
+  local count = 0
+  for _, branch_code in ipairs(hell_branches) do
+    if not util.contains(c_persist.branches_entered, branch_code) then
+      table.insert(untried_branches, branch_code)
+      count = count + 1
+    end
+  end
+  if count == 0 then
+    return "U" -- depths
+  end
+  return untried_branches[crawl.roll_dice(1,count)]
+end
+
 function plan_new_travel()
   if cloudy then
     return false
@@ -5903,6 +5964,8 @@ function plan_new_travel()
   if where == "Depths:5" then
     if game_status == "zot" then
       travel_destination = "Z"
+    elseif game_status == "hells" then
+      travel_destination = "H"
     else
       if game_status == "shopping" then
         c_persist.done_shopping = true
@@ -5910,6 +5973,10 @@ function plan_new_travel()
       travel_destination = "D"
     end
   end
+  if where == "Hell" then
+    travel_destination = choose_hell_rune_branch()
+  end
+  -- travel back from hell ends is handled in plan_early_new_travel()
   return plan_continue_travel()
 end
 
@@ -6967,6 +7034,7 @@ plan_explore = cascade {
   {plan_dive, "try_dive"},
   {plan_dive_pan, "dive_pan"},
   {plan_dive_go_to_pan_downstairs, "try_dive_go_to_pan_downstairs"},
+  {plan_early_new_travel, "try_early_new_travel"},
   {plan_autoexplore, "try_autoexplore"},
 } -- hack
 
@@ -7345,6 +7413,8 @@ function make_endgame_plans()
       PAN_RUNE = true
     elseif pl == "abyss" then
       ABYSSAL_RUNE = true
+    elseif pl == "hells" then
+      HELL_RUNE = true
     end
   end
   if endgame_plan_list[#endgame_plan_list] ~= "zot" then
