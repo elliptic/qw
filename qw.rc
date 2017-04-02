@@ -5497,6 +5497,9 @@ function plan_simple_go_down()
   if where == "Vaults:4" and easy_runes() < 2 then
     return false
   end
+  if where == "Tomb:1" then
+    return false
+  end
   expect_new_location = true
   magic("G>")
   return true
@@ -6430,20 +6433,32 @@ function plan_orbrun_teleport()
   return false
 end
 
-function plan_tomb2_go_up()
-  if where == "Tomb:2" and view.feature_at(0,0):find("stone_stairs_up")
-     and crawl.random2(2) == 0 then
+function plan_tomb_use_stairs()
+  if where == "Tomb:2" and view.feature_at(0,0):find("stone_stairs_up") then
     expect_new_location = true
     magic("<")
+    return true
+  elseif where == "Tomb:1" and view.feature_at(0,0):find("stone_stairs_down") then
+    expect_new_location = true
+    magic(">")
     return true
   end
   return false
 end
 
-function plan_tomb2_go_to_upstairs()
+function plan_tomb_go_to_stairs()
   if where == "Tomb:2" then
-    magic("X<\r")
-    return true
+    if not view.feature_at(0,0):find("stone_stairs_up")
+       or crawl.random2(2) == 0 then
+      magic("X<\r")
+      return true
+    end
+  elseif where == "Tomb:1" then
+    if not view.feature_at(0,0):find("stone_stairs_down")
+       or crawl.random2(2) == 0 then
+      magic("X>\r")
+      return true
+    end
   end
   return false
 end
@@ -7134,8 +7149,8 @@ plan_move = cascade {
   {plan_explore, "explore"},
   {plan_pre_explore2, "pre_explore2"},
   {plan_explore2, "explore2"},
-  {plan_tomb2_go_up, "tomb2_go_up"},
-  {plan_tomb2_go_to_upstairs, "try_tomb2_go_to_upstairs"},
+  {plan_tomb_go_to_stairs, "try_tomb_go_to_stairs"},
+  {plan_tomb_use_stairs, "tomb_use_stairs"},
   {plan_swamp_clear_exclusions, "try_swamp_clear_exclusions"},
   {plan_swamp_go_to_rune, "try_swamp_go_to_rune"},
   {plan_swamp_clouds_hack, "swamp_clouds_hack"},
