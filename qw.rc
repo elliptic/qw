@@ -27,7 +27,7 @@
 # * dsmart - Swamp/Spider > Snake > Shoals (DsBe data)
 : RUNE_PREFERENCE = "random"
 # plan for post-V:5, should end with zot
-# maximal example: "hells,pan,slime,abyss,zot"
+# maximal example: "tomb,hells,pan,slime,abyss,zot"
 : ENDGAME_PLAN = "zot"
 # depth to attempt to dive in ziggurats (0 to turn off)
 # if turned on, this causes annoying throttling delays when played online
@@ -221,6 +221,7 @@ local sgd_timer = -200
 local stuck_turns = 0
 
 local stepped_on_lair = false
+local stepped_on_tomb = false
 local lair_step_mode = false
 
 -- are these still necessary?
@@ -282,6 +283,7 @@ local ABYSSAL_RUNE = false
 local SLIMY_RUNE = false
 local PAN_RUNE = false
 local HELL_RUNE = false
+local GOLDEN_RUNE = false
 local endgame_plan_list = {}
 local which_endgame_plan = 1
 
@@ -769,7 +771,7 @@ function resist_dominated(it,it2)
 end
 
 function rune_goal()
-  return 3 + (ABYSSAL_RUNE and 1 or 0) + (SLIMY_RUNE and 1 or 0) + (PAN_RUNE and 5 or 0) + (HELL_RUNE and 4 or 0)
+  return 3 + (ABYSSAL_RUNE and 1 or 0) + (SLIMY_RUNE and 1 or 0) + (PAN_RUNE and 5 or 0) + (HELL_RUNE and 4 or 0) + (GOLDEN_RUNE and 1 or 0)
 end
 
 function easy_runes()
@@ -798,7 +800,9 @@ function update_game_status()
       or game_status == "hells" and have_hell_runes() and where ~= "Hell"
          and not where:find("Dis") and not where:find("Geh")
          and not where:find("Coc") and not where:find("Tar")
-         and not where:find("Abyss") do
+         and not where:find("Abyss")
+      or game_status == "tomb" and you.have_rune("golden")
+         and not where:find("Tomb") and not where:find("Abyss") do
     which_endgame_plan = which_endgame_plan + 1
     game_status = endgame_plan_list[which_endgame_plan]
   end
@@ -813,7 +817,7 @@ function slime_soon()
 end
 
 function in_extended()
-  return (game_status == "pan" or game_status == "hells")
+  return (game_status == "pan" or game_status == "hells" or game_status == "tomb")
 end
 
 -- list of armour slots, this is used to normalize names for them and also
@@ -1305,7 +1309,7 @@ function item_is_dominated(it)
   if slotname == "Weapon" and you.xl() < 18
      and not item_is_sit_dominated(it, "hydra") then
     return false
-  elseif (PAN_RUNE or HELL_RUNE) and slotname == "Weapon"
+  elseif (PAN_RUNE or HELL_RUNE or GOLDEN_RUNE) and slotname == "Weapon"
          and not item_is_sit_dominated(it, "extended") then
     return false
   end
@@ -1414,8 +1418,8 @@ local branch_data = {
   {"N", "Spider"},
   {"M", "Slime"},
   {"V", "Vaults"},
-  --{"C", "Crypt"},
-  --{"W", "Tomb"},
+  {"C", "Crypt"},
+  {"W", "Tomb"},
   {"D", "D:"},
   {"U", "Depths"},
   {"H", "Hell"},
@@ -1660,6 +1664,8 @@ local scary_monsters = {
   {100, "Asmodeus"},
   {100, "Antaeus"},
   {100, "Ereshkigal"},
+  {100, "greater mummy"},
+  {100, "Khufu"},
 } -- hack
 
 -- BiA these even at low piety
@@ -1743,6 +1749,8 @@ local bia_monsters = {
   {100, "Asmodeus"},
   {100, "Antaeus"},
   {100, "Ereshkigal"},
+  {100, "greater mummy"},
+  {100, "Khufu"},
 } -- hack
 
 -- Trog's Hand these
@@ -4826,7 +4834,7 @@ function brand_is_great(brand)
   elseif brand == "electrocution" then
     return (where ~= "Zot:5")
   elseif brand == "holy wrath" then
-    return (where == "Zot:5" or you.have_orb() or PAN_RUNE or HELL_RUNE)
+    return (where == "Zot:5" or you.have_orb() or PAN_RUNE or HELL_RUNE or GOLDEN_RUNE)
   else
     return false
   end
@@ -5820,16 +5828,22 @@ function plan_exit_pan()
 end
 
 function plan_step_towards_lair()
-  local x, y
-  if stepped_on_lair or not found_branch("L") then
+  local x, y, feat
+  if (stepped_on_lair or not found_branch("L"))
+     and (where ~= "Crypt:3" or stepped_on_tomb or not found_branch("W")) then
     return false
   end
   for x = -LOS,LOS do
     for y = -LOS,LOS do
-      if view.feature_at(x,y) == "enter_lair"
+      feat = view.feature_at(x,y)
+      if (feat == "enter_lair" or feat == "enter_tomb")
          and you.see_cell_no_trans(x,y) then
         if x == 0 and y == 0 then
-          stepped_on_lair = true
+          if where == "Crypt:3" then
+            stepped_on_tomb = true
+          else
+            stepped_on_lair = true
+          end
           return false
         else
           lair_step_mode = true
@@ -5937,7 +5951,11 @@ function plan_new_travel()
     travel_destination = "D"
   end
   if where == "Vaults:5" and you.have_rune("silver") then
-    travel_destination = "D"
+    if game_status == "tomb" then
+      travel_destination = "C"
+    else
+      travel_destination = "D"
+    end
   end
   if where == "Slime:5" and you.have_rune("slimy") then
     travel_destination = "D"
@@ -5951,6 +5969,8 @@ function plan_new_travel()
     elseif you.have_rune("silver") then
       if game_status == "slime" then
         travel_destination = "L"
+      elseif game_status == "tomb" then
+        travel_destination = "V"
       else
         travel_destination = "U"
       end
@@ -5977,6 +5997,16 @@ function plan_new_travel()
     travel_destination = choose_hell_rune_branch()
   end
   -- travel back from hell ends is handled in plan_early_new_travel()
+  if where == "Crypt:3" then
+    if game_status == "tomb" then
+      travel_destination = "W"
+    else
+      travel_destination = "V"
+    end
+  end
+  if where == "Tomb:3" and you.have_rune("golden") then
+    travel_destination = "C"
+  end
   return plan_continue_travel()
 end
 
@@ -6396,6 +6426,24 @@ end
 function plan_orbrun_teleport()
   if can_teleport() and want_to_orbrun_teleport() then
     return teleport()
+  end
+  return false
+end
+
+function plan_tomb2_go_up()
+  if where == "Tomb:2" and view.feature_at(0,0):find("stone_stairs_up")
+     and crawl.random2(2) == 0 then
+    expect_new_location = true
+    magic("<")
+    return true
+  end
+  return false
+end
+
+function plan_tomb2_go_to_upstairs()
+  if where == "Tomb:2" then
+    magic("X<\r")
+    return true
   end
   return false
 end
@@ -7086,6 +7134,8 @@ plan_move = cascade {
   {plan_explore, "explore"},
   {plan_pre_explore2, "pre_explore2"},
   {plan_explore2, "explore2"},
+  {plan_tomb2_go_up, "tomb2_go_up"},
+  {plan_tomb2_go_to_upstairs, "try_tomb2_go_to_upstairs"},
   {plan_swamp_clear_exclusions, "try_swamp_clear_exclusions"},
   {plan_swamp_go_to_rune, "try_swamp_go_to_rune"},
   {plan_swamp_clouds_hack, "swamp_clouds_hack"},
@@ -7415,6 +7465,8 @@ function make_endgame_plans()
       ABYSSAL_RUNE = true
     elseif pl == "hells" then
       HELL_RUNE = true
+    elseif pl == "tomb" then
+      GOLDEN_RUNE = true
     end
   end
   if endgame_plan_list[#endgame_plan_list] ~= "zot" then
