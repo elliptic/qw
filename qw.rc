@@ -2130,7 +2130,7 @@ end
 
 function can_drink()
   if you.berserk() or you.race() == "Mummy" or you.transform() == "bat"
-     or you.transform() == "lich" then
+     or you.transform() == "lich" or you.status("no potions") then
     return false
   end
   return true
