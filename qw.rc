@@ -169,6 +169,7 @@ bindkey = [N] CMD_NO_CMD_DEFAULT
 bindkey = [B] CMD_NO_CMD_DEFAULT
 bindkey = [C] CMD_NO_CMD_DEFAULT
 bindkey = [.] CMD_NO_CMD_DEFAULT
+bindkey = [^D] CMD_LUA_CONSOLE
 
 ####################################
 # Don't get interrupted!
