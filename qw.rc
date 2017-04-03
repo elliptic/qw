@@ -4597,13 +4597,19 @@ function plan_find_altar()
   return true
 end
 
+local tried_find_altar_turn = -1
 function plan_find_conversion_altar()
   if game_status ~= "tso" or you.god() == "the Shining One" or unshafting() then
     return false
   end
   expect_new_location = true
   str = "altar of the Shining One"
-  magic(control('f') .. str .. "\ra\r")
+  if tried_find_altar_turn ~= you.turns() then
+    tried_find_altar_turn = you.turns()
+    magic(control('f') .. str .. "\ra\r")
+    return nil
+  end
+  magic(control('f') .. str .. "\rb\r")
   return true
 end
 
