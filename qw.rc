@@ -6890,8 +6890,11 @@ function attack_melee(x, y)
     end
   end
   if monster_array[x][y]:attitude() == ATT_NEUTRAL then
-    magic(control(delta_to_vi(x, y)))
-    return
+    if you.god() == "the Shining One" then
+      magic("s")
+    else
+      magic(control(delta_to_vi(x, y)))
+    end
   end
   magic(delta_to_vi(x, y) .. "Y")
 end
