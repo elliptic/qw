@@ -7872,4 +7872,8 @@ function c_answer_prompt(prompt)
     return false
   end
 end
+
+function ch_stash_search_annotate_item(it)
+  return ""
+end
 }
