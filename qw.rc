@@ -5645,8 +5645,8 @@ function plan_dive_go_to_pan_downstairs()
   return false
 end
 
-function plan_pan_open_runed_doors()
-  if where ~= "Pan" then
+function plan_open_runed_doors()
+  if where ~= "Pan" and (where ~= "Depths:3" or not PAN_RUNE) then
     return false
   end
   for x = -1,1 do
@@ -7130,7 +7130,7 @@ plan_explore2 = cascade {
   {plan_zig_go_to_stairs, "try_zig_go_to_stairs"},
   {plan_exit_portal, "exit_portal"},
   {plan_go_to_portal_exit, "try_go_to_portal_exit"},
-  {plan_pan_open_runed_doors, "pan_open_runed_doors"},
+  {plan_open_runed_doors, "open_runed_doors"},
   {plan_exit_pan, "exit_pan"},
   {plan_go_to_pan_exit, "try_go_to_pan_exit"},
   {plan_go_down_pan, "try_go_down_pan"},
