@@ -6460,7 +6460,8 @@ function plan_tomb_use_stairs()
     expect_new_location = true
     magic("<")
     return true
-  elseif where == "Tomb:1" and view.feature_at(0,0):find("stone_stairs_down") then
+  elseif where == "Tomb:1" and view.feature_at(0,0):find("stone_stairs_down")
+         and not (you.have_rune("golden") and travel_destination) then
     expect_new_location = true
     magic(">")
     return true
