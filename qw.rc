@@ -3133,10 +3133,10 @@ function on_dangerous_corpse()
   return false
 end
 
-function on_edible_corpse(allow_dragon)
+function on_edible_corpse()
   for it in at_feet() do
     if it.name():find("corpse") and
-       (not it.name():find("noeat") or allow_dragon and it.name():find("dragon corpse")) and (you.god() ~= "Beogh" or not it.name():find("orc ")) then
+       (not it.name():find("noeat")) and (you.god() ~= "Beogh" or not it.name():find("orc ")) then
       return true
     end
   end
@@ -4567,7 +4567,7 @@ function plan_handle_corpses()
   if you.race() == "Vampire" then
     return vp_handle_corpses()
   end
-  if on_edible_corpse(true) then
+  if on_edible_corpse() then
     chop()
     return true
   end
