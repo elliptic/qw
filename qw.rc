@@ -3240,6 +3240,8 @@ function should_rest()
   return (hp_is_low(90) and
           (you.race() ~= "Deep Dwarf" and you.hunger_name() ~= "bloodless"
            or you.regenerating())
+          and (you.god() ~= "the Shining One" or hp_is_low(75) or
+               count_divine_warrior(2) == 0)
           or you.slowed() or you.exhausted() or you.teleporting()
           or you.status("barbed spikes")
           or you.silencing() or you.corrosion() > 0
