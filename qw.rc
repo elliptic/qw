@@ -27,7 +27,7 @@
 # * dsmart - Swamp/Spider > Snake > Shoals (DsBe data)
 : RUNE_PREFERENCE = "random"
 # plan for post-V:5, should end with zot
-# maximal example: "tomb,hells,pan,slime,abyss,zot"
+# maximal example: "tso,tomb,hells,pan,slime,abyss,zot"
 : ENDGAME_PLAN = "zot"
 # depth to attempt to dive in ziggurats (0 to turn off)
 # if turned on, this causes annoying throttling delays when played online
@@ -45,25 +45,24 @@
 : QUIT_TURNS = 1000
 # use a shield at all cost
 : SHIELD_CRAZY = true
-# acceptable gods (will not abandon)
-: GOD_LIST = { "Trog", "Makhleb", "Ru", "Cheibriados", "Okawaru",}
-: DD_GOD_LIST = { "Trog", "Makhleb", "Ru", }
-# preferred gods (will join)
-: GOD_DESIRED = { "Trog", }
-: DD_GOD_DESIRED = { "Trog", "Makhleb", }
-# use faded altar
+
+# acceptable gods (join whichever one we find first)
+# gods who have been at least partially implemented: BCHLMOQRTUXY1
+# gods who are actually pretty decent on qw: CMORT
+: GOD_LIST = { "Trog", }
+# use faded altar, abandoning if we don't get one of the gods in GOD_LIST
 : FADED_ALTAR = false
 
 # cycle through combos using c_persist.options
 : COMBO_CYCLE = false
 # combos to cycle through - uses the same syntax as the regular combo option
-# with an optional "^<god initials>" suffix to overwrite the GOD_LIST and
-# GOD_DESIRED lists above. Here are some sample choices:
-: COMBO_CYCLE_LIST = "DDFi.waraxe^M, DDBe.handaxe, GrBe.handaxe, MiFi.waraxe^R"
+# with an optional "^<god initials>" suffix to overwrite the GOD_LIST
+# list above. Here are some sample choices:
+: COMBO_CYCLE_LIST = "DDFi.waraxe^M, DDBe.handaxe^T, GrBe.handaxe^T, GrFi.waraxe^O, MiFi.waraxe^O"
 
 # Choose randomly between these combos. This will not apply if the COMBO_CYCLE
 # option was on in your _previous_ game.
-combo = DDFi.waraxe, GrBe.handaxe, MiBe.handaxe
+combo = GrBe.handaxe
 
 # For random berserkers, use these combos:
 #combo = CeBe.handaxe, DDBe.handaxe, DEBe.handaxe, DrBe.handaxe, DsBe.handaxe
@@ -284,6 +283,7 @@ local SLIMY_RUNE = false
 local PAN_RUNE = false
 local HELL_RUNE = false
 local GOLDEN_RUNE = false
+local TSO_CONVERSION = false
 local endgame_plan_list = {}
 local which_endgame_plan = 1
 
@@ -346,6 +346,8 @@ end
 -- if it2, pretend we aren't equipping it2
 -- if sit = "hydra", assume we are fighting a hydra at lowish XL
 --        = "extended", assume we are in (or about to enter) Pan
+--                     if TSO_CONVERSION, we need this weapon to be TSO-friendly
+--        = "bless", assume we want to bless the weapon with TSO eventually
 function equip_value(it, cur, it2, sit)
   if not it then
     return 0,0
@@ -802,7 +804,8 @@ function update_game_status()
          and not where:find("Coc") and not where:find("Tar")
          and not where:find("Abyss")
       or game_status == "tomb" and you.have_rune("golden")
-         and not where:find("Tomb") and not where:find("Abyss") do
+         and not where:find("Tomb") and not where:find("Abyss")
+      or game_status == "tso" and you.god() == "the Shining One" do
     which_endgame_plan = which_endgame_plan + 1
     game_status = endgame_plan_list[which_endgame_plan]
   end
@@ -941,6 +944,7 @@ end
 function weapon_value(it, cur, it2, sit)
   local hydra_swap = (sit == "hydra")
   local extended = (sit == "extended")
+  local tso = you.god() == "the Shining One" or extended and TSO_CONVERSION
   if it.class(true) ~= "weapon" then
     return -1,-1
   end
@@ -956,15 +960,33 @@ function weapon_value(it, cur, it2, sit)
       end
     end
   end
+  if it.hands == 2 and want_buckler() then
+    return -1,-1
+  end
+  if sit == "bless" then
+    local val1, val2 = 0, 0
+    if it.artefact then
+      return -1,-1
+    elseif name:find("runed") or name:find("glowing")
+           or name:find("enchanted")
+           or it.ego() and not it.fully_identified then
+      val2 = val2 + 150
+      val1 = val1 + (cur and 150 or -150)
+    end
+    if it.plus then
+      value = value + 30*it.plus
+    end
+    delay_estimate = min(7,math.floor(it.delay / 2))
+    if it.weap_skill == "Short Blades" and delay_estimate > 5 then
+      delay_estimate = 5
+    end
+    value = value + 1200*it.damage/delay_estimate
+    return value+val1, value+val2
+  end
   if you.god() == "Cheibriados" and name:find("quick blade") then
     return -1,-1
   end
-  -- FIXME: should check for other demon weapons too (ideally in a better
-  --        way than this) and should also maybe carry one to holy brand.
-  if you.god() == "the Shining One" and name:find("demon whip") then
-    return -1,-1
-  end
-  if it.hands == 2 and want_buckler() then
+  if tso and name:find("demon") and not name:find("eudemon") then
     return -1,-1
   end
   if it.artefact then
@@ -990,7 +1012,7 @@ function weapon_value(it, cur, it2, sit)
     end
     if name:find("obsidian axe") then
       value = value + 300
-      if you.god() == "the Shining One" then
+      if tso then
         return -1,-1
       end
     end
@@ -1026,7 +1048,7 @@ function weapon_value(it, cur, it2, sit)
       end
     elseif ego == "vampirism" then
       value = value + 500 -- this is what we want
-      if you.god() == "the Shining One" then
+      if tso then
         return -1,-1
       end
       if extended then
@@ -1043,7 +1065,7 @@ function weapon_value(it, cur, it2, sit)
       if not extended then
         value = value + 75
       end
-      if you.god() == "the Shining One" then
+      if tso then
         return -1,-1
       end
     elseif ego == "flaming" or ego == "freezing"
@@ -1060,7 +1082,7 @@ function weapon_value(it, cur, it2, sit)
       else
         value = value + 75
       end
-    elseif ego == "pain" and you.god() == "the Shining One" then
+    elseif ego == "pain" and tso then
       return -1,-1
     elseif ego == "chaos" and you.god() == "Cheibriados" then
       return -1,-1
@@ -1311,6 +1333,11 @@ function item_is_dominated(it)
     return false
   elseif (PAN_RUNE or HELL_RUNE or GOLDEN_RUNE) and slotname == "Weapon"
          and not item_is_sit_dominated(it, "extended") then
+    return false
+  elseif slotname == "Weapon"
+         and (you.god() == "the Shining One" and not you.one_time_ability_used()
+         or you.god() ~= "the Shining One" and TSO_CONVERSION)
+         and not item_is_sit_dominated(it, "bless") then
     return false
   end
   local minv,maxv = equip_value(it)
@@ -4551,21 +4578,14 @@ function magicfind(target)
 end
 
 function god_options()
-  if FADED_ALTAR then
-    return (you.race() == "Deep Dwarf" and DD_GOD_LIST or GOD_LIST)
-  end
-  return c_persist.cur_god_list or (you.race() == "Deep Dwarf" and DD_GOD_LIST or GOD_LIST)
-end
-
-function god_desired()
-  return c_persist.cur_god_list or (you.race() == "Deep Dwarf" and DD_GOD_DESIRED or GOD_DESIRED)
+  return c_persist.cur_god_list or GOD_LIST
 end
 
 function plan_find_altar()
   if not want_altar() then
     return false
   end
-  str = "@altar&&<<of " .. table.concat(god_desired(), "||of ")
+  str = "@altar&&<<of " .. table.concat(god_options(), "||of ")
   if FADED_ALTAR then
     str = str .. "||of an unknown god"
   end
@@ -4575,29 +4595,18 @@ function plan_find_altar()
 end
 
 function plan_find_conversion_altar()
-  if you.xl() ~= 12 then
-    return false
-  end
-  if you.god() ~= "Lugonu" or FADED_ALTAR then
-    return false
-  end
-  if unshafting() then
+  if game_status ~= "tso" or you.god() == "the Shining One" or unshafting() then
     return false
   end
   expect_new_location = true
-  conv_gods = { }
-  for _,god in ipairs(god_desired()) do
-    if god ~= "Lugonu" then
-      table.insert(conv_gods, god)
-    end
-  end
-  str = "altar&&<<of " .. table.concat(conv_gods, "||of ") .. ">>"
+  str = "altar of the Shining One"
   magic(control('f') .. str .. "\ra\r")
   return true
 end
 
 function plan_abandon_god()
-  if you.god() ~= "No God" and not util.contains(god_options(), you.god()) then
+  if you.god() ~= "No God" and you.num_runes() == 0
+     and not util.contains(god_options(), you.god()) then
     magic("aXYY")
     return true
   end
@@ -4619,7 +4628,7 @@ function plan_join_beogh()
   if you.race() ~= "Hill Orc" or not want_altar() or you.confused() then
     return false
   end
-  for _,god in ipairs(god_desired()) do
+  for _,god in ipairs(god_options()) do
     if god == "Beogh" and use_ability("Convert to Beogh", "YY") then
       return true
     end
@@ -4628,29 +4637,16 @@ function plan_join_beogh()
 end
 
 function plan_convert()
-  if you.xl() ~= 12 then
+  if game_status ~= "tso" or you.god() == "the Shining One"
+     or view.feature_at(0,0) ~= "altar_the_shining_one" then
     return false
   end
-  if you.god() ~= "Lugonu" or FADED_ALTAR then
-    return false
+  if you.silenced() then
+    rest()
+  else
+    magic("<YYY")
   end
-  feat = view.feature_at(0,0)
-  for _,god in ipairs(god_desired()) do
-    if god ~= "Lugonu" and feat == ("altar_" .. string.gsub(string.lower(god), " ", "_")) then
-      if you.silenced() then
-        rest()
-      else
-        for i,br in ipairs(c_persist.branches_entered) do
-          if br == "L" then
-            table.remove(c_persist.branches_entered,i)
-          end
-        end
-        magic("<YYY")
-      end
-      return true
-    end
-  end
-  return false
+  return true
 end
 
 function plan_join_god()
@@ -4658,7 +4654,7 @@ function plan_join_god()
     return false
   end
   feat = view.feature_at(0,0)
-  for _,god in ipairs(god_desired()) do
+  for _,god in ipairs(god_options()) do
     if feat == ("altar_" .. string.gsub(string.lower(god), " ", "_")) then
       if you.silenced() then
         rest()
@@ -5042,6 +5038,29 @@ function plan_swap_weapon()
     magic("w" .. l .. "YY")
     -- this might have a 0-turn fail because of unIDed vamp/holy
     return nil
+  end
+  return false
+end
+
+function plan_bless_weapon()
+  if you.god() ~= "the Shining One" or you.one_time_ability_used()
+     or you.piety_rank() < 6 then
+    return false
+  end
+  local bestv = -1
+  local minv, maxv, bestletter
+  for it in inventory() do
+    if equip_slot(it) == "Weapon" then
+      minv,maxv = equip_value(it, true, nil, "bless")
+      if minv > bestv then
+        bestv = minv
+        bestletter = letter(it)
+      end
+    end
+  end
+  if bestv > 0 then
+    use_ability("Brand Weapon With Holy Wrath", bestletter .. "Y")
+    return true
   end
   return false
 end
@@ -5506,7 +5525,8 @@ function plan_simple_go_down()
 end
 
 function want_altar()
-  return (you.race() ~= "Demigod" and not util.contains(god_options(), you.god()))
+  return (you.race() ~= "Demigod" and you.num_runes() == 0
+          and not util.contains(god_options(), you.god()))
 end
 
 function plan_go_to_temple()
@@ -5514,7 +5534,7 @@ function plan_go_to_temple()
   if c and c >= 100 then
     return false
   end
-  if found_branch("T") and (want_altar() or you.god() == "Lugonu") and not
+  if found_branch("T") and (want_altar() or TSO_CONVERSION) and not
      util.contains(c_persist.branches_entered, "T") and in_branch("D") then
     expect_new_location = true
     magic("GTY")
@@ -6994,6 +7014,7 @@ plan_pre_explore = cascade {
   {plan_fly, "fly"},
   {plan_ancestor_life, "ancestor_life"},
   {plan_sacrifice, "sacrifice"},
+  {plan_bless_weapon, "bless_weapon"},
   {plan_upgrade_weapon, "upgrade_weapon"},
   {plan_maybe_upgrade_armour, "maybe_upgrade_armour"},
   {plan_use_good_consumables, "use_good_consumables"},
@@ -7482,6 +7503,8 @@ function make_endgame_plans()
       HELL_RUNE = true
     elseif pl == "tomb" then
       GOLDEN_RUNE = true
+    elseif pl == "tso" then
+      TSO_CONVERSION = true
     end
   end
   if endgame_plan_list[#endgame_plan_list] ~= "zot" then
