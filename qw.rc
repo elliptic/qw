@@ -259,8 +259,6 @@ local stairdance_count = {}
 local clear_exclusion_count = {}
 local v5_entry_turn
 
-local slime_forgot_map = false
-
 local last_swamp_fail_count = -1
 local swamp_rune_reachable = false
 
@@ -6654,13 +6652,14 @@ function plan_stuck_dig_grate()
   return false
 end
 
-function plan_slime_forget_map()
-  if where ~= "Slime:5" or slime_forgot_map or you.have_rune("slimy") then
-    return false
+function plan_stuck_forget_map()
+  if not cloudy and not danger
+     and (where == "Slime:5" and not you.have_rune("slimy")
+     or where == "Geh:7" and not you.have_rune("obsidian")) then
+    magic("X" .. control('f'))
+    return true
   end
-  slime_forgot_map = true
-  magic("X" .. control('f'))
-  return true
+  return false
 end
 
 function plan_stuck_cloudy()
@@ -7188,10 +7187,10 @@ plan_move = cascade {
   {plan_swamp_clear_exclusions, "try_swamp_clear_exclusions"},
   {plan_swamp_go_to_rune, "try_swamp_go_to_rune"},
   {plan_swamp_clouds_hack, "swamp_clouds_hack"},
-  {plan_slime_forget_map, "try_slime_forget_map"},
   {plan_stuck_clear_exclusions, "try_stuck_clear_exclusions"},
   {plan_stuck_dig_grate, "try_stuck_dig_grate"},
   {plan_stuck_cloudy, "stuck_cloudy"},
+  {plan_stuck_forget_map, "try_stuck_forget_map"},
   {plan_stuck_teleport, "stuck_teleport"},
   {plan_stuck, "stuck"},
 } -- hack
