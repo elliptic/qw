@@ -285,6 +285,7 @@ local GOLDEN_RUNE = false
 local TSO_CONVERSION = false
 local endgame_plan_list = {}
 local which_endgame_plan = 1
+local dislike_pan_level = false
 
 -- options to set while qw is running
 -- maybe should add more mutes for watchability
@@ -2596,6 +2597,36 @@ function count_big_slimes(r)
   return i
 end
 
+function count_hellions(r)
+  local x, y
+  local i = 0
+  for x = -r,r do
+    for y = -r,r do
+      m = monster_array[x][y]
+      if m and not m:is_safe()
+       and m:name() == "hellion" then
+        i = i+1
+      end
+    end
+  end
+  return i
+end
+
+function count_daevas(r)
+  local x, y
+  local i = 0
+  for x = -r,r do
+    for y = -r,r do
+      m = monster_array[x][y]
+      if m and not m:is_safe()
+       and m:name() == "daeva" then
+        i = i+1
+      end
+    end
+  end
+  return i
+end
+
 function count_pan_lords(r)
   local e
   local i = 0
@@ -4081,6 +4112,10 @@ end
 function want_to_teleport()
   if count_hostile_sgd(LOS) > 0 and you.xl() < 21 then
     sgd_timer = you.turns()
+    return true
+  end
+  if where == "Pan" and (count_hellions(LOS) >= 3 or count_daevas(LOS) >= 3) then
+    dislike_pan_level = true
     return true
   end
   if you.xl() <= 17 and not can_berserk() and count_big_slimes(LOS) > 0 then
@@ -5673,7 +5708,8 @@ end
 local pan_failed_rune_count = -1
 function want_to_dive_pan()
   return (where == "Pan" and you.num_runes() > pan_failed_rune_count
-          and you.have_rune("demonic") and not have_pan_runes())
+          and (you.have_rune("demonic") and not have_pan_runes()
+               or dislike_pan_level))
 end
 
 function plan_dive_go_to_pan_downstairs()
@@ -5838,6 +5874,7 @@ function plan_dive_pan()
     end
     expect_new_location = true
     pan_stair_turn = you.turns()
+    dislike_pan_level = false
     magic(">Y")
     return nil -- in case we are trying to leave a rune level
   end
