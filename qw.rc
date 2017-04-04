@@ -1779,6 +1779,13 @@ local bia_monsters = {
   {100, "Khufu"},
 } -- hack
 
+-- Use haste/might on these few
+local ridiculous_uniques = {
+  {100, "Antaeus"},
+  {100, "Asmodeus"},
+  {100, "Lom Lobon"},
+} -- hack
+
 -- Trog's Hand these
 local hand_monsters = {
   {10, "Grinder"},
@@ -3630,6 +3637,20 @@ function plan_orbrun_might()
   return false
 end
 
+function plan_haste()
+  if want_to_serious_buff() then
+    return haste()
+  end
+  return false
+end
+
+function plan_might()
+  if want_to_serious_buff() then
+    return might()
+  end
+  return false
+end
+
 function plan_orbrun_heroism()
   if can_heroism() and want_to_orbrun_buff() then
     return heroism()
@@ -4123,6 +4144,19 @@ end
 
 function want_to_orbrun_buff()
   return ((count_pan_lords(LOS) > 0) or check_monsters(LOS, scary_monsters))
+end
+
+function want_to_serious_buff()
+  if you.god() == "Okawaru" or you.god() == "Trog" then
+    return false -- these gods have their own buffs
+  end
+  if you.num_runes() < 3 then
+    return false -- none of these uniques exist early
+  end
+  if you.teleporting() then
+    return false -- don't waste a potion if we are already leaving
+  end
+  return (check_monsters(LOS, ridiculous_uniques))
 end
 
 function want_resistance()
@@ -7055,6 +7089,7 @@ plan_emergency = cascade {
   {plan_heal_wounds, "heal_wounds"},
   {plan_cloud_step, "cloud_step"},
   {plan_hand, "hand"},
+  {plan_haste, "haste"},
   {plan_resistance, "resistance"},
   {plan_heroism, "heroism"},
   {plan_bia, "bia"},
@@ -7069,6 +7104,7 @@ plan_emergency = cascade {
   {plan_water_step, "water_step"},
   {plan_finesse, "finesse"},
   {plan_dig_grate, "try_dig_grate"},
+  {plan_might, "might"},
   {plan_berserk, "berserk"},
   {plan_other_step, "other_step"},
 } -- hack
