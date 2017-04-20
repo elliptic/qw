@@ -4,12 +4,14 @@ to win DCSS with no human assistance. A substantial amount of code here was
 contributed by elliott or borrowed from N78291's bot "xw", and many others
 have contributed as well.
 
-The current version of qw works in 0.19 trunk and can start as any
-species/background combination. Note though that spells and most racial
+The current version of qw can start as any species/background combination
+and has some basic grasp of how many of the gods work (see qw.rc
+for configuration details). Note though that most spells and racial
 abilities aren't used, and qw is not very good at most combos! Its best
-combo at the moment is DDFi^Makhleb, which managed a winrate of 15% in
-offline testing. It is also quite good at some berserkers (12-13% winrate
-with DDBe and GrBe) and has won MiFi^Ru.
+3-rune combo at the moment is DDFi^Makhleb, which manages a winrate of about
+15% in offline testing. It can optionally try to get more runes, with its
+preferred combo for that being GrFi^Okawaru, converting to TSO after Slime
+(15-rune winrate for this build is about 1%).
 
 ## running on remote DCSS server
 * go to e.g. http://crawl.akrasiac.org:8080/
