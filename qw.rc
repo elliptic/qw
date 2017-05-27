@@ -287,6 +287,8 @@ local endgame_plan_list = {}
 local which_endgame_plan = 1
 local dislike_pan_level = false
 
+local prev_hatch_dist = 1000
+
 -- options to set while qw is running
 -- maybe should add more mutes for watchability
 
@@ -5592,7 +5594,7 @@ function plan_simple_go_down()
   if where == "Vaults:4" and easy_runes() < 2 then
     return false
   end
-  if where == "Tomb:1" then
+  if where == "Tomb:1" or where == "Tomb:2" or where == "Tomb:3" then
     return false
   end
   expect_new_location = true
@@ -6531,33 +6533,71 @@ function plan_orbrun_teleport()
   return false
 end
 
-function plan_tomb_use_stairs()
-  if where == "Tomb:2" and view.feature_at(0,0):find("stone_stairs_up") then
+function plan_tomb_use_hatch()
+  if (where == "Tomb:2" and not you.have_rune("golden")
+      or where == "Tomb:1")
+     and view.feature_at(0,0) == "escape_hatch_down" then
     expect_new_location = true
-    magic("<")
-    return true
-  elseif where == "Tomb:1" and view.feature_at(0,0):find("stone_stairs_down")
-         and not (you.have_rune("golden") and travel_destination) then
-    expect_new_location = true
+    prev_hatch_dist = 1000
     magic(">")
+    return true
+  end
+  if (where == "Tomb:3" and you.have_rune("golden")
+      or where == "Tomb:2")
+     and view.feature_at(0,0) == "escape_hatch_up" then
+    expect_new_location = true
+    prev_hatch_dist = 1000
+    magic("<")
     return true
   end
   return false
 end
 
-function plan_tomb_go_to_stairs()
-  if where == "Tomb:2" then
-    if not view.feature_at(0,0):find("stone_stairs_up")
-       or crawl.random2(2) == 0 then
+function plan_tomb_go_to_final_hatch()
+  if where == "Tomb:2" and not you.have_rune("golden")
+     and view.feature_at(0,0) ~= "escape_hatch_down" then
+    magic("X>\r")
+    return true
+  end
+  return false
+end
+
+function waypoint_dist()
+  local dx,dy = travel.waypoint_delta(waypoint_parity)
+  return supdist(dx,dy)
+end
+
+function plan_tomb_go_to_hatch()
+  if where == "Tomb:3" then
+    if you.have_rune("golden")
+       and view.feature_at(0,0) ~= "escape_hatch_up" then
       magic("X<\r")
       return true
     end
-  elseif where == "Tomb:1" then
-    if not view.feature_at(0,0):find("stone_stairs_down")
-       or crawl.random2(2) == 0 then
-      magic("X>\r")
-      return true
+  elseif where == "Tomb:2" then
+    if not you.have_rune("golden")
+       and view.feature_at(0,0) == "escape_hatch_down" then
+      return false
     end
+    if view.feature_at(0,0) == "escape_hatch_up" then
+      local new_hatch_dist = waypoint_dist()
+      if new_hatch_dist >= prev_hatch_dist then
+        return false
+      end
+      prev_hatch_dist = new_hatch_dist
+    end
+    magic("X<\r")
+    return true
+  elseif where == "Tomb:1" then
+    if view.feature_at(0,0) == "escape_hatch_down" then
+      local new_hatch_dist = waypoint_dist()
+      if new_hatch_dist >= prev_hatch_dist then
+        return false
+      end
+      prev_hatch_dist = new_hatch_dist
+    end
+    magic("X>\r")
+    return true
   end
   return false
 end
@@ -7255,8 +7295,9 @@ plan_move = cascade {
   {plan_explore, "explore"},
   {plan_pre_explore2, "pre_explore2"},
   {plan_explore2, "explore2"},
-  {plan_tomb_go_to_stairs, "try_tomb_go_to_stairs"},
-  {plan_tomb_use_stairs, "tomb_use_stairs"},
+  {plan_tomb_go_to_final_hatch, "try_tomb_go_to_final_hatch"},
+  {plan_tomb_go_to_hatch, "try_tomb_go_to_hatch"},
+  {plan_tomb_use_hatch, "tomb_use_hatch"},
   {plan_swamp_clear_exclusions, "try_swamp_clear_exclusions"},
   {plan_swamp_go_to_rune, "try_swamp_go_to_rune"},
   {plan_swamp_clouds_hack, "swamp_clouds_hack"},
@@ -7798,7 +7839,7 @@ function update_stuff()
   if you.where() ~= where then
     if (where == "nowhere" or is_waypointable(where)) and is_waypointable(you.where()) then
       waypoint_parity = 3 - waypoint_parity
-      if you.where() ~= prev_where then
+      if you.where() ~= prev_where or you.where():find("Tomb") then
         clear_level_map(waypoint_parity)
         set_waypoint()
         coroutine.yield()
