@@ -6023,6 +6023,7 @@ function choose_hell_rune_branch()
   return untried_branches[crawl.roll_dice(1,count)]
 end
 
+local depths_loop_count = 0
 function plan_new_travel()
   if cloudy then
     return false
@@ -6095,7 +6096,13 @@ function plan_new_travel()
       if game_status == "shopping" then
         c_persist.done_shopping = true
       end
-      travel_destination = "D"
+      if depths_loop_count < 20 then
+        travel_destination = "D"
+        depths_loop_count = depths_loop_count + 1
+      else
+        game_status = "zot"
+        travel_destination = "Z"
+      end
     end
   end
   if where == "Hell" then
