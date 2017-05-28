@@ -5737,6 +5737,36 @@ function plan_open_runed_doors()
   return false
 end
 
+function plan_use_transporter()
+  if where:find("D:") and not where:find("D:1")
+     and view.feature_at(0,0) == "transporter"
+     and crawl.messages(5):find("unvisited transporter") then
+    magic(">")
+    return true
+  end
+end
+
+local transporter_attempt_count = 0
+function plan_go_to_transporter()
+  if transporter_attempt_count >= 100 then
+    return false
+  end
+  if where:find("D:") and not where:find("D:1")
+     and view.feature_at(0,0) ~= "transporter"
+     and crawl.messages(5):find("unvisited transporter") then
+    transporter_attempt_count = transporter_attempt_count + 1
+    local i,j
+    local c = "X"
+    j = crawl.roll_dice(1,12)
+    for i = 1,j do
+      c = (c .. ">")
+    end
+    magic(c .. "\r")
+    return nil
+  end
+  return false
+end
+
 function plan_go_to_abyss_exit()
   if want_to_stay_in_abyss() then
     return false
@@ -7253,6 +7283,8 @@ plan_explore2 = cascade {
   {plan_exit_portal, "exit_portal"},
   {plan_go_to_portal_exit, "try_go_to_portal_exit"},
   {plan_open_runed_doors, "open_runed_doors"},
+  {plan_use_transporter, "try_use_transporter"},
+  {plan_go_to_transporter, "try_go_to_transporter"},
   {plan_exit_pan, "exit_pan"},
   {plan_go_to_pan_exit, "try_go_to_pan_exit"},
   {plan_go_down_pan, "try_go_down_pan"},
