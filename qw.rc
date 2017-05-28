@@ -5124,7 +5124,7 @@ end
 
 function plan_bless_weapon()
   if you.god() ~= "the Shining One" or you.one_time_ability_used()
-     or you.piety_rank() < 6 then
+     or you.piety_rank() < 6 or you.silenced() then
     return false
   end
   local bestv = -1
