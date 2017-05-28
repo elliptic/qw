@@ -5744,6 +5744,7 @@ function plan_use_transporter()
     magic(">")
     return true
   end
+  return false
 end
 
 local transporter_attempt_count = 0
