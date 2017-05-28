@@ -288,6 +288,8 @@ local which_endgame_plan = 1
 local dislike_pan_level = false
 
 local prev_hatch_dist = 1000
+local prev_hatch_x
+local prev_hatch_y
 
 -- options to set while qw is running
 -- maybe should add more mutes for watchability
@@ -6562,11 +6564,6 @@ function plan_tomb_go_to_final_hatch()
   return false
 end
 
-function waypoint_dist()
-  local dx,dy = travel.waypoint_delta(waypoint_parity)
-  return supdist(dx,dy)
-end
-
 function plan_tomb_go_to_hatch()
   if where == "Tomb:3" then
     if you.have_rune("golden")
@@ -6580,21 +6577,29 @@ function plan_tomb_go_to_hatch()
       return false
     end
     if view.feature_at(0,0) == "escape_hatch_up" then
-      local new_hatch_dist = waypoint_dist()
-      if new_hatch_dist >= prev_hatch_dist then
+      local x,y = travel.waypoint_delta(waypoint_parity)
+      local new_hatch_dist = supdist(x,y)
+      if new_hatch_dist >= prev_hatch_dist
+         and (x ~= prev_hatch_x or y ~= prev_hatch_y) then
         return false
       end
       prev_hatch_dist = new_hatch_dist
+      prev_hatch_x = x
+      prev_hatch_y = y
     end
     magic("X<\r")
     return true
   elseif where == "Tomb:1" then
     if view.feature_at(0,0) == "escape_hatch_down" then
-      local new_hatch_dist = waypoint_dist()
-      if new_hatch_dist >= prev_hatch_dist then
+      local x,y = travel.waypoint_delta(waypoint_parity)
+      local new_hatch_dist = supdist(x,y)
+      if new_hatch_dist >= prev_hatch_dist
+         and (x ~= prev_hatch_x or y ~= prev_hatch_y) then
         return false
       end
       prev_hatch_dist = new_hatch_dist
+      prev_hatch_x = x
+      prev_hatch_y = y
     end
     magic("X>\r")
     return true
