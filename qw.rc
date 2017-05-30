@@ -283,6 +283,7 @@ local PAN_RUNE = false
 local HELL_RUNE = false
 local GOLDEN_RUNE = false
 local TSO_CONVERSION = false
+local LUGONU_CONVERSION = false
 local endgame_plan_list = {}
 local which_endgame_plan = 1
 local dislike_pan_level = false
@@ -4670,11 +4671,17 @@ end
 
 local tried_find_altar_turn = -1
 function plan_find_conversion_altar()
-  if game_status ~= "tso" or you.god() == "the Shining One" or unshafting() then
+  if unshafting() then
+    return false
+  end
+  if game_status == "tso" and you.god() ~= "the Shining One" then
+    str = "altar of the Shining One"
+  elseif LUGONU_CONVERSION and you.xl() == 12 and you.god() == "Lugonu" then
+    str = "altar of Makhleb"
+  else
     return false
   end
   expect_new_location = true
-  str = "altar of the Shining One"
   if tried_find_altar_turn ~= you.turns() then
     tried_find_altar_turn = you.turns()
     magic(control('f') .. str .. "\ra\r")
@@ -4717,13 +4724,22 @@ function plan_join_beogh()
 end
 
 function plan_convert()
-  if game_status ~= "tso" or you.god() == "the Shining One"
-     or view.feature_at(0,0) ~= "altar_the_shining_one" then
+  if (game_status ~= "tso" or you.god() == "the Shining One"
+      or view.feature_at(0,0) ~= "altar_the_shining_one") and
+     ((not LUGONU_CONVERSION) or you.god() ~= "Lugonu"
+      or view.feature_at(0,0) ~= "altar_makhleb") then
     return false
   end
   if you.silenced() then
     rest()
   else
+    if view.feature_at(0,0) == "altar_makhleb" then
+      for i,br in ipairs(c_persist.branches_entered) do
+        if br == "L" then
+          table.remove(c_persist.branches_entered,i)
+        end
+      end
+    end
     magic("<YYY")
   end
   return true
@@ -5614,7 +5630,8 @@ function plan_go_to_temple()
   if c and c >= 100 then
     return false
   end
-  if found_branch("T") and (want_altar() or TSO_CONVERSION) and not
+  if found_branch("T") and (want_altar() or TSO_CONVERSION
+                            or LUGONU_CONVERSION) and not
      util.contains(c_persist.branches_entered, "T") and in_branch("D") then
     expect_new_location = true
     magic("GTY")
@@ -7647,6 +7664,9 @@ function make_endgame_plans()
   end
   if endgame_plan_list[#endgame_plan_list] ~= "zot" then
     table.insert(endgame_plan_list, "zot")
+  end
+  if you.race() == "Deep Dwarf" and you.god() == "Lugonu" then
+    LUGONU_CONVERSION = true
   end
 end
 
