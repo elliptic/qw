@@ -2193,7 +2193,7 @@ end
 
 function can_berserk()
   return (not (you.berserk() or you.confused() or you.silenced() or
-          you.exhausted() or you.mesmerised() or
+          you.status("berserk cooldown") or you.mesmerised() or
           too_hungry_to_berserk() or
           you.piety_rank() < 1 or
           you.god() ~= "Trog" or
@@ -3285,6 +3285,7 @@ function should_rest()
           and (you.god() ~= "the Shining One" or hp_is_low(75) or
                count_divine_warrior(2) == 0)
           or you.slowed() or you.exhausted() or you.teleporting()
+          or you.status("berserk cooldown")
           or you.status("barbed spikes")
           or you.silencing() or you.corrosion() > 0
           or you.god() == "Makhleb" and you.turns() <= sgd_timer + 100
