@@ -1471,6 +1471,7 @@ local portal_data = {
   {"Sewer", "a glowing drain", "sewer"},
   --{"Volcano", "a dark tunnel", "volcano"},
   --{"WizLab", "a magical portal", "wizlab"},
+  --{"Desolation", "ruined gateway", "desolation"},
   --{"Zig", "gateway to a ziggurat", "ziggurat"},
   --{"Lab", "labyrinth entrance", "labyrinth"},
 } -- hack
