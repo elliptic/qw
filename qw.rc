@@ -950,6 +950,7 @@ function weapon_value(it, cur, it2, sit)
   local hydra_swap = (sit == "hydra")
   local extended = (sit == "extended")
   local tso = you.god() == "the Shining One" or extended and TSO_CONVERSION
+              or you.god() == "Elyvilon"
   if it.class(true) ~= "weapon" then
     return -1,-1
   end
@@ -2276,6 +2277,18 @@ function dd_heal_ability()
   return false
 end
 
+function can_ely_healing()
+  return (not (you.berserk() or you.silenced() or starving()
+               or you.piety_rank() < 4 or you.god() ~= "Elyvilon"
+               or cmp() < 2))
+end
+
+function can_purification()
+  return (not (you.berserk() or you.silenced() or starving()
+               or you.piety_rank() < 3 or you.god() ~= "Elyvilon"
+               or cmp() < 3))
+end
+
 function can_ru_healing()
   return (not (you.berserk() or you.confused() or you.silenced() or
           starving() or you.exhausted() or you.piety_rank() < 3 or
@@ -3276,7 +3289,13 @@ function should_rest()
   end
   if not no_spells and starting_spell() then
     local mp,mmp = you.mp()
-    if mp < mmp then
+    if mp < mmp and player_resist("Spirit") <= 0 then
+      return true
+    end
+  end
+  if you.god() == "Elyvilon" and you.piety_rank() >= 4 then
+    local mp,mmp = you.mp()
+    if mp < mmp and mp < 10 and player_resist("Spirit") <= 0 then
       return true
     end
   end
@@ -3413,6 +3432,14 @@ end
 
 function ru_healing()
   use_ability("Draw Out Power")
+end
+
+function ely_healing()
+  use_ability("Greater Healing")
+end
+
+function purification()
+  use_ability("Purification")
 end
 
 function bia()
@@ -3588,6 +3615,17 @@ function prefer_ru_healing()
   return (not (you.status("drained") or you.status("heavily drained") or you.status("very heavily drained")))
 end
 
+function prefer_ely_healing()
+  if you.god() ~= "Elyvilon" or you.piety_rank() < 4 then
+    return false
+  end
+  if you.hunger_name() == "near starving" and
+     not (you.race() == "Deep Dwarf" and you.base_mp() < 10) then
+    return false
+  end
+  return true
+end
+
 function plan_dd_hand_for_healing()
   if you.race() ~= "Deep Dwarf" then
     return false
@@ -3628,6 +3666,10 @@ function plan_cure_bad_poison()
       say("(to cure bad poison)")
       return true
     end
+    if can_purification() then
+      purification()
+      return true
+    end
   end
   return false
 end
@@ -3637,11 +3679,19 @@ function heal_general()
     ru_healing()
     return true
   end
+  if can_ely_healing() and prefer_ely_healing() then
+    ely_healing()
+    return true
+  end
   if heal_wounds() then
     return true
   end
   if can_ru_healing() and you.race() ~= "Deep Dwarf" then
     ru_healing()
+    return true
+  end
+  if can_ely_healing() then
+    ely_healing()
     return true
   end
   return false
@@ -4143,8 +4193,14 @@ function want_to_orbrun_teleport()
   return (hp_is_low(33) and sense_danger(2))
 end
 
+function need_to_wait_for_ely_healing()
+  local mp,mmp = you.mp()
+  return (you.god() == "Elyvilon" and you.piety_rank() >= 4 and mmp >= 2
+          and mp < 2)
+end
+
 function dd_want_to_heal_wounds()
-  if (not danger) and (you.regenerating() or dd_prefer_hand() or (dd_prefer_ru_healing() and you.exhausted())) then
+  if (not danger) and (you.regenerating() or dd_prefer_hand() or (dd_prefer_ru_healing() and you.exhausted()) or need_to_wait_for_ely_healing()) then
     return false
   end
   local hp,mhp = you.hp()
@@ -4152,7 +4208,7 @@ function dd_want_to_heal_wounds()
     return (hp_is_low(25) or (hp_is_low(50) and mhp - hp >= 30) or
             (mhp - hp >= 20 and hp <= 20))
   else
-    if (dd_prefer_hand() or (dd_prefer_ru_healing() and you.exhausted())) and (not you.teleporting()) and not hp_is_low(66) then
+    if (dd_prefer_hand() or (dd_prefer_ru_healing() and you.exhausted()) or need_to_wait_for_ely_healing()) and (not you.teleporting()) and not hp_is_low(66) then
       return false
     end
     if (you.god() == "Makhleb" and you.piety_rank() >= 1
@@ -5412,7 +5468,7 @@ end
 function ready_for_lair()
   if you.god() == "Trog" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Qazlal" or you.god() == "the Shining One" or you.god() == "Lugonu" or you.god() == "Uskayaw" or you.god() == "Xom" or
      (you.god() == "Beogh" or you.god() == "Makhleb" or you.god() == "Yredelemnul") and you.piety_rank() >= 4 or
-     you.god() == "Ru" and you.piety_rank() >= 3 or
+     (you.god() == "Ru" or you.god() == "Elyvilon") and you.piety_rank() >= 3 or
      you.god() == "Hepliaklqana" and you.piety_rank() >= 2 then
     return true
   end
@@ -6530,6 +6586,10 @@ function plan_cure_confusion()
       say("(to cure confusion)")
       return true
     end
+    if can_purification() then
+      purification()
+      return true
+    end
     if you.god() == "Beogh" then
       magic("s") -- avoid Beogh penance
       return true
@@ -6542,6 +6602,27 @@ function plan_cure_starving()
   if you.hunger_name() == "fainting"
      or you.hunger_name() == "starving" then
     return eat_permafood(true)
+  end
+  return false
+end
+
+-- curing poison/confusion with purification is handled elsewhere
+function plan_special_purification()
+  if not can_purification() then
+    return false
+  end
+  if you.slowed() or you.petrifying() then
+    purification()
+    return true
+  end
+  local str, mstr = you.strength()
+  local int, mint = you.intelligence()
+  local dex, mdex = you.dexterity()
+  if str < mstr and (str < mstr-5 or str < 3)
+     or int < mint and int < 3
+     or dex < mdex and (dex < mdex-8 or dex < 3) then
+    purification()
+    return true
   end
   return false
 end
@@ -6899,9 +6980,15 @@ function plan_cure_poison()
       return true
     end
   end
-  if you.poison_survival() <= 1 and you.poisoned() and can_hand() then
-    hand()
-    return true
+  if you.poison_survival() <= 1 and you.poisoned() then
+    if can_hand() then
+      hand()
+      return true
+    end
+    if can_purification() then
+      purification()
+      return true
+    end
   end
   return false
 end
@@ -7031,7 +7118,7 @@ function attack_melee(x, y)
     end
   end
   if monster_array[x][y]:attitude() == ATT_NEUTRAL then
-    if you.god() == "the Shining One" then
+    if you.god() == "the Shining One" or you.god() == "Elyvilon" then
       magic("s")
     else
       magic(control(delta_to_vi(x, y)))
@@ -7188,6 +7275,7 @@ plan_pre_explore2 = cascade {
 
 plan_emergency = cascade {
   {plan_cure_starving, "cure_starving"},
+  {plan_special_purification, "special_purification"},
   {plan_cure_confusion, "cure_confusion"},
   {plan_coward_step, "coward_step"},
   {plan_remove_terrible_jewellery, "remove_terrible_jewellery"},
@@ -7219,6 +7307,7 @@ plan_emergency = cascade {
 
 plan_orbrun_emergency = cascade {
   {plan_cure_starving, "cure_starving"},
+  {plan_special_purification, "special_purification"},
   {plan_cure_confusion, "cure_confusion"},
   {plan_orbrun_teleport, "orbrun_teleport"},
   {plan_orbrun_heal_wounds, "orbrun_heal_wounds"},
@@ -7433,7 +7522,17 @@ function skill_value(sk)
     end
     return (at_target_shield_skill() and 0.2 or 0.75)
   elseif sk == "Invocations" then
-    return ((you.god() == "Uskayaw") and 0.75 or 0)
+    if you.god() == "Uskayaw" then
+      return 0.75
+    elseif you.god() == "Elyvilon" then
+      if you.piety_rank() >= 4 then
+        return 1
+      else
+        return 0.5
+      end
+    else
+      return 0
+    end
   elseif sk == wskill() then
     return (at_min_delay() and 0.5 or 1.5)
   end
@@ -7461,7 +7560,7 @@ function choose_skills()
 
   -- Choose one MP skill to train.
   mp_skill = "Evocations"
-  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or you.god() == "Beogh" or you.god() == "Qazlal" or you.god() == "the Shining One" or you.god() == "Lugonu" or you.god() == "Hepliaklqana" or you.god() == "Uskayaw" then
+  if you.god() == "Makhleb" or you.god() == "Cheibriados" or you.god() == "Okawaru" or you.god() == "Yredelemnul" or you.god() == "Beogh" or you.god() == "Qazlal" or you.god() == "the Shining One" or you.god() == "Lugonu" or you.god() == "Hepliaklqana" or you.god() == "Uskayaw" or you.god() == "Elyvilon" then
     mp_skill = "Invocations"
   elseif you.god() == "Ru" or you.god() == "Xom" then
     mp_skill = "Spellcasting"
@@ -7786,6 +7885,8 @@ function fullgodname(g)
     return "Beogh"
   elseif g == "C" then
     return "Cheibriados"
+  elseif g == "E" then
+    return "Elyvilon"
   elseif g == "H" then
     return "Hepliaklqana"
   elseif g == "L" then
