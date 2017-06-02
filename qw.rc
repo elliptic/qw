@@ -5095,7 +5095,8 @@ function plan_use_good_consumables()
         return drink(it)
       end
       if it.name():find("mutation") then
-        if base_mutation("inhibited regeneration") > 0 or
+        if base_mutation("inhibited regeneration") > 0
+           and you.race() ~= "Ghoul" or
            base_mutation("teleportitis") > 0 or
            base_mutation("deformed body") > 0 and you.race() ~= "Naga"
            and you.race() ~= "Centaur"
