@@ -7804,7 +7804,7 @@ function initialize()
     waypoint_parity = 1
     prev_where = "nowhere"
   end
-  for _,god in god_list do
+  for _,god in ipairs(god_options()) do
     if god == "the Shining One" or god == "Elyvilon" then
       MIGHT_BE_GOOD = true
     end
