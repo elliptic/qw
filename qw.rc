@@ -1092,7 +1092,7 @@ function weapon_value(it, cur, it2, sit)
       end
     elseif ego == "pain" and tso then
       return -1,-1
-    elseif ego == "chaos" and you.god() == "Cheibriados" then
+    elseif ego == "chaos" and (tso or you.god() == "Cheibriados") then
       return -1,-1
     end
   end
