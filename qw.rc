@@ -4226,6 +4226,10 @@ function want_to_heal_wounds()
   if you.race() == "Deep Dwarf" then
     return dd_want_to_heal_wounds()
   end
+  if danger and can_ely_healing() and hp_is_low(50) and you.piety_rank() >= 5
+     and you.hunger_name() ~= "near starving" then
+    return true
+  end
   return (danger and hp_is_low(25))
 end
 
@@ -7525,7 +7529,7 @@ function skill_value(sk)
     if you.god() == "Uskayaw" then
       return 0.75
     elseif you.god() == "Elyvilon" then
-      if you.piety_rank() >= 4 then
+      if you.piety_rank() >= 4 and you.race() == "Deep Dwarf" then
         return 1
       else
         return 0.5
