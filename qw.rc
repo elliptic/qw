@@ -284,6 +284,7 @@ local HELL_RUNE = false
 local GOLDEN_RUNE = false
 local TSO_CONVERSION = false
 local LUGONU_CONVERSION = false
+local MIGHT_BE_GOOD = false
 local endgame_plan_list = {}
 local which_endgame_plan = 1
 local dislike_pan_level = false
@@ -951,6 +952,7 @@ function weapon_value(it, cur, it2, sit)
   local extended = (sit == "extended")
   local tso = you.god() == "the Shining One" or extended and TSO_CONVERSION
               or you.god() == "Elyvilon"
+              or you.god() == "No God" and MIGHT_BE_GOOD
   if it.class(true) ~= "weapon" then
     return -1,-1
   end
@@ -7801,6 +7803,11 @@ function initialize()
     clear_level_map(2)
     waypoint_parity = 1
     prev_where = "nowhere"
+  end
+  for _,god in god_list do
+    if god == "the Shining One" or god == "Elyvilon" then
+      MIGHT_BE_GOOD = true
+    end
   end
   initialized = true
 end
