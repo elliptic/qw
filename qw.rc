@@ -276,6 +276,9 @@ local waypoint_parity
 local cur_where
 local prev_where
 local did_waypoint = false
+local good_stair_list
+local target_stair
+local last_flee_turn = -100
 
 local ABYSSAL_RUNE = false
 local SLIMY_RUNE = false
@@ -3289,29 +3292,38 @@ function should_rest()
     end
     return true
   end
+  return (reason_to_rest() or you.status("barbed spikes")
+          or you.god() == "Makhleb" and you.turns() <= sgd_timer + 100
+          or should_ally_rest())
+end
+
+-- check statuses to see whether there is something to rest off,
+-- does not include some things in should_rest() because they are
+-- not clearly good to wait out with monsters around
+function reason_to_rest()
   if not no_spells and starting_spell() then
     local mp,mmp = you.mp()
-    if mp < mmp and player_resist("Spirit") <= 0 then
+    if mp < mmp and (you.race() ~= "Deep Dwarf"
+                     or player_resist("Spirit") <= 0) then
       return true
     end
   end
   if you.god() == "Elyvilon" and you.piety_rank() >= 4 then
     local mp,mmp = you.mp()
-    if mp < mmp and mp < 10 and player_resist("Spirit") <= 0 then
+    if mp < mmp and mp < 10 and (you.race() ~= "Deep Dwarf"
+                                 or player_resist("Spirit") <= 0) then
       return true
     end
   end
-  return (hp_is_low(90) and
+  return (you.confused() or transformed() or
+          hp_is_low(90) and
           (you.race() ~= "Deep Dwarf" and you.hunger_name() ~= "bloodless"
            or you.regenerating())
           and (you.god() ~= "the Shining One" or hp_is_low(75) or
                count_divine_warrior(2) == 0)
           or you.slowed() or you.exhausted() or you.teleporting()
-          or you.status("berserk cooldown")
-          or you.status("barbed spikes")
-          or you.silencing() or you.corrosion() > 0
-          or you.god() == "Makhleb" and you.turns() <= sgd_timer + 100
-          or should_ally_rest())
+          or you.status("berserk cooldown") or you.status("marked")
+          or you.silencing() or you.corrosion() > 0)
 end
 
 function should_ally_rest()
@@ -3856,6 +3868,9 @@ function assess_square(x,y)
   -- weak clouds if monsters are around
   a.cloud_safe = (cloud == nil) or a.safe
                  or danger and not cloud_is_dangerous(cloud)
+  -- equal to 10000 if the move is not closer to any stair in good_stair_list,
+  -- otherwise equal to the (min) dist to such a stair
+  a.stair_closer = stair_improvement(x,y)
   return a
 end
 
@@ -3868,6 +3883,7 @@ end
 --   stealth     - moving out of sight of sleeping or wandering monsters
 --   outnumbered - stepping away from a square adjacent to multiple monsters
 --                 (when not cleaving)
+--   fleeing     - moving towards stairs
 function step_reason(a1,a2)
   if not (a2.can_move and a2.safe and a2.supdist > 0) then
     return false
@@ -3877,6 +3893,10 @@ function step_reason(a1,a2)
     return "hiding"
   elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0 and a2.unalert < a1.unalert then
     return "stealth"
+  elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0
+         and a2.stair_closer < 10000 and a1.enemy_distance < 10
+         and reason_to_rest() then
+    return "fleeing"
   elseif not a1.cloud_safe then
     return "cloud"
   elseif a1.fumble then
@@ -3919,9 +3939,17 @@ function step_improvement(reason,a1,a2)
     return true
   elseif a2.adjacent+a2.ranged == 0 and a2.unalert > a1.unalert then
     return false
+  elseif reason == "fleeing" and a2.stair_closer < a1.stair_closer then
+    return true
+  elseif reason == "fleeing" and a2.stair_closer > a1.stair_closer then
+    return false
   elseif a2.enemy_distance < a1.enemy_distance then
     return true
   elseif a2.enemy_distance > a1.enemy_distance then
+    return false
+  elseif a2.stair_closer < a1.stair_closer then
+    return true
+  elseif a2.stair_closer > a2.stair_closer then
     return false
   elseif a1.cornerish and not a2.cornerish then
     return true
@@ -3935,14 +3963,15 @@ function choose_tactical_step()
   tactical_reason = "none"
   if you.confused() or you.berserk() or you.constricted()
      or you.transform() == "tree" or you.transform() == "fungus"
-     or where:find("Slime") then
+     or where:find("Slime") or you.status("barbed spikes") then
     return
   end
   local a0 = assess_square(0,0)
   if a0.cloud_safe and not (a0.fumble and sense_danger(3))
      and (not have_reaching() or a0.slow_adjacent == 0)
      and (a0.adjacent <= 1 or cleaving())
-     and (a0.near_ally or a0.unalert == 0 and a0.longranged == 0) then
+     and (a0.near_ally or a0.unalert == 0 and a0.longranged == 0)
+     and a0.enemy_distance == 10 then
     return
   end
   local bestx,besty,bestreason
@@ -3998,6 +4027,19 @@ function plan_coward_step()
     if SPAM then
       say("Stepping ~*~*~tactically~*~*~ (" .. tactical_reason .. ").")
     end
+    magic(tactical_step .. "Y")
+    return true
+  end
+  return false
+end
+
+function plan_flee_step()
+  if tactical_reason == "fleeing" then
+    if SPAM then
+      say("FLEEEEING.")
+    end
+    set_stair_target(tactical_step)
+    last_flee_turn = you.turns()
     magic(tactical_step .. "Y")
     return true
   end
@@ -5499,23 +5541,33 @@ function want_to_stairdance_up()
     return false
   end
   local n = stairdance_count[where] or 0
-  if n > 10 then
+  if n >= 20 then
     return false
   end
-  if you.caught() or you.mesmerised() or you.constricted() or you.berserk()
-     or you.rooted() or you.transform() == "tree" or you.transform() == "fungus"
-     or hp_is_low(33) or count_bia(3) > 0 or count_sgd(3) > 0 or count_divine_warrior(3) > 0 then
+  if you.caught() or you.mesmerised() or you.constricted() or you.rooted()
+     or you.transform() == "tree" or you.transform() == "fungus"
+     or count_bia(3) > 0 or count_sgd(3) > 0 or count_divine_warrior(3) > 0 then
     return false
   end
+  local only_when_safe = (you.berserk() or hp_is_low(33))
+  local follow_count = 0
+  local other_count = 0
   local e
   for _,e in ipairs(enemy_list) do
     local dist = supdist(e.x,e.y)
-    if dist == 1 then
-      if e.m:stabbability() == 0 and can_use_stairs(e.m:name()) then
-        stairdance_count[where] = n + 1
-        return true
-      end
+    if dist == 1 and e.m:stabbability() == 0 and can_use_stairs(e.m:name()) then
+      follow_count = follow_count + 1
+    else
+      other_count = other_count + 1
     end
+  end
+  if only_when_safe and follow_count > 0 then
+    return false
+  end
+  if follow_count == 0 and (reason_to_rest() or you.status("barbed spikes"))
+     or other_count > 0 and follow_count > 0 then
+    stairdance_count[where] = n + 1
+    return true
   end
   return false
 end
@@ -5530,7 +5582,9 @@ function can_use_stairs(mname)
      or mname == "Geryon" or mname == "Royal Jelly"
      or mname:find("'s ghost") or mname:find("' ghost")
      or mname == "swamp worm" or mname == "electric eel"
-     or mname == "kraken" or mname == "lava snake" then
+     or mname == "kraken" or mname == "lava snake"
+     or mname == "bat" or mname == "unseen horror"
+     or mname == "fire vortex" then
     return false
   else
     return true
@@ -6433,6 +6487,107 @@ function update_dist_map(dist_map,queue)
   end
 end
 
+function find_good_stairs()
+  good_stair_list = { }
+  if not is_waypointable(where) then
+    return
+  end
+  local num = waypoint_parity
+  local dx,dy = travel.waypoint_delta(num)
+  local staircount = #(stair_dists[num])
+  local pdist,mdist,minmdist,speed_diff
+  local pspeed = player_speed_num()
+  for i = 1,staircount do
+    pdist = stair_dists[num][i][dx][dy]
+    if pdist == nil then
+      pdist = 10000
+    end
+    minmdist = 1000
+    for _,e in ipairs(enemy_list) do
+      mdist = stair_dists[num][i][dx+e.x][dy+e.y]
+      if mdist == nil then
+        mdist = 10000
+      end
+      speed_diff = mon_speed_num(e.m) - pspeed
+      if speed_diff > 1 then
+        mdist = mdist / 2
+      elseif speed_diff > 0 then
+        mdist = mdist / 1.5
+      end
+      if mdist < minmdist then
+        minmdist = mdist
+      end
+    end
+    if pdist < minmdist then
+      table.insert(good_stair_list, i)
+    end
+  end
+end
+
+function stair_improvement(x,y)
+  if not is_waypointable(where) then
+    return 10000
+  end
+  local num = waypoint_parity
+  local dx,dy = travel.waypoint_delta(num)
+  local val
+  local minval = 10000
+  for _,i in ipairs(good_stair_list) do
+    val = stair_dists[num][i][dx+x][dy+y]
+    if val < stair_dists[num][i][dx][dy] and val < minval then
+      minval = val
+    end
+  end
+  return minval
+end
+
+function set_stair_target(c)
+  local x,y = vi_to_delta(c)
+  local num = waypoint_parity
+  local dx,dy = travel.waypoint_delta(num)
+  local val
+  local minval = 10000
+  local best_stair
+  for _,i in ipairs(good_stair_list) do
+    val = stair_dists[num][i][dx+x][dy+y]
+    if val < stair_dists[num][i][dx][dy] and val < minval then
+      minval = val
+      best_stair = i
+    end
+  end
+  target_stair = best_stair
+end
+
+function plan_continue_flee()
+  if you.turns() >= last_flee_turn + 10 or not target_stair then
+    return false
+  end
+  if danger or not reason_to_rest() or you.transform() == "tree"
+     or count_bia(3) > 0 or count_sgd(3) > 0 or count_divine_warrior(3) > 0
+     or you.status("barbed spikes") or you.confused() then
+    return false
+  end
+  local num = waypoint_parity
+  local dx,dy = travel.waypoint_delta(num)
+  local val
+  for x = -1,1 do
+    for y = -1,1 do
+      if is_traversable(x,y) and not is_solid(x,y)
+         and not monster_in_way(x,y) and view.is_safe_square(x,y) then
+        val = stair_dists[num][target_stair][dx+x][dy+y]
+        if val and val < stair_dists[num][target_stair][dx][dy] then
+          if SPAM then
+            say("STILL FLEEEEING.")
+          end
+          magic(delta_to_vi(x,y))
+          return true
+        end
+      end
+    end
+  end
+  return false
+end
+
 function plan_stuck()
   if starving() then
     return random_step("starving")
@@ -7285,6 +7440,7 @@ plan_emergency = cascade {
   {plan_special_purification, "special_purification"},
   {plan_cure_confusion, "cure_confusion"},
   {plan_coward_step, "coward_step"},
+  {plan_flee_step, "flee_step"},
   {plan_remove_terrible_jewellery, "remove_terrible_jewellery"},
   {plan_teleport, "teleport"},
   {plan_cure_bad_poison, "cure_bad_poison"},
@@ -7309,6 +7465,7 @@ plan_emergency = cascade {
   {plan_dig_grate, "try_dig_grate"},
   {plan_might, "might"},
   {plan_berserk, "berserk"},
+  {plan_continue_flee, "continue_flee"},
   {plan_other_step, "other_step"},
 } -- hack
 
@@ -8000,6 +8157,7 @@ function update_stuff()
       cur_where = you.where()
     end
     clear_ignores()
+    target_stair = nil
     if expect_new_location then
       if where_shafted_from == you.where() then
         say("Successfully unshafted to " .. you.where() .. ".")
@@ -8034,6 +8192,7 @@ function update_stuff()
   update_monster_array()
   danger = sense_danger(LOS)
   immediate_danger = sense_immediate_danger()
+  find_good_stairs()
   cloudy = (not view.is_safe_square(0,0) and view.cloud_at(0,0) ~= nil)
   sense_sigmund()
   choose_tactical_step()
@@ -8096,6 +8255,46 @@ function ttt()
     local val1,val2 = equip_value(it)
     local val3,val4 = equip_value(it, true)
     crawl.mpr("name = " .. it.name() .. ", ego = " .. (it.ego() or "none") .. it.ego_type .. ", subtype = " .. (it.subtype() or "none") .. ", slot = " .. (slot(it) or -1) .. ", values = " .. val1 .. " " .. val2 .. " " .. val3 .. " " .. val4 .. ".")
+  end
+end
+
+function print_level_map()
+  local num = waypoint_parity
+  local dx,dy = travel.waypoint_delta(num)
+  local x,y
+  local str
+  for y = -20,20 do
+    str = ""
+    for x = -20,20 do
+      if level_map[num][dx+x][dy+y] == nil then
+        str = str .. " "
+      else
+        str = str .. level_map[num][dx+x][dy+y]
+      end
+    end
+    say(str)
+  end
+end
+
+function print_stair_dists()
+  local num = waypoint_parity
+  local dx,dy = travel.waypoint_delta(num)
+  local x,y
+  local i
+  local str
+  for i = 1, #stair_dists[num] do
+  say("---------------------------------------")
+  for y = -20,20 do
+    str = ""
+    for x = -20,20 do
+      if stair_dists[num][i][dx+x][dy+y] == nil then
+        str = str .. " "
+      else
+        str = str .. string.char(string.byte('A') + stair_dists[num][i][dx+x][dy+y])
+      end
+    end
+    say(str)
+  end
   end
 end
 
