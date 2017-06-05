@@ -6582,7 +6582,7 @@ function plan_continue_flee()
           if SPAM then
             say("STILL FLEEEEING.")
           end
-          magic(delta_to_vi(x,y))
+          magic(delta_to_vi(x,y) .. "YY")
           return true
         end
       end
