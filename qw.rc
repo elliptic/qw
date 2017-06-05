@@ -6436,7 +6436,7 @@ function update_level_map(num)
           end
         end
       end
-      if travel.feature_traversable(feat) then
+      if travel.feature_traversable(feat) and not travel.feature_solid(feat) then
         if level_map[num][x][y] ~= "." then
           if feat_is_upstairs(feat) then
             newcount = #stair_dists[num]+1
