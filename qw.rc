@@ -2840,6 +2840,18 @@ function count_longranged(cx, cy, r)
   return i
 end
 
+function count_shortranged(cx, cy, r)
+  local e
+  local i = 0
+  for _,e in ipairs(enemy_list) do
+    local dist = supdist(cx-e.x,cy-e.y)
+    if dist <= r and is_ranged(e.m) then
+      i = i+1
+    end
+  end
+  return i
+end
+
 function count_unalert(cx, cy, r)
   local e
   local i = 0
@@ -3846,6 +3858,8 @@ function assess_square(x,y)
   a.adjacent = count_nearby(x,y,1)
   -- wandering or sleeping monsters
   a.unalert = count_unalert(x,y,LOS)
+  -- ranged monsters at distance <= 5, not necessarily visible
+  a.shortranged = count_shortranged(x,y,5)
 
   -- corners - avoid these if possible
   a.cornerish = is_cornerish(x,y)
@@ -3896,6 +3910,7 @@ function step_reason(a1,a2)
   elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0 and a2.unalert < a1.unalert then
     return "stealth"
   elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0
+         and a2.shortranged == 0
          and a2.stair_closer < 10000 and a1.enemy_distance < 10
          and reason_to_rest() then
     return "fleeing"
@@ -3972,8 +3987,7 @@ function choose_tactical_step()
   if a0.cloud_safe and not (a0.fumble and sense_danger(3))
      and (not have_reaching() or a0.slow_adjacent == 0)
      and (a0.adjacent <= 1 or cleaving())
-     and (a0.near_ally or a0.unalert == 0 and a0.longranged == 0)
-     and a0.enemy_distance == 10 then
+     and (a0.near_ally or a0.enemy_distance == 10) then
     return
   end
   local bestx,besty,bestreason
