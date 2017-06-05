@@ -2218,7 +2218,8 @@ function can_heroism()
                you.god() ~= "Okawaru" or
                you.piety_rank() < 1 or
                you.status("heroism") or
-               cmp() < 2))
+               cmp() < 2 or
+               you.under_penance()))
 end
 
 function can_recall()
@@ -2247,7 +2248,8 @@ function can_finesse()
                you.god() ~= "Okawaru" or
                you.piety_rank() < 5 or
                you.status("finesse") or
-               cmp() < 5))
+               cmp() < 5 or
+               you.under_penance()))
 end
 
 function can_slouch()
