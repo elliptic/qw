@@ -6573,7 +6573,8 @@ function plan_continue_flee()
   for x = -1,1 do
     for y = -1,1 do
       if is_traversable(x,y) and not is_solid(x,y)
-         and not monster_in_way(x,y) and view.is_safe_square(x,y) then
+         and not monster_in_way(x,y) and view.is_safe_square(x,y)
+         and not view.withheld(x,y) then
         val = stair_dists[num][target_stair][dx+x][dy+y]
         if val and val < stair_dists[num][target_stair][dx][dy] then
           if SPAM then
