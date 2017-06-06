@@ -3311,6 +3311,24 @@ function should_rest()
           or should_ally_rest())
 end
 
+function should_rest_more()
+  if dangerous_to_rest() then
+    return false
+  end
+  local hp, mhp = you.hp()
+  if hp < mhp
+     and (you.race() ~= "Deep Dwarf" and you.hunger_name() ~= "bloodless"
+          or you.regenerating())
+     and (you.god() ~= "the Shining One" or count_divine_warrior(2) == 0) then
+    return true
+  end
+  local mp, mmp = you.mp()
+  if mp < mmp and you.race() ~= "Deep Dwarf" and player_resist("Spirit") > 0 then
+    return true
+  end
+  return false
+end
+
 -- check statuses to see whether there is something to rest off,
 -- does not include some things in should_rest() because they are
 -- not clearly good to wait out with monsters around
@@ -4706,6 +4724,14 @@ end
 
 function plan_rest()
   if should_rest() then
+    rest()
+    return true
+  end
+  return false
+end
+
+function plan_rest_more()
+  if should_rest_more() then
     rest()
     return true
   end
@@ -7443,6 +7469,7 @@ plan_pre_explore = cascade {
 
 plan_pre_explore2 = cascade {
   {plan_disturbance_random_step, "disturbance_random_step"},
+  {plan_rest_more, "rest_more"},
   {plan_upgrade_armour, "upgrade_armour"},
   {plan_upgrade_amulet, "upgrade_amulet"},
   {plan_upgrade_rings, "upgrade_rings"},
