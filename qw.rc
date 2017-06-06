@@ -3306,7 +3306,7 @@ function should_rest()
     end
     return true
   end
-  return (reason_to_rest() or you.status("barbed spikes")
+  return (reason_to_rest(90) or you.status("barbed spikes")
           or you.god() == "Makhleb" and you.turns() <= sgd_timer + 100
           or should_ally_rest())
 end
@@ -3332,7 +3332,7 @@ end
 -- check statuses to see whether there is something to rest off,
 -- does not include some things in should_rest() because they are
 -- not clearly good to wait out with monsters around
-function reason_to_rest()
+function reason_to_rest(percentage)
   if not no_spells and starting_spell() then
     local mp,mmp = you.mp()
     if mp < mmp and (you.race() ~= "Deep Dwarf"
@@ -3348,7 +3348,7 @@ function reason_to_rest()
     end
   end
   return (you.confused() or transformed() or
-          hp_is_low(90) and
+          hp_is_low(percentage) and
           (you.race() ~= "Deep Dwarf" and you.hunger_name() ~= "bloodless"
            or you.regenerating())
           and (you.god() ~= "the Shining One" or hp_is_low(75) or
@@ -3930,7 +3930,7 @@ function step_reason(a1,a2)
   elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0
          and a2.shortranged == 0
          and a2.stair_closer < 10000 and a1.enemy_distance < 10
-         and reason_to_rest()
+         and reason_to_rest(90)
          and (no_spells or starting_spell() ~= "Summon Small Mammal") then
     return "fleeing"
   elseif not a1.cloud_safe then
@@ -5607,7 +5607,7 @@ function want_to_stairdance_up()
   if only_when_safe and follow_count > 0 then
     return false
   end
-  if follow_count == 0 and (reason_to_rest() or you.status("barbed spikes"))
+  if follow_count == 0 and (reason_to_rest(80) or you.status("barbed spikes"))
      or other_count > 0 and follow_count > 0 then
     stairdance_count[where] = n + 1
     return true
@@ -6605,7 +6605,7 @@ function plan_continue_flee()
   if you.turns() >= last_flee_turn + 10 or not target_stair then
     return false
   end
-  if danger or not reason_to_rest() or you.transform() == "tree"
+  if danger or not reason_to_rest(90) or you.transform() == "tree"
      or count_bia(3) > 0 or count_sgd(3) > 0 or count_divine_warrior(3) > 0
      or you.status("barbed spikes") or you.confused() then
     return false
