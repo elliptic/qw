@@ -3912,7 +3912,8 @@ function step_reason(a1,a2)
   elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0
          and a2.shortranged == 0
          and a2.stair_closer < 10000 and a1.enemy_distance < 10
-         and reason_to_rest() then
+         and reason_to_rest()
+         and (no_spells or starting_spell() ~= "Summon Small Mammal") then
     return "fleeing"
   elseif not a1.cloud_safe then
     return "cloud"
