@@ -3929,7 +3929,8 @@ function step_reason(a1,a2)
     return "stealth"
   elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0
          and a2.shortranged == 0
-         and a2.stair_closer < 10000 and a1.enemy_distance < 10
+         and a2.stair_closer < 10000 and a1.stair_closer > 0
+         and a1.enemy_distance < 10
          and reason_to_rest(90)
          and (no_spells or starting_spell() ~= "Summon Small Mammal") then
     return "fleeing"
@@ -6570,6 +6571,13 @@ end
 function stair_improvement(x,y)
   if not is_waypointable(where) then
     return 10000
+  end
+  if x == 0 and y == 0 then
+    if feat_is_upstairs(view.feature_at(0,0)) then
+      return 0
+    else
+      return 10000
+    end
   end
   local num = waypoint_parity
   local dx,dy = travel.waypoint_delta(num)
