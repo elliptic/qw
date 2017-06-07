@@ -108,6 +108,7 @@ darken_beyond_range = false
 clear_messages = true
 travel_delay = -1
 explore_delay = -1
+rest_delay = -1
 travel_key_stop = false
 default_manual_training = true
 autopickup_no_burden = false
@@ -3306,27 +3307,9 @@ function should_rest()
     end
     return true
   end
-  return (reason_to_rest(90) or you.status("barbed spikes")
+  return (reason_to_rest(99.9) or you.status("barbed spikes")
           or you.god() == "Makhleb" and you.turns() <= sgd_timer + 100
           or should_ally_rest())
-end
-
-function should_rest_more()
-  if dangerous_to_rest() then
-    return false
-  end
-  local hp, mhp = you.hp()
-  if hp < mhp
-     and (you.race() ~= "Deep Dwarf" and you.hunger_name() ~= "bloodless"
-          or you.regenerating())
-     and (you.god() ~= "the Shining One" or count_divine_warrior(2) == 0) then
-    return true
-  end
-  local mp, mmp = you.mp()
-  if mp < mmp and you.race() ~= "Deep Dwarf" and player_resist("Spirit") > 0 then
-    return true
-  end
-  return false
 end
 
 -- check statuses to see whether there is something to rest off,
@@ -3419,8 +3402,12 @@ function want_chunk()
 end
 
 function rest()
- magic("s")
- next_delay = 5
+  magic("s")
+  next_delay = 5
+end
+
+function easy_rest()
+  magic("5")
 end
 
 function attack()
@@ -4723,16 +4710,16 @@ function count_permafood()
   return s
 end
 
-function plan_rest()
+function plan_easy_rest()
   if should_rest() then
-    rest()
+    easy_rest()
     return true
   end
   return false
 end
 
-function plan_rest_more()
-  if should_rest_more() then
+function plan_rest()
+  if should_rest() then
     rest()
     return true
   end
@@ -7477,7 +7464,6 @@ plan_pre_explore = cascade {
 
 plan_pre_explore2 = cascade {
   {plan_disturbance_random_step, "disturbance_random_step"},
-  {plan_rest_more, "rest_more"},
   {plan_upgrade_armour, "upgrade_armour"},
   {plan_upgrade_amulet, "upgrade_amulet"},
   {plan_upgrade_rings, "upgrade_rings"},
@@ -7542,6 +7528,7 @@ plan_eatrest = cascade {
   {plan_eat_chunk, "eat_chunk"},
   {plan_eat_permafood, "eat_permafood"},
   {plan_dd_hand_for_healing, "dd_hand_for_healing"},
+  {plan_easy_rest, "try_easy_rest"},
   {plan_rest, "rest"},
   {plan_handle_corpses, "handle_corpses"},
   {plan_find_corpses, "try_find_corpses"},
