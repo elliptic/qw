@@ -3406,10 +3406,6 @@ function rest()
   next_delay = 5
 end
 
-function easy_rest()
-  magic("5")
-end
-
 function attack()
   local success = false
   failed_move = { }
@@ -4710,14 +4706,6 @@ function count_permafood()
   return s
 end
 
-function plan_easy_rest()
-  if should_rest() then
-    easy_rest()
-    return true
-  end
-  return false
-end
-
 function plan_rest()
   if should_rest() then
     rest()
@@ -5595,7 +5583,7 @@ function want_to_stairdance_up()
   if only_when_safe and follow_count > 0 then
     return false
   end
-  if follow_count == 0 and (reason_to_rest(80) or you.status("barbed spikes"))
+  if follow_count == 0 and (reason_to_rest(90) or you.status("barbed spikes"))
      or other_count > 0 and follow_count > 0 then
     stairdance_count[where] = n + 1
     return true
@@ -7528,7 +7516,6 @@ plan_eatrest = cascade {
   {plan_eat_chunk, "eat_chunk"},
   {plan_eat_permafood, "eat_permafood"},
   {plan_dd_hand_for_healing, "dd_hand_for_healing"},
-  {plan_easy_rest, "try_easy_rest"},
   {plan_rest, "rest"},
   {plan_handle_corpses, "handle_corpses"},
   {plan_find_corpses, "try_find_corpses"},
