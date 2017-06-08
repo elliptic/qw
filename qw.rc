@@ -3906,17 +3906,16 @@ function step_reason(a1,a2)
     return false
   elseif (a2.fumble or a2.slow) and a1.cloud_safe then
     return false
-  elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0 and a1.longranged > 0 then
-    return "hiding"
-  elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0 and a2.unalert < a1.unalert then
-    return "stealth"
-  elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0
-         and a2.shortranged == 0
+  elseif (not a1.near_ally)
          and a2.stair_closer < 10000 and a1.stair_closer > 0
          and a1.enemy_distance < 10
          and reason_to_rest(90)
          and (no_spells or starting_spell() ~= "Summon Small Mammal") then
     return "fleeing"
+  elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0 and a1.longranged > 0 then
+    return "hiding"
+  elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0 and a2.unalert < a1.unalert then
+    return "stealth"
   elseif not a1.cloud_safe then
     return "cloud"
   elseif a1.fumble then
@@ -3941,11 +3940,17 @@ end
 
 -- determines whether moving a0->a2 is an improvement over a0->a1
 -- assumes that these two moves have already been determined to be better
--- than not moving, with given reason
-function step_improvement(reason,a1,a2)
-  if reason == "water" and a2.enemy_distance < a1.enemy_distance then
+-- than not moving, with given reasons
+function step_improvement(bestreason,reason,a1,a2)
+  if reason == "fleeing" and bestreason ~= "fleeing" then
     return true
-  elseif reason == "water" and a2.enemy_distance > a1.enemy_distance then
+  elseif bestreason == "fleeing" and reason ~= "fleeing" then
+    return false
+  if reason == "water" and bestreason == "water"
+     and a2.enemy_distance < a1.enemy_distance then
+    return true
+  elseif reason == "water" and bestreason == "water"
+     and a2.enemy_distance > a1.enemy_distance then
     return false
   elseif a2.adjacent+a2.ranged < a1.adjacent+a1.ranged then
     return true
@@ -4004,7 +4009,7 @@ function choose_tactical_step()
         a = assess_square(x,y)
         reason = step_reason(a0,a)
         if reason then
-          if besta == nil or step_improvement(reason,besta,a) then
+          if besta == nil or step_improvement(bestreason,reason,besta,a) then
             bestx = x
             besty = y
             besta = a
@@ -6532,6 +6537,9 @@ function find_good_stairs()
         mdist = mdist / 2
       elseif speed_diff > 0 then
         mdist = mdist / 1.5
+      end
+      if is_ranged(e.m) then
+        mdist = mdist - 4
       end
       if mdist < minmdist then
         minmdist = mdist
