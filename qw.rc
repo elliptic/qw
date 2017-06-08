@@ -3946,7 +3946,7 @@ function step_improvement(bestreason,reason,a1,a2)
     return true
   elseif bestreason == "fleeing" and reason ~= "fleeing" then
     return false
-  if reason == "water" and bestreason == "water"
+  elseif reason == "water" and bestreason == "water"
      and a2.enemy_distance < a1.enemy_distance then
     return true
   elseif reason == "water" and bestreason == "water"
