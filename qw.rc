@@ -3348,6 +3348,21 @@ function reason_to_rest(percentage)
           or you.silencing() or you.corrosion() > 0)
 end
 
+-- are we significantly stronger than usual thanks to a buff that we used?
+function buffed()
+  if hp_is_low(50) or transformed() or you.corrosion() >= 2 then
+    return false
+  end
+  if you.god() == "Okawaru" and
+     (you.status("heroism") or you.status("finesse")) then
+    return true
+  end
+  if you.extra_resistant() then
+    return true
+  end
+  return false
+end
+
 function should_ally_rest()
   if you.god() ~= "Yredelemnul" and you.god() ~= "Beogh" then
     return false
@@ -3928,7 +3943,7 @@ function step_reason(a1,a2)
   elseif (not a1.near_ally)
          and a2.stair_closer < 10000 and a1.stair_closer > 0
          and a1.enemy_distance < 10
-         and reason_to_rest(90)
+         and reason_to_rest(90) and not buffed()
          and (no_spells or starting_spell() ~= "Summon Small Mammal") then
     return "fleeing"
   elseif (not a1.near_ally) and a2.ranged == 0 and a2.adjacent == 0 and a1.longranged > 0 then
@@ -5613,6 +5628,7 @@ function want_to_stairdance_up()
     return false
   end
   if follow_count == 0 and (reason_to_rest(90) or you.status("barbed spikes"))
+     and not buffed()
      or other_count > 0 and follow_count > 0 then
     stairdance_count[where] = n + 1
     return true
@@ -6622,7 +6638,7 @@ function plan_continue_flee()
   end
   if danger or not reason_to_rest(90) or you.transform() == "tree"
      or count_bia(3) > 0 or count_sgd(3) > 0 or count_divine_warrior(3) > 0
-     or you.status("barbed spikes") or you.confused() then
+     or you.status("barbed spikes") or you.confused() or buffed() then
     return false
   end
   local num = waypoint_parity
