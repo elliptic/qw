@@ -27,12 +27,10 @@
 # * dsmart - Swamp/Spider > Snake > Shoals (DsBe data)
 : RUNE_PREFERENCE = "random"
 # plan for post-V:5, should end with zot
-# maximal example: "tso,tomb,hells,pan,slime,abyss,zot"
+# maximal example: "tso,tomb,hells,pan,slime,abyss,zig,zot"
 : ENDGAME_PLAN = "zot"
-# depth to attempt to dive in ziggurats (0 to turn off)
-# if turned on, this causes annoying throttling delays when played online
-# for some reason
-: ZIG_DIVE = 0
+# depth to attempt to dive in ziggurats
+: ZIG_DIVE = 27
 # burn books with Trog, may theoretically cause navigation problems
 : BURN_BOOKS = true
 # enable certain somewhat spammy notes
@@ -815,7 +813,8 @@ function update_game_status()
          and not where:find("Abyss")
       or game_status == "tomb" and you.have_rune("golden")
          and not where:find("Tomb") and not where:find("Abyss")
-      or game_status == "tso" and you.god() == "the Shining One" do
+      or game_status == "tso" and you.god() == "the Shining One"
+      or game_status == "zig" and c_persist.entered_zig and not where:find("Zig") do
     which_endgame_plan = which_endgame_plan + 1
     game_status = endgame_plan_list[which_endgame_plan]
   end
@@ -1480,7 +1479,6 @@ local portal_data = {
   --{"Volcano", "a dark tunnel", "volcano"},
   --{"WizLab", "a magical portal", "wizlab"},
   --{"Desolation", "ruined gateway", "desolation"},
-  --{"Zig", "gateway to a ziggurat", "ziggurat"},
   --{"Lab", "labyrinth entrance", "labyrinth"},
 } -- hack
 
@@ -2066,7 +2064,7 @@ function miasma_immune()
 end
 
 function is_waypointable(loc)
-  return (not is_portal_location(loc) and not loc:find("Abyss") and loc ~= "Pan")
+  return (not is_portal_location(loc) and not loc:find("Abyss") and loc ~= "Pan" and not loc:find("Zig"))
 end
 
 function is_portal_location(loc)
@@ -4269,6 +4267,9 @@ function bad_corrosion()
 end
 
 function want_to_teleport()
+  if where:find("Zig") then
+    return false
+  end
   if count_hostile_sgd(LOS) > 0 and you.xl() < 21 then
     sgd_timer = you.turns()
     return true
@@ -5854,14 +5855,13 @@ function plan_go_to_portal_entrance()
 end
 
 function plan_go_to_zig()
-  if ZIG_DIVE <= 0 then
+  if not where:find("Depths") or game_status ~= "zig" or c_persist.entered_zig then
     return false
+  else
+    expect_new_location = true
+    magicfind("gateway to a ziggurat")
+    return true
   end
-  if you.num_runes() < rune_goal() then
-    return false
-  end
-  magicfind("gateway to a ziggurat")
-  return true
 end
 
 function plan_go_to_portal_exit()
@@ -5983,15 +5983,13 @@ function plan_early_new_travel()
 end
 
 function plan_enter_zig()
-  if ZIG_DIVE <= 0 then
-    return false
-  end
-  if you.num_runes() < rune_goal() then
+  if not where:find("Depths") or game_status ~= "zig" or c_persist.entered_zig then
     return false
   end
   if view.feature_at(0,0) == "enter_ziggurat" then
     expect_new_location = true
-    magic(">")
+    c_persist.entered_zig = true
+    magic(">Y")
     return true
   end
   return false
@@ -6092,10 +6090,12 @@ function plan_zig_leave_level()
   if where:find(tostring(ZIG_DIVE)) then
     if view.feature_at(0,0) == "exit_ziggurat" then
       magic("<Y")
+      expect_new_location = true
       return true
     end
   elseif string.find(view.feature_at(0,0), "stone_stairs_down") then
     magic(">")
+    expect_new_location = true
     return true
   end
   return false
@@ -7040,10 +7040,14 @@ end
 
 function plan_dig_grate()
   local grate_mon_list
-  local grate_count_needed
-  if where == "Depths:5" or where:find("Zot") then
+  local grate_count_needed = 3
+  if where:find("Zot") then
     grate_mon_list = {"draconian stormcaller", "draconian scorcher"}
-    grate_count_needed = 3
+  elseif where == "Depths:5" then
+    grate_mon_list = {"draconian stormcaller", "draconian scorcher",
+                      "angel", "daeva", "lich"}
+  elseif where:find("Depths") then
+    grate_mon_list = {"angel", "daeva", "lich"}
   elseif where == "Pan" or where == "Geh:7" then
     grate_mon_list = {"smoke demon"}
     grate_count_needed = 1
@@ -7592,7 +7596,6 @@ plan_orbrun_eatrest = cascade {
 
 plan_explore = cascade {
   {plan_unshaft, "try_unshaft"},
-  {plan_enter_zig, "enter_zig"},
   {plan_continue_travel, "try_continue_travel"},
   {plan_enter_portal, "enter_portal"},
   {plan_go_to_portal_entrance, "try_go_to_portal_entrance"},
@@ -7600,6 +7603,8 @@ plan_explore = cascade {
   {plan_go_to_abyss_portal, "try_go_to_abyss_portal"},
   {plan_enter_pan, "enter_pan"},
   {plan_go_to_pan_portal, "try_go_to_pan_portal"},
+  {plan_enter_zig, "enter_zig"},
+  {plan_go_to_zig, "try_go_to_zig"},
   {plan_dive, "try_dive"},
   {plan_dive_pan, "dive_pan"},
   {plan_dive_go_to_pan_downstairs, "try_dive_go_to_pan_downstairs"},
@@ -7618,7 +7623,6 @@ plan_explore2 = cascade {
   {plan_go_down_pan, "try_go_down_pan"},
   {plan_go_to_pan_downstairs, "try_go_to_pan_downstairs"},
   {plan_enter_branch, "try_enter_branch"},
-  {plan_go_to_zig, "try_go_to_zig"},
   {plan_shopping_spree, "try_shopping_spree"},
   {plan_simple_go_down, "try_simple_go_down"},
   {plan_new_travel, "try_new_travel"},
