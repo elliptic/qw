@@ -7051,6 +7051,9 @@ function plan_dig_grate()
   elseif where == "Pan" or where == "Geh:7" then
     grate_mon_list = {"smoke demon"}
     grate_count_needed = 1
+  elseif where:find("Zig") then
+    grate_mon_list = {""}
+    grate_count_needed = 1
   else
     return false
   end
