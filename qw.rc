@@ -4363,6 +4363,9 @@ function want_to_orbrun_buff()
 end
 
 function want_to_serious_buff()
+  if danger and where:find("Zig") and hp_is_low(50) and count_nearby(0,0,LOS) >= 5 then
+    return true
+  end
   if you.god() == "Okawaru" or you.god() == "Trog" then
     return false -- these gods have their own buffs
   end
