@@ -3426,6 +3426,10 @@ function rest()
   next_delay = 5
 end
 
+function easy_rest()
+  magic("5")
+end
+
 function attack()
   local success = false
   failed_move = { }
@@ -4744,6 +4748,14 @@ function count_permafood()
     end
   end
   return s
+end
+
+function plan_easy_rest()
+  if should_rest() then
+    easy_rest()
+    return true
+  end
+  return false
 end
 
 function plan_rest()
@@ -7572,6 +7584,7 @@ plan_eatrest = cascade {
   {plan_eat_chunk, "eat_chunk"},
   {plan_eat_permafood, "eat_permafood"},
   {plan_dd_hand_for_healing, "dd_hand_for_healing"},
+  --{plan_easy_rest, "try_easy_rest"},
   {plan_rest, "rest"},
   {plan_handle_corpses, "handle_corpses"},
   {plan_find_corpses, "try_find_corpses"},
