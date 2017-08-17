@@ -5876,6 +5876,35 @@ function plan_go_to_zig()
   end
 end
 
+function plan_go_to_zig_dig()
+  if not where:find("Depths") or game_status ~= "zig" or c_persist.entered_zig
+     or view.feature_at(0,0) == "enter_ziggurat"
+     or view.feature_at(3,1) == "enter_ziggurat"
+     or count_charges("digging") == 0 then
+    return false
+  else
+    expect_new_location = true
+    off_level_travel = false
+    magic(control('f') .. "gateway to a ziggurat" .. "\rayby\r")
+    return true
+  end
+end
+
+function plan_zig_dig()
+  if not where:find("Depths") or game_status ~= "zig" or c_persist.entered_zig
+     or view.feature_at(3,1) ~= "enter_ziggurat" then
+    return false
+  else
+    local c = find_item("wand", "digging")
+    if c and can_zap() then
+      say("ZAPPING " .. item(c).name() .. ".")
+      magic("V" .. letter(c) .. "L")
+      return true
+    end
+  end
+  return false
+end
+
 function plan_go_to_portal_exit()
   if in_portal() then
     magic("X<\r")
@@ -7057,9 +7086,9 @@ function plan_dig_grate()
     grate_mon_list = {"draconian stormcaller", "draconian scorcher"}
   elseif where == "Depths:5" then
     grate_mon_list = {"draconian stormcaller", "draconian scorcher",
-                      "angel", "daeva", "lich"}
+                      "angel", "daeva", "lich", "eye"}
   elseif where:find("Depths") then
-    grate_mon_list = {"angel", "daeva", "lich"}
+    grate_mon_list = {"angel", "daeva", "lich", "eye"}
   elseif where == "Pan" or where == "Geh:7" then
     grate_mon_list = {"smoke demon"}
     grate_count_needed = 1
@@ -7621,6 +7650,8 @@ plan_explore = cascade {
   {plan_go_to_pan_portal, "try_go_to_pan_portal"},
   {plan_enter_zig, "enter_zig"},
   {plan_go_to_zig, "try_go_to_zig"},
+  {plan_zig_dig, "zig_dig"},
+  {plan_go_to_zig_dig, "try_go_to_zig_dig"},
   {plan_dive, "try_dive"},
   {plan_dive_pan, "dive_pan"},
   {plan_dive_go_to_pan_downstairs, "try_dive_go_to_pan_downstairs"},
