@@ -1310,7 +1310,7 @@ function want_scroll(it)
   if sub ~= "identify" and sub ~= "teleportation" and sub ~= "remove curse"
      and sub ~= "enchant weapon" and sub ~= "enchant armour"
      and sub ~= "acquirement" and sub ~= "recharging"
-     and sub ~= "brand weapon" then
+     and sub ~= "brand weapon" and sub ~= "fog" then
     return false
   end
   return true
@@ -4149,6 +4149,17 @@ function plan_recall_ancestor()
     return true
   end
   return false
+end
+
+function plan_zig_fog()
+  if not where:find("Zig")
+     or you.berserk() or you.teleporting() or you.confused()
+     or not danger or not hp_is_low(70)
+     or count_nearby(0,0,LOS) - count_nearby(0,0,2) < 15
+     or view.cloud_at(0,0) ~= nil then
+    return false
+  end
+  return read_by_name("fog")
 end
 
 function plan_finesse()
@@ -7597,6 +7608,7 @@ plan_emergency = cascade {
   {plan_wield_weapon, "wield_weapon"},
   {plan_swap_weapon, "swap_weapon"},
   {plan_water_step, "water_step"},
+  {plan_zig_fog, "zig_fog"},
   {plan_finesse, "finesse"},
   {plan_dig_grate, "try_dig_grate"},
   {plan_might, "might"},
