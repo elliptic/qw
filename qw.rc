@@ -2432,7 +2432,8 @@ function is_ranged(m)
   if m:has_known_ranged_attack() then
     return true
   end
-  if name == "Maurice" or name == "Ijyb" or name == "crimson imp" then
+  if name == "Maurice" or name == "Ijyb" or name == "crimson imp"
+     or name == "lost soul" then
     return true
   end
   return false
