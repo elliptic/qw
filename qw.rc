@@ -3800,11 +3800,13 @@ function plan_blinking()
         count = 0
         for dx = -1,1 do
           for dy = -1,1 do
-            m = monster_array[x+dx][y+dy]
-            if m and m:name() == "floating eye" then
-              count = count + 3
-            elseif m and m:name() == "starcursed mass" then
-              count = count + 1
+            if abs(x+dx) <= LOS and abs(y+dy) <= LOS then
+              m = monster_array[x+dx][y+dy]
+              if m and m:name() == "floating eye" then
+                count = count + 3
+              elseif m and m:name() == "starcursed mass" then
+                count = count + 1
+              end
             end
           end
         end
