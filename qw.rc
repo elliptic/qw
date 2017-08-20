@@ -1296,7 +1296,7 @@ function want_potion(it)
   end
   if sub ~= "curing" and sub ~= "heal wounds" and sub ~= "haste"
      and sub ~= "resistance" and sub ~= "experience" and sub ~= "might"
-     and sub ~= "mutation" then
+     and sub ~= "mutation" and sub ~= "cancellation" then
     return false
   end
   return true
@@ -1310,7 +1310,8 @@ function want_scroll(it)
   if sub ~= "identify" and sub ~= "teleportation" and sub ~= "remove curse"
      and sub ~= "enchant weapon" and sub ~= "enchant armour"
      and sub ~= "acquirement" and sub ~= "recharging"
-     and sub ~= "brand weapon" and sub ~= "fog" then
+     and sub ~= "brand weapon" and sub ~= "fog"
+     and sub ~= "blinking" then
     return false
   end
   return true
@@ -3740,6 +3741,84 @@ function plan_cure_bad_poison()
       purification()
       return true
     end
+  end
+  return false
+end
+
+function plan_cancellation()
+  if not danger or not can_drink() or you.teleporting() then
+    return false
+  end
+  if you.petrifying() or you.corrosion() >= 4
+     or you.corrosion() >= 3 and hp_is_low(70) then
+    if drink_by_name("cancellation") then
+      return true
+    end
+  end
+  return false
+end
+
+function plan_blinking()
+  if not where:find("Zig") or not danger or not can_read() then
+    return false
+  end
+  local para_danger = false
+  for _,e in ipairs(enemy_list) do
+    if e.m:name() == "floating eye" or e.m:name() == "starcursed mass" then
+      para_danger = true
+    end
+  end
+  if not para_danger then
+    return false
+  end
+  if count_item("scroll", "of blinking") == 0 then
+    return false
+  end
+  local x,y,dx,dy,m
+  local cur_count = 0
+  local best_count = 0
+  local count
+  local best_x,best_y
+  for x = -1,1 do
+    for y = -1,1 do
+      m = monster_array[x][y]
+      if m and m:name() == "floating eye" then
+        cur_count = cur_count + 3
+      elseif m and m:name() == "starcursed mass" then
+        cur_count = cur_count + 1
+      end
+    end
+  end
+  if cur_count >= 2 then
+    return false
+  end
+  for x = -LOS,LOS do
+    for y = -LOS,LOS do
+      if is_traversable(x,y) and not is_solid(x,y)
+         and monster_array[x][y] == nil and view.is_safe_square(x,y)
+         and not view.withheld(x,y) and you.see_cell_no_trans(x,y) then
+        count = 0
+        for dx = -1,1 do
+          for dy = -1,1 do
+            m = monster_array[x+dx][y+dy]
+            if m and m:name() == "floating eye" then
+              count = count + 3
+            elseif m and m:name() == "starcursed mass" then
+              count = count + 1
+            end
+          end
+        end
+        if count > best_count then
+          best_count = count
+          best_x = x
+          best_y = y
+        end
+      end
+    end
+  end
+  if best_count >= cur_count + 2 then
+    local c = find_item("scroll", "blinking")
+    return read2(letter(c), vector_move(best_x,best_y) .. ".")
   end
   return false
 end
@@ -7592,6 +7671,7 @@ plan_emergency = cascade {
   {plan_remove_terrible_jewellery, "remove_terrible_jewellery"},
   {plan_teleport, "teleport"},
   {plan_cure_bad_poison, "cure_bad_poison"},
+  {plan_cancellation, "cancellation"},
   {plan_drain_life, "drain_life"},
   {plan_heal_wounds, "heal_wounds"},
   {plan_cloud_step, "cloud_step"},
@@ -7613,6 +7693,7 @@ plan_emergency = cascade {
   {plan_finesse, "finesse"},
   {plan_dig_grate, "try_dig_grate"},
   {plan_might, "might"},
+  {plan_blinking, "blinking"},
   {plan_berserk, "berserk"},
   {plan_continue_flee, "continue_flee"},
   {plan_other_step, "other_step"},
