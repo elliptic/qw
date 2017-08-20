@@ -3759,7 +3759,8 @@ function plan_cancellation()
 end
 
 function plan_blinking()
-  if not where:find("Zig") or not danger or not can_read() then
+  if not where:find("Zig") or not danger or not can_read()
+     or you.mutation("blurry vision") > 0 then
     return false
   end
   local para_danger = false
