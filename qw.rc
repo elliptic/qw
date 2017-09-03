@@ -98,6 +98,7 @@ combo = GrBe.handaxe
 name = qw
 restart_after_game = false
 
+bold_brightens_foreground = true
 equip_bar = true
 ability_menu = false
 view_delay = 0
@@ -130,6 +131,7 @@ equip_unequip = true
 dump_order = header,hiscore,stats,misc,mutations,skills,spells,inventory
 dump_order += overview
 dump_order += messages,screenshot,monlist,kills,notes,vaults,skill_gains,action_counts
+dump_order += xp_by_level
 ood_interesting = 6
 note_hp_percent = 25
 note_skill_levels = 1,3,6,9,12,15,18,21,24,27
