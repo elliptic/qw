@@ -288,6 +288,7 @@ local HELL_RUNE = false
 local GOLDEN_RUNE = false
 local TSO_CONVERSION = false
 local LUGONU_CONVERSION = false
+local WILL_ZIG = false
 local MIGHT_BE_GOOD = false
 local endgame_plan_list = {}
 local which_endgame_plan = 1
@@ -1312,8 +1313,8 @@ function want_scroll(it)
   if sub ~= "identify" and sub ~= "teleportation" and sub ~= "remove curse"
      and sub ~= "enchant weapon" and sub ~= "enchant armour"
      and sub ~= "acquirement" and sub ~= "recharging"
-     and sub ~= "brand weapon" and sub ~= "fog"
-     and sub ~= "blinking" then
+     and sub ~= "brand weapon"
+     and (not WILL_ZIG or sub ~= "fog" and sub ~= "blinking") then
     return false
   end
   return true
@@ -8165,6 +8166,8 @@ function make_endgame_plans()
       GOLDEN_RUNE = true
     elseif pl == "tso" then
       TSO_CONVERSION = true
+    elseif pl == "zig" then
+      WILL_ZIG = true
     end
   end
   if endgame_plan_list[#endgame_plan_list] ~= "zot" then
