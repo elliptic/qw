@@ -1947,7 +1947,7 @@ function armour_plan()
   local sp = you.race()
   if sp == "Ogre" or sp == "Troll" then
     return "large"
-  elseif sp == "Deep Elf" or sp == "Halfling" or sp == "Kobold"
+  elseif sp == "Deep Elf" or sp == "Kobold"
          or sp == "Merfolk" then
     return "dodgy"
   elseif sp:find("Draconian") or sp == "Felid" or sp == "Octopode"
@@ -2006,8 +2006,6 @@ function weapon_choice()
   sp = you.race()
   if sp == "Felid" or sp == "Troll" or sp == "Ghoul" then
     return "Unarmed Combat"
-  elseif sp == "Halfling" then
-    return "Long Blades"
   elseif sp == "Ogre" or sp == "Kobold" then
     return "Maces & Flails"
   elseif sp == "Merfolk" then
