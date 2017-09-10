@@ -1486,15 +1486,17 @@ local portal_data = {
   --{"Lab", "labyrinth entrance", "labyrinth"},
 } -- hack
 
--- monster lists: XL cutoff (>= to ignore), monster name (or function)
-function in_desc(str)
+-- functions for use in the monster lists below
+function in_desc(lev,str)
   return function (m)
-    return m:desc():find(str)
+    return (you.xl() < lev and m:desc():find(str))
   end
 end
 
-function pan_lord(m)
-  return (m:type() == ENUM_MONS_PANDEMONIUM_LORD)
+function pan_lord(lev)
+  return function (m)
+    return (you.xl() < lev and m:type() == ENUM_MONS_PANDEMONIUM_LORD)
+  end
 end
 
 local res_func_table = {
@@ -1507,15 +1509,15 @@ local res_func_table = {
   --MR=you.res_magic, -- (doesn't exist yet...)
 } --hack
 
-function check_resist(name,resist,value)
+function check_resist(lev,resist,value)
   return function (m)
-    return (m:name() == name and res_func_table[resist]() < value)
+    return (you.xl() < lev and res_func_table[resist]() < value)
   end
 end
 
-function slow_berserk(name)
+function slow_berserk(lev)
   return function (m)
-    return (m:name() == name and count_nearby(0,0,1) > 0)
+    return (you.xl() < lev and count_nearby(0,0,1) > 0)
   end
 end
 
@@ -1534,333 +1536,356 @@ function hydra_weapon_status(weap)
   end
 end
 
-function hydra_check_flaming(m)
-  if m:desc():find("hydra") then
-    return (hydra_weapon_status(items.equipped_at("Weapon")) ~= 1)
+function hydra_check_flaming(lev)
+  return function (m)
+    return (you.xl() < lev and m:desc():find("hydra")
+            and hydra_weapon_status(items.equipped_at("Weapon")) ~= 1)
   end
-  return false
 end
+
+-- The format in monster lists below is that a num is equivalent to checking
+-- XL < num, otherwise we want a function. ["*"] should be a table of
+-- functions to check for every monster.
 
 -- berserk these
 local scary_monsters = {
-  {3, "Terence"},
+  ["*"] = {
+    in_desc(15,"hydra"),
+    hydra_check_flaming(20),
+    in_desc(100,"berserk[^e]"),
+    in_desc(100,"statue"),
+    in_desc(100,"'s ghost"),
+    in_desc(100,"' ghost"),
+    in_desc(100,"'s illusion"),
+    in_desc(100,"' illusion"),
+    pan_lord(100),
+  },
 
-  {4, slow_berserk("worm")},
+  ["Terence"] = 3,
 
-  {5, "gnoll"},
-  {5, "ice beast"},
-  {5, "iguana"},
-  {5, "Natasha"},
-  {5, "Robin"},
+  ["worm"] = slow_berserk(4),
 
-  {7, "Ijyb"},
-  {7, check_resist("ice beast","rC",1)},
-  {7, "orc wizard"},
-  {7, "Grinder"},
-  {7, "Dowan"},
-  {7, "Duvessa"},
-  {7, "Menkaure"},
-  {7, "Edmund"},
-  {7, "Blork the orc"},
-  {7, "Eustachio"},
-  {7, "gnoll sergeant"},
+  ["gnoll"] = 5,
+  ["ice beast"] = 5,
+  ["iguana"] = 5,
+  ["Natasha"] = 5,
+  ["Robin"] = 5,
 
-  {10, "Prince Ribbit"},
-  {10, "Pikel"},
-  {10, "Crazy Yiuf"},
-  {10, "Sigmund"},
-  {10, "ogre"},
-  {10, "decayed bog body"},
+  ["Ijyb"] = 7,
+  ["ice beast"] = check_resist(7,"rC",1),
+  ["orc wizard"] = 7,
+  ["Grinder"] = 7,
+  ["Dowan"] = 7,
+  ["Duvessa"] = 7,
+  ["Menkaure"] = 7,
+  ["Edmund"] = 7,
+  ["Blork the orc"] = 7,
+  ["Eustachio"] = 7,
+  ["gnoll sergeant"] = 7,
 
-  {12, "two-headed ogre"},
-  {12, "orc priest"},
-  {12, "orc warrior"},
-  {12, "troll"},
-  {12, "cyclops"},
-  {12, "spiny frog"},
-  {12, "black mamba"},
-  {12, "Snorg"},
-  {12, "Harold"},
-  {12, "komodo dragon"},
-  {12, "Gastronok"},
-  {12, "snapping turtle"},
-  {12, "Urug"},
-  {12, "Grum"},
-  {12, "electric eel"},
-  {12, "Nergalle"},
-  {12, "jelly"},
-  {12, "manticore"},
-  {12, "guardian mummy"},
-  {12, "Psyche"},
-  {12, "oklob sapling"},
+  ["Prince Ribbit"] = 10,
+  ["Pikel"] = 10,
+  ["Crazy Yiuf"] = 10,
+  ["Sigmund"] = 10,
+  ["ogre"] = 10,
+  ["decayed bog body"] = 10,
 
-  {13, "blink frog"},
+  ["two-headed ogre"] = 12,
+  ["orc priest"] = 12,
+  ["orc warrior"] = 12,
+  ["troll"] = 12,
+  ["cyclops"] = 12,
+  ["spiny frog"] = 12,
+  ["black mamba"] = 12,
+  ["Snorg"] = 12,
+  ["Harold"] = 12,
+  ["komodo dragon"] = 12,
+  ["Gastronok"] = 12,
+  ["snapping turtle"] = 12,
+  ["Urug"] = 12,
+  ["Grum"] = 12,
+  ["electric eel"] = 12,
+  ["Nergalle"] = 12,
+  ["jelly"] = 12,
+  ["manticore"] = 12,
+  ["guardian mummy"] = 12,
+  ["Psyche"] = 12,
+  ["oklob sapling"] = 12,
 
-  {15, "death yak"},
-  {15, "Erica"},
-  {15, "catoblepas"},
-  {15, "orc knight"},
-  {15, "swamp worm"},
-  {15, in_desc("hydra")},
+  ["blink frog"] = 13,
 
-  {17, "fire dragon"},
-  {17, "ice dragon"},
-  {17, "storm dragon"},
-  {17, "ogre mage"},
-  {17, "orc sorcerer"},
-  {17, "orc high priest"},
-  {17, "orc warlord"},
-  {17, "dire elephant"},
-  {17, "very large slime creature"},
-  {17, "skeletal warrior"},
-  {17, "Arachne"},
-  {17, "deep troll"},
-  {17, "thorn hunter"},
-  {17, "sun demon"},
-  {17, check_resist("white ugly thing","rC",1)},
-  {17, check_resist("white very ugly thing","rC",1)},
+  ["death yak"] = 15,
+  ["Erica"] = 15,
+  ["catoblepas"] = 15,
+  ["orc knight"] = 15,
+  ["swamp worm"] = 15,
 
-  {20, "nagaraja"},
-  {20, "naga sharpshooter"},
-  {20, "emperor scorpion"},
-  {20, "Donald"},
-  {20, "Rupert"},
-  {20, "Aizul"},
-  {20, hydra_check_flaming},
-  {20, "Azrael"},
-  {20, "Frances"},
-  {20, "Saint Roka"},
-  {20, "Agnes"},
-  {20, "Jory"},
-  {20, "Nikola"},
-  {20, "stone giant"},
-  {20, "fire giant"},
-  {20, "frost giant"},
-  {20, "acid blob"},
-  {20, "azure jelly"},
-  {20, "Asterion"},
-  {20, "spriggan defender"},
-  {20, "spriggan air mage"},
-  {20, "spriggan druid"},
-  {20, "deep troll shaman"},
-  {20, "Xtahua"},
-  {20, "tengu reaver"},
-  {20, "ettin"},
-  {20, "Polyphemus"},
-  {20, "Bai Suzhen"},
+  ["fire dragon"] = 17,
+  ["ice dragon"] = 17,
+  ["storm dragon"] = 17,
+  ["ogre mage"] = 17,
+  ["orc sorcerer"] = 17,
+  ["orc high priest"] = 17,
+  ["orc warlord"] = 17,
+  ["dire elephant"] = 17,
+  ["very large slime creature"] = 17,
+  ["skeletal warrior"] = 17,
+  ["Arachne"] = 17,
+  ["deep troll"] = 17,
+  ["thorn hunter"] = 17,
+  ["sun demon"] = 17,
+  ["white ugly thing"] = check_resist(17,"rC",1),
+  ["white very ugly thing"] = check_resist(17,"rC",1),
 
-  {24, check_resist("storm dragon","rElec",1)},
-  {24, check_resist("fire giant","rF",1)},
-  {24, check_resist("frost giant","rC",1)},
-  {24, check_resist("azure jelly","rC",1)},
+  ["nagaraja"] = 20,
+  ["naga sharpshooter"] = 20,
+  ["emperor scorpion"] = 20,
+  ["Donald"] = 20,
+  ["Rupert"] = 20,
+  ["Aizul"] = 20,
+  ["Azrael"] = 20,
+  ["Frances"] = 20,
+  ["Saint Roka"] = 20,
+  ["Agnes"] = 20,
+  ["Jory"] = 20,
+  ["Nikola"] = 20,
+  ["stone giant"] = 20,
+  ["fire giant"] = 20,
+  ["frost giant"] = 20,
+  ["acid blob"] = 20,
+  ["azure jelly"] = 20,
+  ["Asterion"] = 20,
+  ["spriggan defender"] = 20,
+  ["spriggan air mage"] = 20,
+  ["spriggan druid"] = 20,
+  ["deep troll shaman"] = 20,
+  ["Xtahua"] = 20,
+  ["tengu reaver"] = 20,
+  ["ettin"] = 20,
+  ["Polyphemus"] = 20,
+  ["Bai Suzhen"] = 20,
 
-  {100, check_resist("Xtahua","rF",1)},
-  {100, "deep elf annihilator"},
-  {100, "deep elf sorcerer"},
-  {100, "the Enchantress"},
-  {100, "Vashnia"},
-  {100, "Sojobo"},
-  {100, in_desc("berserk[^e]")},
-  {100, "Roxanne"},
-  {100, "Erolcha"},
-  {100, in_desc("statue")},
-  {100, "Nessos"},
-  {100, "Sonja"},
-  {100, "Louise"},
-  {100, "Mennas"},
-  {100, check_resist("Margery","rF",2)},
-  {100, "Frederick"},
-  {100, "Boris"},
-  {100, "Mara"},
-  {100, "boggart"},
-  {100, "lich"},
-  {100, "ancient lich"},
-  {100, in_desc("'s ghost")},
-  {100, in_desc("' ghost")},
-  {100, in_desc("'s illusion")},
-  {100, in_desc("' illusion")},
-  {100, "oklob plant"},
-  {100, "hellion"},
-  {100, "tormentor"},
-  {100, "Hell Sentinel"},
-  {100, "Ice Fiend"},
-  {100, "Tzitzimitl"},
-  {100, "Brimstone Fiend"},
-  {100, "curse toe"},
-  {100, "curse skull"},
-  {100, "Tiamat"},
-  {100, "titanic slime creature"},
-  {100, "enormous slime creature"},
-  {100, "titan"},
-  {100, "orb of fire"},
-  {100, "caustic shrike"},
-  {100, "seraph"},
-  {100, "juggernaut"},
-  {100, "Royal Jelly"},
-  {100, "iron giant"},
-  {100, "Cerebov"},
-  {100, "Gloorx Vloq"},
-  {100, "Lom Lobon"},
-  {100, "Mnoleg"},
-  {100, pan_lord},
-  {100, "Dispater"},
-  {100, "Asmodeus"},
-  {100, "Antaeus"},
-  {100, "Ereshkigal"},
-  {100, "greater mummy"},
-  {100, "Khufu"},
+  ["storm dragon"] = check_resist(24,"rElec",1),
+  ["fire giant"] = check_resist(24,"rF",1),
+  ["frost giant"] = check_resist(24,"rC",1),
+  ["azure jelly"] = check_resist(24,"rC",1),
+
+  ["Xtahua"] = check_resist(100,"rF",1),
+  ["deep elf annihilator"] = 100,
+  ["deep elf sorcerer"] = 100,
+  ["the Enchantress"] = 100,
+  ["Vashnia"] = 100,
+  ["Sojobo"] = 100,
+  ["Roxanne"] = 100,
+  ["Erolcha"] = 100,
+  ["Nessos"] = 100,
+  ["Sonja"] = 100,
+  ["Louise"] = 100,
+  ["Mennas"] = 100,
+  ["Margery"] = check_resist(100,"rF",2),
+  ["Frederick"] = 100,
+  ["Boris"] = 100,
+  ["Mara"] = 100,
+  ["boggart"] = 100,
+  ["lich"] = 100,
+  ["ancient lich"] = 100,
+  ["oklob plant"] = 100,
+  ["hellion"] = 100,
+  ["tormentor"] = 100,
+  ["Hell Sentinel"] = 100,
+  ["Ice Fiend"] = 100,
+  ["Tzitzimitl"] = 100,
+  ["Brimstone Fiend"] = 100,
+  ["curse toe"] = 100,
+  ["curse skull"] = 100,
+  ["Tiamat"] = 100,
+  ["titanic slime creature"] = 100,
+  ["enormous slime creature"] = 100,
+  ["titan"] = 100,
+  ["orb of fire"] = 100,
+  ["caustic shrike"] = 100,
+  ["seraph"] = 100,
+  ["juggernaut"] = 100,
+  ["Royal Jelly"] = 100,
+  ["iron giant"] = 100,
+  ["Cerebov"] = 100,
+  ["Gloorx Vloq"] = 100,
+  ["Lom Lobon"] = 100,
+  ["Mnoleg"] = 100,
+  ["Dispater"] = 100,
+  ["Asmodeus"] = 100,
+  ["Antaeus"] = 100,
+  ["Ereshkigal"] = 100,
+  ["greater mummy"] = 100,
+  ["Khufu"] = 100,
 } -- hack
 
 -- BiA these even at low piety
 local bia_necessary_monsters = {
-  {15, hydra_check_flaming},
-  {20, "orb spider"},
-  {100, in_desc("statue")},
+  ["*"] = {
+    hydra_check_flaming(15),
+    in_desc(100,"statue"),
+  },
+
+  ["orb spider"] = 20,
 } -- hack
 
 -- BiA these
 local bia_monsters = {
-  {15, "Rupert"},
-  {15, "Azrael"},
-  {15, "fire dragon"},
-  {15, "ice dragon"},
-  {15, "Snorg"},
-  {15, "death yak"},
-  {15, "red devil"},
+  ["*"] = {
+    hydra_check_flaming(17),
+    in_desc(100,"statue"),
+    in_desc(100,"'s ghost"),
+    in_desc(100,"' ghost"),
+    pan_lord(100),
+  },
 
-  {17, hydra_check_flaming},
-  {17, "Nikola"},
+  ["Rupert"] = 15,
+  ["Azrael"] = 15,
+  ["fire dragon"] = 15,
+  ["ice dragon"] = 15,
+  ["Snorg"] = 15,
+  ["death yak"] = 15,
+  ["red devil"] = 15,
 
-  {20, "orc warlord"},
-  {20, "Aizul"},
-  {20, "Frances"},
-  {20, "Saint Roka"},
-  {20, "Agnes"},
-  {20, "Jory"},
-  {20, "Arachne"},
-  {20, check_resist("Nikola","rElec",1)},
-  {20, "Vashnia"},
-  {20, "Asterion"},
-  {20, "orb spider"},
-  {20, "thorn hunter"},
-  {20, check_resist("sun demon","rF",1)},
-  {20, "Polyphemus"},
-  {20, "Ilsuiw"},
-  {20, "Bai Suzhen"},
-  {20, "merfolk avatar"},
+  ["Nikola"] = 17,
 
-  {100, "deep troll shaman"},
-  {100, check_resist("spriggan air mage","rElec",1)},
-  {100, "the Enchantress"},
-  {100, "Sojobo"},
-  {100, "Roxanne"},
-  {100, "Erolcha"},
-  {100, in_desc("statue")},
-  {100, "Nessos"},
-  {100, "Sonja"},
-  {100, "Louise"},
-  {100, "Mennas"},
-  {100, "Margery"},
-  {100, "Frederick"},
-  {100, "Boris"},
-  {100, "Mara"},
-  {100, "boggart"},
-  {100, "lich"},
-  {100, "ancient lich"},
-  {100, in_desc("'s ghost")},
-  {100, in_desc("' ghost")},
-  {100, "oklob plant"},
-  {100, "Hell Sentinel"},
-  {100, "Ice Fiend"},
-  {100, "Brimstone Fiend"},
-  {100, "Tzitzimitl"},
-  {100, "Tiamat"},
-  {100, "orb of fire"},
-  {100, "caustic shrike"},
-  {100, "seraph"},
-  {100, "Royal Jelly"},
-  {100, check_resist("spark wasp","rElec",1)},
-  {100, "juggernaut"},
-  {100, "iron giant"},
-  {100, check_resist("entropy weaver", "rCorr", 1)},
-  {100, "Cerebov"},
-  {100, "Gloorx Vloq"},
-  {100, "Lom Lobon"},
-  {100, "Mnoleg"},
-  {100, pan_lord},
-  {100, "Dispater"},
-  {100, "Asmodeus"},
-  {100, "Antaeus"},
-  {100, "Ereshkigal"},
-  {100, "greater mummy"},
-  {100, "Khufu"},
+  ["orc warlord"] = 20,
+  ["Aizul"] = 20,
+  ["Frances"] = 20,
+  ["Saint Roka"] = 20,
+  ["Agnes"] = 20,
+  ["Jory"] = 20,
+  ["Arachne"] = 20,
+  ["Nikola"] = check_resist(20,"rElec",1),
+  ["Vashnia"] = 20,
+  ["Asterion"] = 20,
+  ["orb spider"] = 20,
+  ["thorn hunter"] = 20,
+  ["sun demon"] = check_resist(20,"rF",1),
+  ["Polyphemus"] = 20,
+  ["Ilsuiw"] = 20,
+  ["Bai Suzhen"] = 20,
+  ["merfolk avatar"] = 20,
+
+  ["deep troll shaman"] = 100,
+  ["spriggan air mage"] = check_resist(100,"rElec",1),
+  ["the Enchantress"] = 100,
+  ["Sojobo"] = 100,
+  ["Roxanne"] = 100,
+  ["Erolcha"] = 100,
+  ["Nessos"] = 100,
+  ["Sonja"] = 100,
+  ["Louise"] = 100,
+  ["Mennas"] = 100,
+  ["Margery"] = 100,
+  ["Frederick"] = 100,
+  ["Boris"] = 100,
+  ["Mara"] = 100,
+  ["boggart"] = 100,
+  ["lich"] = 100,
+  ["ancient lich"] = 100,
+  ["oklob plant"] = 100,
+  ["Hell Sentinel"] = 100,
+  ["Ice Fiend"] = 100,
+  ["Brimstone Fiend"] = 100,
+  ["Tzitzimitl"] = 100,
+  ["Tiamat"] = 100,
+  ["orb of fire"] = 100,
+  ["caustic shrike"] = 100,
+  ["seraph"] = 100,
+  ["Royal Jelly"] = 100,
+  ["spark wasp"] = check_resist(100,"rElec",1),
+  ["juggernaut"] = 100,
+  ["iron giant"] = 100,
+  ["entropy weaver"] = check_resist(100,"rCorr",1),
+  ["Cerebov"] = 100,
+  ["Gloorx Vloq"] = 100,
+  ["Lom Lobon"] = 100,
+  ["Mnoleg"] = 100,
+  ["Dispater"] = 100,
+  ["Asmodeus"] = 100,
+  ["Antaeus"] = 100,
+  ["Ereshkigal"] = 100,
+  ["greater mummy"] = 100,
+  ["Khufu"] = 100,
 } -- hack
 
 -- Use haste/might on these few
 local ridiculous_uniques = {
-  {100, "Antaeus"},
-  {100, "Asmodeus"},
-  {100, "Lom Lobon"},
+  ["*"] = {},
+  ["Antaeus"] = 100,
+  ["Asmodeus"] = 100,
+  ["Lom Lobon"] = 100,
 } -- hack
 
 -- Trog's Hand these
 local hand_monsters = {
-  {10, "Grinder"},
+  ["*"] = {},
 
-  {17, "orc sorcerer"},
-  {17, "wizard"},
+  ["Grinder"] = 10,
 
-  {100, "ogre mage"},
-  {100, "Rupert"},
-  {100, "Xtahua"},
-  {100, "Aizul"},
-  {100, "Erolcha"},
-  {100, "Louise"},
-  {100, "lich"},
-  {100, "ancient lich"},
-  {100, "Kirke"},
-  {100, "golden eye"},
-  {100, "deep elf sorcerer"},
-  {100, "deep elf demonologist"},
-  {100, "sphinx"},
-  {100, "great orb of eyes"},
-  {100, "vault sentinel"},
-  {100, "the Enchantress"},
-  {100, "satyr"},
-  {100, "vampire knight"},
-  {100, "siren"},
-  {100, "merfolk avatar"},
+  ["orc sorcerer"] = 17,
+  ["wizard"] = 17,
+
+  ["ogre mage"] = 100,
+  ["Rupert"] = 100,
+  ["Xtahua"] = 100,
+  ["Aizul"] = 100,
+  ["Erolcha"] = 100,
+  ["Louise"] = 100,
+  ["lich"] = 100,
+  ["ancient lich"] = 100,
+  ["Kirke"] = 100,
+  ["golden eye"] = 100,
+  ["deep elf sorcerer"] = 100,
+  ["deep elf demonologist"] = 100,
+  ["sphinx"] = 100,
+  ["great orb of eyes"] = 100,
+  ["vault sentinel"] = 100,
+  ["the Enchantress"] = 100,
+  ["satyr"] = 100,
+  ["vampire knight"] = 100,
+  ["siren"] = 100,
+  ["merfolk avatar"] = 100,
 } -- hack
 
 -- potion of resistance these
 local fire_resistance_monsters = {
-  {100, check_resist("Margery","rF",2)},
-  {100, "orb of fire"},
-  {100, check_resist("hellephant","rF",2)},
-  {100, check_resist("Xtahua","rF",2)},
-  {100, "Cerebov"},
-  {100, check_resist("Asmodeus","rF",2)},
+  ["*"] = {},
+
+  ["Margery"] = check_resist(100,"rF",2),
+  ["orb of fire"] = 100,
+  ["hellephant"] = check_resist(100,"rF",2),
+  ["Xtahua"] = check_resist(100,"rF",2),
+  ["Cerebov"] = 100,
+  ["Asmodeus"] = check_resist(100,"rF",2),
 } -- hack
 
 local cold_resistance_monsters = {
-  {100, "Ice Fiend"},
-  {100, "Antaeus"},
+  ["*"] = {},
+  ["Ice Fiend"] = 100,
+  ["Antaeus"] = 100,
 } -- hack
 
 local elec_resistance_monsters = {
-  {20, "storm dragon"},
-  {20, in_desc("black draconian")},
-  {100, "electric golem"},
-  {100, "spark wasp"},
-  {100, "Antaeus"},
+  ["*"] = {
+    in_desc(20,"black draconian"),
+  },
+  ["storm dragon"] = 20,
+  ["electric golem"] = 100,
+  ["spark wasp"] = 100,
+  ["Antaeus"] = 100,
 } -- hack
 
 local pois_resistance_monsters = {
-  {100, "swamp drake"},
+  ["*"] = {},
+  ["swamp drake"] = 100,
 } -- hack
 
 local acid_resistance_monsters = {
-  {100, "acid blob"},
+  ["*"] = {},
+  ["acid blob"] = 100,
 } -- hack
 
 -----------------------------------------
@@ -2513,16 +2538,19 @@ function check_monsters(r, mlist)
       if not contains_string_in(e.m:name(), {"skeleton", "zombie",
          "simulacrum", "spectral"}) then
         local name = e.m:name()
-        local desc = e.m:desc()
-        for _, value in ipairs(mlist) do
-          if xl < value[1] then
-            if type(value[2]) == "string" then
-              if value[2] == name then
-                return true
-              end
-            elseif value[2](e.m) then
-              return true
-            end
+        local entry = mlist[name]
+        if type(entry) == "number" then
+          if xl < entry then
+            return true
+          end
+        elseif type(entry) == "function" then
+          if entry(e.m) then
+            return true
+          end
+        end
+        for _, entry in ipairs(mlist["*"]) do
+          if entry(e.m) then
+            return true
           end
         end
       end
