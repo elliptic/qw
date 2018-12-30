@@ -5251,9 +5251,9 @@ function plan_use_good_consumables()
         if view.feature_at(0,0) ~= "deep_water"
            and view.feature_at(0,0) ~= "lava" then
           if you.race() == "Felid" then
-            return read2(it, " c")
+            return read2(it, "c")
           else
-            return read2(it, " b")
+            return read2(it, "b")
           end
         end
       elseif it.name():find("enchant weapon") then
