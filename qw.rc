@@ -127,6 +127,7 @@ cset = cloud:xa4
 cset = item_orb:0
 use_fake_player_cursor = true
 equip_unequip = true
+bad_item_prompt = false
 
 dump_order = header,hiscore,stats,misc,mutations,skills,spells,inventory
 dump_order += overview
@@ -2303,7 +2304,8 @@ function can_hand()
   return (not (you.berserk() or you.confused() or you.silenced() or
           you.regenerating() or
           starving() or you.piety_rank() < 2 or
-          you.god() ~= "Trog"))
+          you.god() ~= "Trog" or
+          you.status("engulfed (cannot breathe)")))
 end
 
 function dd_heal_ability()
@@ -3550,11 +3552,6 @@ function apocalypse()
   use_ability("Apocalypse")
 end
 
--- Will fail if the book is in a non-fire cloud already.
-function burn_spellbooks()
-  use_ability("Burn Spellbooks")
-end
-
 function plan_bia()
   if can_bia() and want_to_bia() then
     bia()
@@ -4298,14 +4295,6 @@ function plan_drain_life()
   return false
 end
 
-function plan_burn_spellbooks()
-  if want_to_burn_spellbooks() then
-    burn_spellbooks()
-    return true
-  end
-  return false
-end
-
 function want_to_bia()
   if not danger then
     return false
@@ -4922,10 +4911,6 @@ function plan_abyss_rest()
   return false
 end
 
-function want_to_burn_spellbooks()
-  return BURN_BOOKS and (you.god() == "Trog") and can_read() and see_spellbooks_to_burn()
-end
-
 function want_blood()
   return (count_item("potion","of blood") < 10)
 end
@@ -5251,9 +5236,9 @@ function plan_use_good_consumables()
         if view.feature_at(0,0) ~= "deep_water"
            and view.feature_at(0,0) ~= "lava" then
           if you.race() == "Felid" then
-            return read2(it, " c")
+            return read2(it, "c")
           else
-            return read2(it, " b")
+            return read2(it, "b")
           end
         end
       elseif it.name():find("enchant weapon") then
@@ -7830,7 +7815,6 @@ plan_move = cascade {
   {plan_attack, "attack"},
   {plan_cure_poison, "cure_poison"},
   {plan_flail_at_invis, "try_flail_at_invis"},
-  {plan_burn_spellbooks, "try_burn_spellbooks"},
   {plan_eatrest, "eatrest"},
   {plan_pre_explore, "pre_explore"},
   {plan_step_towards_lair, "step_towards_lair"},
