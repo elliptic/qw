@@ -127,6 +127,7 @@ cset = cloud:xa4
 cset = item_orb:0
 use_fake_player_cursor = true
 equip_unequip = true
+bad_item_prompt = false
 
 dump_order = header,hiscore,stats,misc,mutations,skills,spells,inventory
 dump_order += overview
