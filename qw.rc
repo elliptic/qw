@@ -2304,7 +2304,8 @@ function can_hand()
   return (not (you.berserk() or you.confused() or you.silenced() or
           you.regenerating() or
           starving() or you.piety_rank() < 2 or
-          you.god() ~= "Trog"))
+          you.god() ~= "Trog" or
+          you.status("engulfed (cannot breathe)")))
 end
 
 function dd_heal_ability()
