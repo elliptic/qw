@@ -5067,7 +5067,7 @@ function plan_join_god()
       if you.silenced() then
         rest()
       else
-        magic("<YY")
+        magic("<J")
       end
       return true
     end
@@ -5076,7 +5076,7 @@ function plan_join_god()
     if you.silenced() then
       rest()
     else
-      magic("<YY")
+      magic("<J")
     end
     return true
   end
