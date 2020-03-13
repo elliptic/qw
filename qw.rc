@@ -248,6 +248,8 @@ local monster_array
 local enemy_list
 
 local upgrade_phase = false
+local acquirement_pickup = false
+local acquirement_class = nil
 
 local tactical_step
 local tactical_reason
@@ -5192,11 +5194,9 @@ function plan_use_good_consumables()
       if it.name():find("acquirement") then
         if view.feature_at(0,0) ~= "deep_water"
            and view.feature_at(0,0) ~= "lava" then
-          if you.race() == "Felid" then
-            return read2(it, " c")
-          else
-            return read2(it, " b")
-          end
+            if read(it) then
+              return true
+            end
         end
       elseif it.name():find("enchant weapon") then
         weapon = items.equipped_at("weapon")
@@ -5408,7 +5408,20 @@ function plan_bless_weapon()
   return false
 end
 
+function plan_maybe_pickup_acquirement()
+  if acquirement_pickup then
+    magic(";")
+    acquirement_pickup = false
+    return true
+  end
+
+  return false
+end
+
 function plan_upgrade_weapon()
+  if acquirement_class == "Weapon" then
+    acquirement_class = nil
+  end
   if you.race() == "Troll" then
     return false
   end
@@ -5465,6 +5478,15 @@ function plan_remove_terrible_jewellery()
   return false
 end
 
+function plan_maybe_upgrade_amulet()
+  if acquirement_class ~= "Amulet" then
+    return false
+  end
+
+  acquirement_class = nil
+  return plan_upgrade_amulet()
+end
+
 function plan_upgrade_amulet()
   it_old = items.equipped_at("Amulet")
   swappable = can_swap("Amulet")
@@ -5494,6 +5516,15 @@ function plan_upgrade_amulet()
     end
   end
   return false
+end
+
+function plan_maybe_upgrade_rings()
+  if acquirement_class ~= "Ring" then
+    return false
+  end
+
+  acquirement_class = nil
+  return plan_upgrade_rings()
 end
 
 function plan_upgrade_rings()
@@ -5545,9 +5576,24 @@ function plan_upgrade_rings()
 end
 
 function plan_maybe_upgrade_armour()
-  if not upgrade_phase then
+  local acquire = false
+  if acquirement_class ~= nil then
+    for _,s in pairs(good_slots) do
+      if acquirement_class == s then
+        acquire = true
+        break
+      end
+    end
+  end
+
+  if not upgrade_phase and not acquire then
     return false
   end
+
+  if acquire then
+    acquirement_class = nil
+  end
+
   return plan_upgrade_armour()
 end
 
@@ -7591,13 +7637,22 @@ end
 -- any plan that might not know whether or not it successfully took an action
 -- (e.g. autoexplore) should prepend "try_" to its text
 
+-- These plans will only execute after a successful acquirement.
+plan_handle_acquirement_result = cascade {
+  {plan_maybe_pickup_acquirement, "try_pickup_acquirement"},
+  {plan_maybe_upgrade_armour, "maybe_upgrade_armour"},
+  {plan_maybe_upgrade_amulet, "maybe_upgrade_amulet"},
+  {plan_maybe_upgrade_rings, "maybe_upgrade_rings"},
+} -- hack
+
+
 plan_pre_explore = cascade {
   {plan_fly, "fly"},
   {plan_ancestor_life, "ancestor_life"},
   {plan_sacrifice, "sacrifice"},
+  {plan_handle_acquirement_result, "handle_acquirement_result"},
   {plan_bless_weapon, "bless_weapon"},
   {plan_upgrade_weapon, "upgrade_weapon"},
-  {plan_maybe_upgrade_armour, "maybe_upgrade_armour"},
   {plan_use_good_consumables, "use_good_consumables"},
 } -- hack
 
@@ -8532,5 +8587,40 @@ end
 
 function ch_stash_search_annotate_item(it)
   return ""
+end
+
+function c_choose_acquirement()
+  local acq_items = items.acquirement_items()
+
+  -- These categories should be in order of preference.
+  local wanted = {"weapon", "armour", "jewellery", "gold"}
+  local item_ind = {}
+  for _,c in ipairs(wanted) do
+    item_ind[c] = 0
+  end
+
+  for n,it in ipairs(acq_items) do
+    local class = it.class(true)
+    if item_ind[class] ~= nil then
+      item_ind[class] = n
+    end
+  end
+
+  for _,c in ipairs(wanted) do
+    local ind = item_ind[c]
+    if item_ind[c] > 0 then
+      local item = acq_items[ind]
+      if autopickup(item, item.name()) then
+        say("ACQUIRING " .. item.name())
+        acquirement_class = equip_slot(item)
+        acquirement_pickup = true
+        return ind
+      end
+    end
+  end
+
+  -- If somehow we didn't find anything, pick the first item and move on.
+  say("GAVE UP ACQUIRING")
+  return 1
 end
 }
