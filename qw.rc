@@ -1290,9 +1290,6 @@ function want_potion(it)
   if sub == nil then
     return true
   end
-  if sub == "blood" and you.race() == "Vampire" then
-    return true
-  end
   if sub ~= "curing" and sub ~= "heal wounds" and sub ~= "haste"
      and sub ~= "resistance" and sub ~= "experience" and sub ~= "might"
      and sub ~= "mutation" and sub ~= "cancellation" then
@@ -2381,11 +2378,6 @@ function can_teleport()
 end
 
 function too_hungry_to_berserk()
-  if you.race() == "Vampire" then
-    return (you.hunger_name() ~= "almost alive"
-            and you.hunger_name() ~= "very full"
-            and you.hunger_name() ~= "full")
-  end
   return (starving() or
           you.hunger_name() == "near starving" or
           you.hunger_name() == "very hungry")
@@ -3414,13 +3406,9 @@ function should_ally_rest()
 end
 
 function want_permafood()
-  if you.race() == "Mummy" or you.transform() == "lich" then
+  if you.race() == "Mummy" or you.race() == "Vampire"
+     or you.transform() == "lich" then
     return false
-  end
-  if you.race() == "Vampire" then
-    return (you.hunger_name() ~= "almost alive"
-            and you.hunger_name() ~= "very full"
-            and you.hunger_name() ~= "full")
   end
   if you.race() == "Spriggan" then
     return (you.hunger_name() ~= "completely stuffed"
@@ -4819,9 +4807,6 @@ function drink_blood()
 end
 
 function eat_permafood(prefer_ration)
-  if you.race() == "Vampire" then
-    return drink_blood()
-  end
   local l
   local max_prefer = 0
   local food_name
@@ -4904,30 +4889,9 @@ function plan_abyss_rest()
   return false
 end
 
-function want_blood()
-  return (count_item("potion","of blood") < 10)
-end
-
--- this function could probably be simplified
-function vp_handle_corpses()
-  if want_blood() and on_bottleable_corpses() then
-    chop()
-  elseif want_permafood() and on_edible_corpse() and not on_dangerous_corpse() then
-    magic("eY")
-  elseif on_bottleable_corpses() then
-    chop()
-  else
-    return false
-  end
-  return true
-end
-
 function plan_handle_corpses()
   if not on_corpses() then
     return false
-  end
-  if you.race() == "Vampire" then
-    return vp_handle_corpses()
   end
   if on_edible_corpse() then
     chop()
@@ -5141,7 +5105,7 @@ function plan_use_id_scrolls()
   local count = 0
   for it in inventory() do
     if it.class(true) == "wand" and not it.fully_identified and
-       (it.name():find("empty") or 
+       (it.name():find("empty") or
         it.name():find("digging")
         and (where:find("Depths") or where:find("Zot"))) then
       oldname = it.name()
