@@ -3545,11 +3545,6 @@ function apocalypse()
   use_ability("Apocalypse")
 end
 
--- Will fail if the book is in a non-fire cloud already.
-function burn_spellbooks()
-  use_ability("Burn Spellbooks")
-end
-
 function plan_bia()
   if can_bia() and want_to_bia() then
     bia()
@@ -4293,14 +4288,6 @@ function plan_drain_life()
   return false
 end
 
-function plan_burn_spellbooks()
-  if want_to_burn_spellbooks() then
-    burn_spellbooks()
-    return true
-  end
-  return false
-end
-
 function want_to_bia()
   if not danger then
     return false
@@ -4915,10 +4902,6 @@ function plan_abyss_rest()
     return true
   end
   return false
-end
-
-function want_to_burn_spellbooks()
-  return BURN_BOOKS and (you.god() == "Trog") and can_read() and see_spellbooks_to_burn()
 end
 
 function want_blood()
@@ -7802,7 +7785,6 @@ plan_move = cascade {
   {plan_attack, "attack"},
   {plan_cure_poison, "cure_poison"},
   {plan_flail_at_invis, "try_flail_at_invis"},
-  {plan_burn_spellbooks, "try_burn_spellbooks"},
   {plan_eatrest, "eatrest"},
   {plan_pre_explore, "pre_explore"},
   {plan_step_towards_lair, "step_towards_lair"},
