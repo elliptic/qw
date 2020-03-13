@@ -1040,15 +1040,11 @@ function weapon_value(it, cur, it2, sit)
   end
   local ego = it.ego()
   if hydra_swap then
-    if ego == "vampirism" and not intrinsic_undead() then
+    local hydra_quality = hydra_weapon_status(it)
+    if hydra_quality == -1 then
       return -1,-1
-    else
-      local hydra_quality = hydra_weapon_status(it)
-      if hydra_quality == -1 then
-        return -1,-1
-      elseif hydra_quality == 1 then
-        value = value + 500
-      end
+    elseif hydra_quality == 1 then
+      value = value + 500
     end
   end
   if ego then -- names are mostly in weapon_brands_verbose[]
@@ -5388,11 +5384,11 @@ function plan_wield_weapon()
   end
   for it in inventory() do
     if it and it.class(true) == "weapon" then
-      if should_equip(it) and (not it.name():find("vamp") or intrinsic_undead()) then
+      if should_equip(it) then
         l = items.index_to_letter(it.slot)
         say("Wielding weapon " .. it.name() .. ".")
         magic("w" .. l .. "YY")
-        -- this might have a 0-turn fail because of unIDed vamp/holy
+        -- this might have a 0-turn fail because of unIDed holy
         return nil
       end
     end
@@ -5429,7 +5425,7 @@ function plan_swap_weapon()
   end
   it_old = items.equipped_at("Weapon")
   swappable = can_swap("Weapon")
-  if not swappable or (it_old.ego() == "vampirism" and not intrinsic_undead()) then
+  if not swappable then
     return false
   end
   cur_val = weapon_value(it_old,true,it_old,sit)
@@ -5437,7 +5433,7 @@ function plan_swap_weapon()
   max_it = nil
   for it in inventory() do
     if it and it.class(true) == "weapon" and not it.equipped then
-      if (twohands or it.hands < 2) and not (it.name():find("vamp") and not intrinsic_undead()) then
+      if twohands or it.hands < 2 then
         val2 = weapon_value(it,true,it_old,sit)
         if val2 > max_val then
           max_val = val2
@@ -5450,7 +5446,7 @@ function plan_swap_weapon()
     l = items.index_to_letter(max_it.slot)
     say("SWAPPING to " .. max_it.name() .. ".")
     magic("w" .. l .. "YY")
-    -- this might have a 0-turn fail because of unIDed vamp/holy
+    -- this might have a 0-turn fail because of unIDed holy
     return nil
   end
   return false
@@ -5503,20 +5499,11 @@ function plan_upgrade_weapon()
         drop = true
       end
       if equip and swappable and (twohands or it.hands < 2) then
-        if it.name():find("vamp") and not intrinsic_undead() and not
-           (you.hunger_name() == "full" or you.hunger_name() == "very full" or
-            you.hunger_name() == "completely stuffed") then
-          say("Eating in order to wield vampiric weapon.")
-          if eat_permafood() then
-            return true
-          end
-        else
-          l = items.index_to_letter(it.slot)
-          say("UPGRADING to " .. it.name() .. ".")
-          magic("w" .. l .. "YY")
-          -- this might have a 0-turn fail because of unIDed vamp/holy
-          return nil
-        end
+        l = items.index_to_letter(it.slot)
+        say("UPGRADING to " .. it.name() .. ".")
+        magic("w" .. l .. "YY")
+        -- this might have a 0-turn fail because of unIDed holy
+        return nil
       end
       if drop then
         l = items.index_to_letter(it.slot)
