@@ -1308,8 +1308,7 @@ function want_scroll(it)
   end
   if sub ~= "identify" and sub ~= "teleportation" and sub ~= "remove curse"
      and sub ~= "enchant weapon" and sub ~= "enchant armour"
-     and sub ~= "acquirement" and sub ~= "recharging"
-     and sub ~= "brand weapon"
+     and sub ~= "acquirement" and sub ~= "brand weapon"
      and (not WILL_ZIG or sub ~= "fog" and sub ~= "blinking") then
     return false
   end
@@ -5314,19 +5313,6 @@ function plan_use_good_consumables()
             return true
           end
         end
-      elseif it.name():find("recharging") then
-        for it2 in inventory() do
-          if it2.class(true) == "wand" and
-             it2.name():find("digging")
-             and (it2.name():find("empty") or
-                  it2.plus and it2.plus < 10) then
-            oldname = it2.name()
-            if read2(it, letter(it2)) then
-              say("RECHARGING " .. oldname .. ".")
-              return true
-            end
-          end
-        end
       elseif it.name():find("remove curse") then
         for it2 in inventory() do
           if it2.cursed and it2.equipped then
@@ -5811,9 +5797,8 @@ function want_to_buy(it)
     return false
   elseif class == "scroll" then
     local sub = it.subtype()
-    if (sub == "identify" or sub == "remove curse") and count_item("scroll",sub) > 9 then
-      return false
-    elseif sub == "recharging" and count_item("scroll", sub) > 0 then
+    if (sub == "identify" or sub == "remove curse")
+       and count_item("scroll",sub) > 9 then
       return false
     end
   end
