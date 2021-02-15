@@ -4,6 +4,11 @@ to win DCSS with no human assistance. A substantial amount of code here was
 contributed by elliott or borrowed from N78291's bot "xw", and many others
 have contributed as well.
 
+This repository is not currently maintained; for a maintained version that
+runs on current versions of DCSS see:
+
+https://github.com/crawl/qw
+
 The current version of qw can start as any species/background combination
 and has some basic grasp of how many of the gods work (see qw.rc
 for configuration details). Note though that most spells and racial
