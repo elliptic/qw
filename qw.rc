@@ -248,6 +248,8 @@ local monster_array
 local enemy_list
 
 local upgrade_phase = false
+local acquirement_pickup = false
+local acquirement_class = nil
 
 local tactical_step
 local tactical_reason
@@ -1040,15 +1042,11 @@ function weapon_value(it, cur, it2, sit)
   end
   local ego = it.ego()
   if hydra_swap then
-    if ego == "vampirism" and not intrinsic_undead() then
+    local hydra_quality = hydra_weapon_status(it)
+    if hydra_quality == -1 then
       return -1,-1
-    else
-      local hydra_quality = hydra_weapon_status(it)
-      if hydra_quality == -1 then
-        return -1,-1
-      elseif hydra_quality == 1 then
-        value = value + 500
-      end
+    elseif hydra_quality == 1 then
+      value = value + 500
     end
   end
   if ego then -- names are mostly in weapon_brands_verbose[]
@@ -1294,9 +1292,6 @@ function want_potion(it)
   if sub == nil then
     return true
   end
-  if sub == "blood" and you.race() == "Vampire" then
-    return true
-  end
   if sub ~= "curing" and sub ~= "heal wounds" and sub ~= "haste"
      and sub ~= "resistance" and sub ~= "experience" and sub ~= "might"
      and sub ~= "mutation" and sub ~= "cancellation" then
@@ -1312,8 +1307,7 @@ function want_scroll(it)
   end
   if sub ~= "identify" and sub ~= "teleportation" and sub ~= "remove curse"
      and sub ~= "enchant weapon" and sub ~= "enchant armour"
-     and sub ~= "acquirement" and sub ~= "recharging"
-     and sub ~= "brand weapon"
+     and sub ~= "acquirement" and sub ~= "brand weapon"
      and (not WILL_ZIG or sub ~= "fog" and sub ~= "blinking") then
     return false
   end
@@ -2386,11 +2380,6 @@ function can_teleport()
 end
 
 function too_hungry_to_berserk()
-  if you.race() == "Vampire" then
-    return (you.hunger_name() ~= "almost alive"
-            and you.hunger_name() ~= "very full"
-            and you.hunger_name() ~= "full")
-  end
   return (starving() or
           you.hunger_name() == "near starving" or
           you.hunger_name() == "very hungry")
@@ -3419,13 +3408,9 @@ function should_ally_rest()
 end
 
 function want_permafood()
-  if you.race() == "Mummy" or you.transform() == "lich" then
+  if you.race() == "Mummy" or you.race() == "Vampire"
+     or you.transform() == "lich" then
     return false
-  end
-  if you.race() == "Vampire" then
-    return (you.hunger_name() ~= "almost alive"
-            and you.hunger_name() ~= "very full"
-            and you.hunger_name() ~= "full")
   end
   if you.race() == "Spriggan" then
     return (you.hunger_name() ~= "completely stuffed"
@@ -3548,11 +3533,6 @@ end
 
 function apocalypse()
   use_ability("Apocalypse")
-end
-
--- Will fail if the book is in a non-fire cloud already.
-function burn_spellbooks()
-  use_ability("Burn Spellbooks")
 end
 
 function plan_bia()
@@ -4298,14 +4278,6 @@ function plan_drain_life()
   return false
 end
 
-function plan_burn_spellbooks()
-  if want_to_burn_spellbooks() then
-    burn_spellbooks()
-    return true
-  end
-  return false
-end
-
 function want_to_bia()
   if not danger then
     return false
@@ -4837,9 +4809,6 @@ function drink_blood()
 end
 
 function eat_permafood(prefer_ration)
-  if you.race() == "Vampire" then
-    return drink_blood()
-  end
   local l
   local max_prefer = 0
   local food_name
@@ -4922,34 +4891,9 @@ function plan_abyss_rest()
   return false
 end
 
-function want_to_burn_spellbooks()
-  return BURN_BOOKS and (you.god() == "Trog") and can_read() and see_spellbooks_to_burn()
-end
-
-function want_blood()
-  return (count_item("potion","of blood") < 10)
-end
-
--- this function could probably be simplified
-function vp_handle_corpses()
-  if want_blood() and on_bottleable_corpses() then
-    chop()
-  elseif want_permafood() and on_edible_corpse() and not on_dangerous_corpse() then
-    magic("eY")
-  elseif on_bottleable_corpses() then
-    chop()
-  else
-    return false
-  end
-  return true
-end
-
 function plan_handle_corpses()
   if not on_corpses() then
     return false
-  end
-  if you.race() == "Vampire" then
-    return vp_handle_corpses()
   end
   if on_edible_corpse() then
     chop()
@@ -5067,7 +5011,7 @@ function plan_join_god()
       if you.silenced() then
         rest()
       else
-        magic("<YY")
+        magic("<J")
       end
       return true
     end
@@ -5076,7 +5020,7 @@ function plan_join_god()
     if you.silenced() then
       rest()
     else
-      magic("<YY")
+      magic("<J")
     end
     return true
   end
@@ -5163,7 +5107,7 @@ function plan_use_id_scrolls()
   local count = 0
   for it in inventory() do
     if it.class(true) == "wand" and not it.fully_identified and
-       (it.name():find("empty") or 
+       (it.name():find("empty") or
         it.name():find("digging")
         and (where:find("Depths") or where:find("Zot"))) then
       oldname = it.name()
@@ -5250,11 +5194,9 @@ function plan_use_good_consumables()
       if it.name():find("acquirement") then
         if view.feature_at(0,0) ~= "deep_water"
            and view.feature_at(0,0) ~= "lava" then
-          if you.race() == "Felid" then
-            return read2(it, " c")
-          else
-            return read2(it, " b")
-          end
+            if read(it) then
+              return true
+            end
         end
       elseif it.name():find("enchant weapon") then
         weapon = items.equipped_at("weapon")
@@ -5318,19 +5260,6 @@ function plan_use_good_consumables()
             return true
           end
         end
-      elseif it.name():find("recharging") then
-        for it2 in inventory() do
-          if it2.class(true) == "wand" and
-             it2.name():find("digging")
-             and (it2.name():find("empty") or
-                  it2.plus and it2.plus < 10) then
-            oldname = it2.name()
-            if read2(it, letter(it2)) then
-              say("RECHARGING " .. oldname .. ".")
-              return true
-            end
-          end
-        end
       elseif it.name():find("remove curse") then
         for it2 in inventory() do
           if it2.cursed and it2.equipped then
@@ -5388,11 +5317,11 @@ function plan_wield_weapon()
   end
   for it in inventory() do
     if it and it.class(true) == "weapon" then
-      if should_equip(it) and (not it.name():find("vamp") or intrinsic_undead()) then
+      if should_equip(it) then
         l = items.index_to_letter(it.slot)
         say("Wielding weapon " .. it.name() .. ".")
         magic("w" .. l .. "YY")
-        -- this might have a 0-turn fail because of unIDed vamp/holy
+        -- this might have a 0-turn fail because of unIDed holy
         return nil
       end
     end
@@ -5429,7 +5358,7 @@ function plan_swap_weapon()
   end
   it_old = items.equipped_at("Weapon")
   swappable = can_swap("Weapon")
-  if not swappable or (it_old.ego() == "vampirism" and not intrinsic_undead()) then
+  if not swappable then
     return false
   end
   cur_val = weapon_value(it_old,true,it_old,sit)
@@ -5437,7 +5366,7 @@ function plan_swap_weapon()
   max_it = nil
   for it in inventory() do
     if it and it.class(true) == "weapon" and not it.equipped then
-      if (twohands or it.hands < 2) and not (it.name():find("vamp") and not intrinsic_undead()) then
+      if twohands or it.hands < 2 then
         val2 = weapon_value(it,true,it_old,sit)
         if val2 > max_val then
           max_val = val2
@@ -5450,7 +5379,7 @@ function plan_swap_weapon()
     l = items.index_to_letter(max_it.slot)
     say("SWAPPING to " .. max_it.name() .. ".")
     magic("w" .. l .. "YY")
-    -- this might have a 0-turn fail because of unIDed vamp/holy
+    -- this might have a 0-turn fail because of unIDed holy
     return nil
   end
   return false
@@ -5479,7 +5408,20 @@ function plan_bless_weapon()
   return false
 end
 
+function plan_maybe_pickup_acquirement()
+  if acquirement_pickup then
+    magic(";")
+    acquirement_pickup = false
+    return true
+  end
+
+  return false
+end
+
 function plan_upgrade_weapon()
+  if acquirement_class == "Weapon" then
+    acquirement_class = nil
+  end
   if you.race() == "Troll" then
     return false
   end
@@ -5503,20 +5445,11 @@ function plan_upgrade_weapon()
         drop = true
       end
       if equip and swappable and (twohands or it.hands < 2) then
-        if it.name():find("vamp") and not intrinsic_undead() and not
-           (you.hunger_name() == "full" or you.hunger_name() == "very full" or
-            you.hunger_name() == "completely stuffed") then
-          say("Eating in order to wield vampiric weapon.")
-          if eat_permafood() then
-            return true
-          end
-        else
-          l = items.index_to_letter(it.slot)
-          say("UPGRADING to " .. it.name() .. ".")
-          magic("w" .. l .. "YY")
-          -- this might have a 0-turn fail because of unIDed vamp/holy
-          return nil
-        end
+        l = items.index_to_letter(it.slot)
+        say("UPGRADING to " .. it.name() .. ".")
+        magic("w" .. l .. "YY")
+        -- this might have a 0-turn fail because of unIDed holy
+        return nil
       end
       if drop then
         l = items.index_to_letter(it.slot)
@@ -5543,6 +5476,15 @@ function plan_remove_terrible_jewellery()
     end
   end
   return false
+end
+
+function plan_maybe_upgrade_amulet()
+  if acquirement_class ~= "Amulet" then
+    return false
+  end
+
+  acquirement_class = nil
+  return plan_upgrade_amulet()
 end
 
 function plan_upgrade_amulet()
@@ -5574,6 +5516,15 @@ function plan_upgrade_amulet()
     end
   end
   return false
+end
+
+function plan_maybe_upgrade_rings()
+  if acquirement_class ~= "Ring" then
+    return false
+  end
+
+  acquirement_class = nil
+  return plan_upgrade_rings()
 end
 
 function plan_upgrade_rings()
@@ -5625,9 +5576,24 @@ function plan_upgrade_rings()
 end
 
 function plan_maybe_upgrade_armour()
-  if not upgrade_phase then
+  local acquire = false
+  if acquirement_class ~= nil then
+    for _,s in pairs(good_slots) do
+      if acquirement_class == s then
+        acquire = true
+        break
+      end
+    end
+  end
+
+  if not upgrade_phase and not acquire then
     return false
   end
+
+  if acquire then
+    acquirement_class = nil
+  end
+
   return plan_upgrade_armour()
 end
 
@@ -5824,9 +5790,8 @@ function want_to_buy(it)
     return false
   elseif class == "scroll" then
     local sub = it.subtype()
-    if (sub == "identify" or sub == "remove curse") and count_item("scroll",sub) > 9 then
-      return false
-    elseif sub == "recharging" and count_item("scroll", sub) > 0 then
+    if (sub == "identify" or sub == "remove curse")
+       and count_item("scroll",sub) > 9 then
       return false
     end
   end
@@ -7672,13 +7637,22 @@ end
 -- any plan that might not know whether or not it successfully took an action
 -- (e.g. autoexplore) should prepend "try_" to its text
 
+-- These plans will only execute after a successful acquirement.
+plan_handle_acquirement_result = cascade {
+  {plan_maybe_pickup_acquirement, "try_pickup_acquirement"},
+  {plan_maybe_upgrade_armour, "maybe_upgrade_armour"},
+  {plan_maybe_upgrade_amulet, "maybe_upgrade_amulet"},
+  {plan_maybe_upgrade_rings, "maybe_upgrade_rings"},
+} -- hack
+
+
 plan_pre_explore = cascade {
   {plan_fly, "fly"},
   {plan_ancestor_life, "ancestor_life"},
   {plan_sacrifice, "sacrifice"},
+  {plan_handle_acquirement_result, "handle_acquirement_result"},
   {plan_bless_weapon, "bless_weapon"},
   {plan_upgrade_weapon, "upgrade_weapon"},
-  {plan_maybe_upgrade_armour, "maybe_upgrade_armour"},
   {plan_use_good_consumables, "use_good_consumables"},
 } -- hack
 
@@ -7830,7 +7804,6 @@ plan_move = cascade {
   {plan_attack, "attack"},
   {plan_cure_poison, "cure_poison"},
   {plan_flail_at_invis, "try_flail_at_invis"},
-  {plan_burn_spellbooks, "try_burn_spellbooks"},
   {plan_eatrest, "eatrest"},
   {plan_pre_explore, "pre_explore"},
   {plan_step_towards_lair, "step_towards_lair"},
@@ -8592,7 +8565,7 @@ function c_answer_prompt(prompt)
   if prompt:find("Really unwield") or prompt:find("Really take off")
      or prompt:find("Really remove") or prompt:find("Really wield")
      or prompt:find("Really wear") or prompt:find("Really put on")
-     or prompt:find("Really drink") then
+     or prompt:find("Really quaff") then
     return true
   end
   if prompt:find("Keep reading") then
@@ -8614,5 +8587,40 @@ end
 
 function ch_stash_search_annotate_item(it)
   return ""
+end
+
+function c_choose_acquirement()
+  local acq_items = items.acquirement_items()
+
+  -- These categories should be in order of preference.
+  local wanted = {"weapon", "armour", "jewellery", "gold"}
+  local item_ind = {}
+  for _,c in ipairs(wanted) do
+    item_ind[c] = 0
+  end
+
+  for n,it in ipairs(acq_items) do
+    local class = it.class(true)
+    if item_ind[class] ~= nil then
+      item_ind[class] = n
+    end
+  end
+
+  for _,c in ipairs(wanted) do
+    local ind = item_ind[c]
+    if item_ind[c] > 0 then
+      local item = acq_items[ind]
+      if autopickup(item, item.name()) then
+        say("ACQUIRING " .. item.name())
+        acquirement_class = equip_slot(item)
+        acquirement_pickup = true
+        return ind
+      end
+    end
+  end
+
+  -- If somehow we didn't find anything, pick the first item and move on.
+  say("GAVE UP ACQUIRING")
+  return 1
 end
 }
